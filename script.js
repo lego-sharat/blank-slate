@@ -4,12 +4,15 @@ const NOTES_KEY = 'minimal_newtab_notes';
 
 // State
 let todos = [];
+let notes = [];
 
 // DOM elements
 const todoInput = document.getElementById('todoInput');
 const addTodoBtn = document.getElementById('addTodoBtn');
 const todoList = document.getElementById('todoList');
-const notesArea = document.getElementById('notesArea');
+const noteInput = document.getElementById('noteInput');
+const addNoteBtn = document.getElementById('addNoteBtn');
+const notesList = document.getElementById('notesList');
 const timeDisplay = document.getElementById('timeDisplay');
 const dateDisplay = document.getElementById('dateDisplay');
 
@@ -31,7 +34,12 @@ function setupEventListeners() {
     }
   });
 
-  notesArea.addEventListener('input', saveNotes);
+  addNoteBtn.addEventListener('click', addNote);
+  noteInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addNote();
+    }
+  });
 }
 
 // Todo functions
@@ -112,12 +120,79 @@ function renderTodos() {
 function loadNotes() {
   const stored = localStorage.getItem(NOTES_KEY);
   if (stored) {
-    notesArea.value = stored;
+    // Handle migration from old string format to new array format
+    try {
+      const parsed = JSON.parse(stored);
+      // If it's already an array, use it
+      if (Array.isArray(parsed)) {
+        notes = parsed;
+      } else {
+        notes = [];
+      }
+    } catch (e) {
+      // If it's not JSON (old string format), migrate it
+      if (stored.trim() !== '') {
+        notes = [{
+          id: Date.now(),
+          text: stored,
+          createdAt: Date.now()
+        }];
+        saveNotes(); // Save migrated data
+      } else {
+        notes = [];
+      }
+    }
+    renderNotes();
   }
 }
 
 function saveNotes() {
-  localStorage.setItem(NOTES_KEY, notesArea.value);
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+}
+
+function addNote() {
+  const text = noteInput.value.trim();
+  if (text === '') return;
+
+  const note = {
+    id: Date.now(),
+    text: text,
+    createdAt: Date.now()
+  };
+
+  notes.push(note);
+  saveNotes();
+  renderNotes();
+  noteInput.value = '';
+  noteInput.focus();
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  saveNotes();
+  renderNotes();
+}
+
+function renderNotes() {
+  notesList.innerHTML = '';
+
+  notes.forEach(note => {
+    const li = document.createElement('li');
+    li.className = 'note-item';
+
+    const text = document.createElement('span');
+    text.className = 'note-text';
+    text.textContent = note.text;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'note-delete';
+    deleteBtn.textContent = 'DEL';
+    deleteBtn.addEventListener('click', () => deleteNote(note.id));
+
+    li.appendChild(text);
+    li.appendChild(deleteBtn);
+    notesList.appendChild(li);
+  });
 }
 
 // Clock functions
