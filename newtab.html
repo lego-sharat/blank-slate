@@ -8,57 +8,69 @@
   <script src="markdown-parser.js"></script>
 </head>
 <body>
-  <button id="settingsBtn" class="settings-btn" title="Settings">⚙</button>
-
-  <div class="clock-container">
-    <div class="time" id="timeDisplay">00:00:00</div>
-    <div class="date" id="dateDisplay">Monday, January 1, 2025</div>
-  </div>
-
-  <div class="container">
-    <section class="todos-section">
-      <h1>TODO</h1>
-      <div class="todo-input-container">
-        <input type="text" id="todoInput" placeholder="Add a new task..." />
-        <button id="addTodoBtn">+</button>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>NOTES</h1>
+        <button id="addNoteBtn" class="add-note-btn" title="New Note">+</button>
       </div>
-      <ul id="todoList"></ul>
-    </section>
+      <ul id="sidebarList" class="sidebar-list"></ul>
+    </aside>
 
-    <section class="notes-section">
-      <h1>NOTES</h1>
-      <button id="addNoteBtn" class="add-note-btn">+ NEW NOTE</button>
-      <ul id="notesList"></ul>
-    </section>
-  </div>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="main-header">
+        <div class="clock-container">
+          <div class="time" id="timeDisplay">00:00:00</div>
+          <div class="date" id="dateDisplay">Monday, January 1, 2025</div>
+        </div>
+        <button id="settingsBtn" class="settings-btn" title="Settings">⚙</button>
+      </div>
 
-  <!-- Note Editor Modal -->
-  <div id="noteModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">New Note</h2>
-        <div class="modal-actions">
-          <button id="copyMarkdown" class="btn-secondary" title="Copy as Markdown">📋 Copy</button>
-          <button id="previewToggle" class="btn-secondary">Preview</button>
-          <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
-          <button id="closeModal" class="btn-close">×</button>
+      <!-- TODO View -->
+      <div id="todoView" class="content-view">
+        <div class="view-header">
+          <h2>TODO</h2>
+        </div>
+        <div class="view-body">
+          <div class="todo-input-container">
+            <input type="text" id="todoInput" placeholder="Add a new task..." />
+            <button id="addTodoBtn">+</button>
+          </div>
+          <ul id="todoList"></ul>
         </div>
       </div>
-      <div class="modal-body">
-        <input type="text" id="noteTitleInput" placeholder="Note title..." class="note-title-input" />
-        <div class="editor-container">
-          <textarea id="noteContentInput" placeholder="Write your note here... (Markdown supported)" class="note-content-input"></textarea>
-          <div id="notePreview" class="note-preview hidden"></div>
+
+      <!-- Note Editor View -->
+      <div id="noteView" class="content-view hidden">
+        <div class="view-header">
+          <h2 id="noteViewTitle">Note</h2>
+          <div class="view-actions">
+            <button id="copyMarkdown" class="btn-secondary" title="Copy as Markdown">📋 Copy</button>
+            <button id="previewToggle" class="btn-secondary">Preview</button>
+            <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
+            <button id="deleteNoteBtn" class="btn-danger hidden">Delete</button>
+            <button id="saveNoteBtn" class="btn-primary">Save</button>
+          </div>
+        </div>
+        <div class="view-body">
+          <input type="text" id="noteTitleInput" placeholder="Note title..." class="note-title-input" />
+          <div class="editor-container">
+            <textarea id="noteContentInput" placeholder="Write your note here... (Markdown supported)" class="note-content-input"></textarea>
+            <div id="notePreview" class="note-preview hidden"></div>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button id="deleteNoteBtn" class="btn-danger hidden">Delete Note</button>
-        <div class="modal-footer-right">
-          <button id="cancelBtn" class="btn-secondary">Cancel</button>
-          <button id="saveNoteBtn" class="btn-primary">Save</button>
+
+      <!-- Welcome View (shown when nothing is selected) -->
+      <div id="welcomeView" class="content-view hidden">
+        <div class="welcome-message">
+          <h2>Welcome</h2>
+          <p>Select a note from the sidebar or create a new one to get started.</p>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- Settings Modal -->
