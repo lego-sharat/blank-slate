@@ -266,6 +266,50 @@ body {
   background-color: #fafafa;
 }
 
+.todo-input-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 1;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.todo-input-actions.hidden {
+  display: none;
+}
+
+.todo-input-save,
+.todo-input-cancel {
+  padding: 6px 12px;
+  border: 1px solid #c0c0c0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.todo-input-save {
+  background-color: #2a2a2a;
+  color: #fff;
+  border-color: #2a2a2a;
+}
+
+.todo-input-save:hover {
+  background-color: #4a4a4a;
+  border-color: #4a4a4a;
+}
+
+.todo-input-cancel {
+  background-color: #e8e8e8;
+  color: #2a2a2a;
+}
+
+.todo-input-cancel:hover {
+  background-color: #d0d0d0;
+  border-color: #808080;
+}
+
 #todoInput {
   flex: 1;
   padding: 0;
@@ -442,15 +486,19 @@ body {
 }
 
 .todo-delete {
-  padding: 6px 12px;
+  padding: 0;
   border: 1px solid #c0c0c0;
   background-color: #e8e8e8;
-  color: #2a2a2a;
+  color: #4a4a4a;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 11px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
 }
 
 .todo-item:hover .todo-delete {
@@ -459,6 +507,7 @@ body {
 
 .todo-delete:hover {
   background-color: #d0d0d0;
+  border-color: #808080;
 }
 
 /* Note Editor View */
