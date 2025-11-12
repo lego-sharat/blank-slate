@@ -86,6 +86,10 @@ body {
   align-items: center;
 }
 
+.sidebar-item[draggable="true"] {
+  cursor: move;
+}
+
 .sidebar-item:hover {
   background-color: #d8d8d8;
 }
@@ -93,6 +97,16 @@ body {
 .sidebar-item.active {
   background-color: #c0c0c0;
   border-left: 3px solid #2a2a2a;
+}
+
+.sidebar-item.dragging {
+  opacity: 0.4;
+  background-color: #d0d0d0;
+}
+
+.sidebar-item.drag-over {
+  border-top: 2px solid #2a2a2a;
+  background-color: #c8c8c8;
 }
 
 .sidebar-item-content {
@@ -188,6 +202,17 @@ body {
   border-color: #808080;
 }
 
+.icon-btn.active {
+  background-color: #2a2a2a;
+  color: #fff;
+  border-color: #2a2a2a;
+}
+
+.icon-btn.active:hover {
+  background-color: #4a4a4a;
+  border-color: #4a4a4a;
+}
+
 .icon-btn svg {
   display: block;
 }
@@ -204,6 +229,12 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.content-view.fade-in {
+  opacity: 1;
 }
 
 .content-view.hidden {
@@ -363,10 +394,21 @@ body {
   gap: 12px;
   transition: all 0.2s ease;
   margin: 0 -12px;
+  cursor: move;
 }
 
 .todo-item:hover {
   background-color: #fafafa;
+}
+
+.todo-item.dragging {
+  opacity: 0.4;
+  background-color: #e8e8e8;
+}
+
+.todo-item.drag-over {
+  border-top: 2px solid #2a2a2a;
+  background-color: #f0f0f0;
 }
 
 .todo-item.editing {
@@ -576,19 +618,54 @@ body {
   overflow-y: auto;
 }
 
-.note-preview h1, .note-preview h2, .note-preview h3 {
+.note-preview h1 {
+  font-size: 32px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.note-preview h2 {
+  font-size: 24px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.note-preview h3 {
+  font-size: 20px;
   margin-top: 16px;
   margin-bottom: 8px;
+  font-weight: bold;
 }
 
 .note-preview p {
   margin-bottom: 12px;
 }
 
+.note-preview ul, .note-preview ol {
+  margin-left: 24px;
+  margin-bottom: 12px;
+}
+
+.note-preview li {
+  margin-bottom: 6px;
+}
+
+.note-preview a {
+  color: #4a4a4a;
+  text-decoration: underline;
+}
+
+.note-preview a:hover {
+  color: #2a2a2a;
+}
+
 .note-preview code {
   background-color: #e8e8e8;
   padding: 2px 6px;
   border-radius: 3px;
+  font-size: 14px;
 }
 
 .note-preview pre {
@@ -596,6 +673,20 @@ body {
   padding: 12px;
   overflow-x: auto;
   margin-bottom: 12px;
+  border-radius: 4px;
+}
+
+.note-preview pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.note-preview strong {
+  font-weight: bold;
+}
+
+.note-preview em {
+  font-style: italic;
 }
 
 /* Welcome View */

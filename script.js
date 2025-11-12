@@ -35,6 +35,7 @@ const noteContentInput = document.getElementById('noteContentInput');
 const notePreview = document.getElementById('notePreview');
 const deleteNoteBtn = document.getElementById('deleteNoteBtn');
 const copyMarkdown = document.getElementById('copyMarkdown');
+const togglePreview = document.getElementById('togglePreview');
 const exportToNotion = document.getElementById('exportToNotion');
 
 // DOM elements - Settings
@@ -103,6 +104,7 @@ function setupEventListeners() {
   // Notes
   deleteNoteBtn.addEventListener('click', confirmDeleteNote);
   copyMarkdown.addEventListener('click', copyCurrentNoteToClipboard);
+  togglePreview.addEventListener('click', togglePreviewMode);
   exportToNotion.addEventListener('click', exportCurrentNoteToNotion);
 
   // Settings
@@ -176,6 +178,16 @@ function renderSidebar() {
   notes.forEach(note => {
     const li = document.createElement('li');
     li.className = `sidebar-item${currentView === 'note' && currentNoteId === note.id ? ' active' : ''}`;
+    li.draggable = true;
+    li.dataset.noteId = note.id;
+
+    // Drag and drop event listeners for notes
+    li.addEventListener('dragstart', handleNoteDragStart);
+    li.addEventListener('dragover', handleNoteDragOver);
+    li.addEventListener('drop', handleNoteDrop);
+    li.addEventListener('dragenter', handleNoteDragEnter);
+    li.addEventListener('dragleave', handleNoteDragLeave);
+    li.addEventListener('dragend', handleNoteDragEnd);
 
     const previewText = note.content ? note.content.substring(0, 50) : '';
     li.innerHTML = `
@@ -205,28 +217,37 @@ function renderSidebar() {
 
 // View switching functions
 function showView(view) {
-  // Hide all views
+  // Hide all views and remove fade-in
+  todoView.classList.remove('fade-in');
+  noteView.classList.remove('fade-in');
+  welcomeView.classList.remove('fade-in');
   todoView.classList.add('hidden');
   noteView.classList.add('hidden');
   welcomeView.classList.add('hidden');
 
-  // Show selected view
+  // Show selected view with fade animation
   if (view === 'todo') {
     todoView.classList.remove('hidden');
+    setTimeout(() => todoView.classList.add('fade-in'), 10);
     // Hide note action buttons
     deleteNoteBtn.classList.add('hidden');
     copyMarkdown.classList.add('hidden');
+    togglePreview.classList.add('hidden');
     exportToNotion.classList.add('hidden');
   } else if (view === 'note') {
     noteView.classList.remove('hidden');
+    setTimeout(() => noteView.classList.add('fade-in'), 10);
     // Show note action buttons (delete button visibility handled in showNoteView)
     copyMarkdown.classList.remove('hidden');
+    togglePreview.classList.remove('hidden');
     exportToNotion.classList.remove('hidden');
   } else {
     welcomeView.classList.remove('hidden');
+    setTimeout(() => welcomeView.classList.add('fade-in'), 10);
     // Hide note action buttons
     deleteNoteBtn.classList.add('hidden');
     copyMarkdown.classList.add('hidden');
+    togglePreview.classList.add('hidden');
     exportToNotion.classList.add('hidden');
   }
 
@@ -251,8 +272,12 @@ function showNoteView(noteId) {
 
   noteContentInput.classList.remove('hidden');
   notePreview.classList.add('hidden');
+  noteTitleInput.disabled = false;
+  noteTitleInput.style.opacity = '1';
 
   deleteNoteBtn.classList.remove('hidden');
+  togglePreview.classList.remove('active');
+  togglePreview.title = 'Toggle Preview';
 
   // Reset copy button state when switching notes
   resetCopyButton();
@@ -262,6 +287,33 @@ function showNoteView(noteId) {
     autoResizeTitle();
     noteTitleInput.focus();
   }, 100);
+}
+
+function togglePreviewMode() {
+  if (!currentNoteId) return;
+
+  isPreviewMode = !isPreviewMode;
+
+  if (isPreviewMode) {
+    // Switch to preview mode
+    const content = noteContentInput.value;
+    notePreview.innerHTML = marked.parse(content);
+    noteContentInput.classList.add('hidden');
+    notePreview.classList.remove('hidden');
+    noteTitleInput.disabled = true;
+    noteTitleInput.style.opacity = '0.8';
+    togglePreview.classList.add('active');
+    togglePreview.title = 'Edit Mode';
+  } else {
+    // Switch to edit mode
+    noteContentInput.classList.remove('hidden');
+    notePreview.classList.add('hidden');
+    noteTitleInput.disabled = false;
+    noteTitleInput.style.opacity = '1';
+    togglePreview.classList.remove('active');
+    togglePreview.title = 'Toggle Preview';
+    noteContentInput.focus();
+  }
 }
 
 function createNewNote() {
@@ -391,6 +443,16 @@ function renderTodos() {
   todos.forEach(todo => {
     const li = document.createElement('li');
     li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+    li.draggable = true;
+    li.dataset.id = todo.id;
+
+    // Drag and drop event listeners
+    li.addEventListener('dragstart', handleTodoDragStart);
+    li.addEventListener('dragover', handleTodoDragOver);
+    li.addEventListener('drop', handleTodoDrop);
+    li.addEventListener('dragenter', handleTodoDragEnter);
+    li.addEventListener('dragleave', handleTodoDragLeave);
+    li.addEventListener('dragend', handleTodoDragEnd);
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -513,6 +575,138 @@ function enterEditMode(li, todo) {
     if (e.key === 'Escape') {
       renderTodos();
     }
+  });
+}
+
+// Drag and drop handlers for todos
+let draggedTodoElement = null;
+let draggedNoteElement = null;
+
+function handleTodoDragStart(e) {
+  draggedTodoElement = e.target;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', e.target.innerHTML);
+}
+
+function handleTodoDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleTodoDragEnter(e) {
+  if (e.target.classList.contains('todo-item') && e.target !== draggedTodoElement) {
+    e.target.classList.add('drag-over');
+  }
+}
+
+function handleTodoDragLeave(e) {
+  if (e.target.classList.contains('todo-item')) {
+    e.target.classList.remove('drag-over');
+  }
+}
+
+function handleTodoDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+
+  if (draggedTodoElement !== e.target && e.target.classList.contains('todo-item')) {
+    const draggedId = parseInt(draggedTodoElement.dataset.id);
+    const targetId = parseInt(e.target.dataset.id);
+
+    const draggedIndex = todos.findIndex(t => t.id === draggedId);
+    const targetIndex = todos.findIndex(t => t.id === targetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove dragged item and insert at new position
+      const [draggedItem] = todos.splice(draggedIndex, 1);
+      todos.splice(targetIndex, 0, draggedItem);
+
+      saveTodos();
+      renderTodos();
+    }
+  }
+
+  e.target.classList.remove('drag-over');
+  return false;
+}
+
+function handleTodoDragEnd(e) {
+  e.target.classList.remove('dragging');
+  // Remove drag-over class from all items
+  document.querySelectorAll('.todo-item').forEach(item => {
+    item.classList.remove('drag-over');
+  });
+}
+
+// Drag and drop handlers for notes
+function handleNoteDragStart(e) {
+  draggedNoteElement = e.currentTarget;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+}
+
+function handleNoteDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleNoteDragEnter(e) {
+  const target = e.currentTarget;
+  if (target.classList.contains('sidebar-item') && target.draggable && target !== draggedNoteElement) {
+    target.classList.add('drag-over');
+  }
+}
+
+function handleNoteDragLeave(e) {
+  const target = e.currentTarget;
+  if (target.classList.contains('sidebar-item')) {
+    target.classList.remove('drag-over');
+  }
+}
+
+function handleNoteDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+
+  const target = e.currentTarget;
+  if (draggedNoteElement !== target && target.classList.contains('sidebar-item') && target.draggable) {
+    const draggedId = parseInt(draggedNoteElement.dataset.noteId);
+    const targetId = parseInt(target.dataset.noteId);
+
+    const draggedIndex = notes.findIndex(n => n.id === draggedId);
+    const targetIndex = notes.findIndex(n => n.id === targetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove dragged item and insert at new position
+      const [draggedItem] = notes.splice(draggedIndex, 1);
+      notes.splice(targetIndex, 0, draggedItem);
+
+      saveNotesData();
+      renderSidebar();
+    }
+  }
+
+  target.classList.remove('drag-over');
+  return false;
+}
+
+function handleNoteDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  // Remove drag-over class from all sidebar items
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('drag-over');
   });
 }
 
