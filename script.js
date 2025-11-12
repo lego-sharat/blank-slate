@@ -25,6 +25,9 @@ const welcomeView = document.getElementById('welcomeView');
 const todoInput = document.getElementById('todoInput');
 const addTodoBtn = document.getElementById('addTodoBtn');
 const todoList = document.getElementById('todoList');
+const todoInputActions = document.getElementById('todoInputActions');
+const saveAddTodoBtn = document.getElementById('saveAddTodoBtn');
+const cancelAddTodoBtn = document.getElementById('cancelAddTodoBtn');
 
 // DOM elements - Notes
 const noteTitleInput = document.getElementById('noteTitleInput');
@@ -65,9 +68,28 @@ function setupEventListeners() {
 
   // Todos
   addTodoBtn.addEventListener('click', addTodo);
+  saveAddTodoBtn.addEventListener('click', addTodo);
+  cancelAddTodoBtn.addEventListener('click', cancelAddTodo);
+
+  todoInput.addEventListener('focus', () => {
+    showAddTodoActions();
+  });
+
+  todoInput.addEventListener('input', () => {
+    if (todoInput.value.trim() !== '') {
+      showAddTodoActions();
+    }
+  });
+
   todoInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       addTodo();
+    }
+  });
+
+  todoInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cancelAddTodo();
     }
   });
 
@@ -274,6 +296,20 @@ function saveTodos() {
   renderSidebar(); // Update TODO count in sidebar
 }
 
+function showAddTodoActions() {
+  todoInputActions.classList.remove('hidden');
+}
+
+function hideAddTodoActions() {
+  todoInputActions.classList.add('hidden');
+}
+
+function cancelAddTodo() {
+  todoInput.value = '';
+  hideAddTodoActions();
+  todoInput.blur();
+}
+
 function addTodo() {
   const text = todoInput.value.trim();
   if (text === '') return;
@@ -288,6 +324,7 @@ function addTodo() {
   saveTodos();
   renderTodos();
   todoInput.value = '';
+  hideAddTodoActions();
   todoInput.focus();
 }
 
