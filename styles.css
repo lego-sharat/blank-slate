@@ -12,6 +12,30 @@ body {
   min-height: 100vh;
 }
 
+/* Clock Section */
+.clock-container {
+  text-align: center;
+  margin: 0 auto 60px;
+  max-width: 900px;
+}
+
+.time {
+  font-size: 72px;
+  font-weight: 300;
+  color: #2a2a2a;
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.date {
+  font-size: 16px;
+  font-weight: normal;
+  color: #6a6a6a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
 .container {
   max-width: 900px;
   margin: 0 auto;
