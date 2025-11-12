@@ -130,7 +130,6 @@ function renderSidebar() {
   const todoItem = document.createElement('li');
   todoItem.className = `sidebar-item${currentView === 'todo' ? ' active' : ''}`;
   todoItem.innerHTML = `
-    <span class="sidebar-item-icon">☑</span>
     <div class="sidebar-item-content">
       <div class="sidebar-item-title">TODO</div>
       <div class="sidebar-item-preview">${todos.length} task${todos.length !== 1 ? 's' : ''}</div>
@@ -146,7 +145,6 @@ function renderSidebar() {
 
     const previewText = note.content ? note.content.substring(0, 50) : '';
     li.innerHTML = `
-      <span class="sidebar-item-icon">📝</span>
       <div class="sidebar-item-content">
         <div class="sidebar-item-title">${note.title || 'Untitled'}</div>
         <div class="sidebar-item-preview">${previewText}${note.content && note.content.length > 50 ? '...' : ''}</div>

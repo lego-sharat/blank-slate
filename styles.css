@@ -84,7 +84,6 @@ body {
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .sidebar-item:hover {
@@ -94,11 +93,6 @@ body {
 .sidebar-item.active {
   background-color: #c0c0c0;
   border-left: 3px solid #2a2a2a;
-}
-
-.sidebar-item-icon {
-  font-size: 14px;
-  flex-shrink: 0;
 }
 
 .sidebar-item-content {
@@ -415,10 +409,10 @@ body {
 
 /* Button Styles */
 .btn-primary, .btn-secondary, .btn-danger, .btn-close {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #c0c0c0;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
 }
