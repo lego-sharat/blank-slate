@@ -26,14 +26,9 @@ const addTodoBtn = document.getElementById('addTodoBtn');
 const todoList = document.getElementById('todoList');
 
 // DOM elements - Notes
-const noteViewTitle = document.getElementById('noteViewTitle');
 const noteTitleInput = document.getElementById('noteTitleInput');
 const noteContentInput = document.getElementById('noteContentInput');
 const notePreview = document.getElementById('notePreview');
-const previewToggle = document.getElementById('previewToggle');
-const copyMarkdown = document.getElementById('copyMarkdown');
-const exportToNotion = document.getElementById('exportToNotion');
-const saveNoteBtn = document.getElementById('saveNoteBtn');
 const deleteNoteBtn = document.getElementById('deleteNoteBtn');
 
 // DOM elements - Settings
@@ -74,11 +69,7 @@ function setupEventListeners() {
   });
 
   // Notes
-  saveNoteBtn.addEventListener('click', saveNote);
   deleteNoteBtn.addEventListener('click', confirmDeleteNote);
-  previewToggle.addEventListener('click', togglePreview);
-  copyMarkdown.addEventListener('click', copyCurrentNoteToClipboard);
-  exportToNotion.addEventListener('click', exportCurrentNoteToNotion);
 
   // Settings
   settingsBtn.addEventListener('click', openSettingsModal);
@@ -98,13 +89,6 @@ function setupEventListeners() {
       if (settingsModal.classList.contains('show')) {
         closeSettingsModal();
       }
-    }
-  });
-
-  // Auto-update preview when typing
-  noteContentInput.addEventListener('input', () => {
-    if (isPreviewMode) {
-      updatePreview();
     }
   });
 
@@ -201,13 +185,11 @@ function showNoteView(noteId) {
   currentNoteId = noteId;
   isPreviewMode = false;
 
-  noteViewTitle.textContent = note.title || 'Note';
   noteTitleInput.value = note.title || '';
   noteContentInput.value = note.content || '';
 
   noteContentInput.classList.remove('hidden');
   notePreview.classList.add('hidden');
-  previewToggle.textContent = 'Preview';
 
   deleteNoteBtn.classList.remove('hidden');
 
@@ -377,28 +359,6 @@ function saveNotesData() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
 }
 
-function saveNote() {
-  if (!currentNoteId) return;
-
-  const note = notes.find(n => n.id === currentNoteId);
-  if (note) {
-    note.title = noteTitleInput.value.trim() || 'Untitled';
-    note.content = noteContentInput.value.trim();
-    note.updatedAt = Date.now();
-    saveNotesData();
-    renderSidebar();
-  }
-
-  // Show feedback
-  const originalText = saveNoteBtn.textContent;
-  saveNoteBtn.textContent = 'Saved!';
-  saveNoteBtn.style.backgroundColor = '#4a4a4a';
-  setTimeout(() => {
-    saveNoteBtn.textContent = originalText;
-    saveNoteBtn.style.backgroundColor = '';
-  }, 1500);
-}
-
 function confirmDeleteNote() {
   if (!currentNoteId) return;
 
@@ -410,53 +370,6 @@ function confirmDeleteNote() {
     // Show TODO view after deleting
     showTodoView();
   }
-}
-
-function togglePreview() {
-  isPreviewMode = !isPreviewMode;
-
-  if (isPreviewMode) {
-    updatePreview();
-    noteContentInput.classList.add('hidden');
-    notePreview.classList.remove('hidden');
-    previewToggle.textContent = 'Edit';
-  } else {
-    noteContentInput.classList.remove('hidden');
-    notePreview.classList.add('hidden');
-    previewToggle.textContent = 'Preview';
-  }
-}
-
-function updatePreview() {
-  const content = noteContentInput.value;
-  notePreview.innerHTML = marked.parse(content);
-}
-
-async function copyCurrentNoteToClipboard() {
-  const title = noteTitleInput.value.trim() || 'Untitled';
-  const content = noteContentInput.value.trim();
-  const markdown = `# ${title}\n\n${content}`;
-
-  try {
-    await navigator.clipboard.writeText(markdown);
-    showCopyFeedback('Copied!');
-  } catch (err) {
-    console.error('Failed to copy:', err);
-    showCopyFeedback('Failed', true);
-  }
-}
-
-function showCopyFeedback(message, isError = false) {
-  const originalText = copyMarkdown.textContent;
-  copyMarkdown.textContent = message;
-  copyMarkdown.style.backgroundColor = isError ? '#c04040' : '#4a4a4a';
-  copyMarkdown.style.color = '#fff';
-
-  setTimeout(() => {
-    copyMarkdown.textContent = originalText;
-    copyMarkdown.style.backgroundColor = '';
-    copyMarkdown.style.color = '';
-  }, 2000);
 }
 
 // Settings functions
@@ -487,75 +400,6 @@ function saveSettingsData() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   closeSettingsModal();
   alert('Settings saved!');
-}
-
-// Notion Integration
-async function exportCurrentNoteToNotion() {
-  if (!currentNoteId) {
-    alert('Please select a note first before exporting to Notion.');
-    return;
-  }
-
-  if (!settings.notionApiKey || !settings.notionDatabaseId) {
-    alert('Please configure Notion API settings first (click the ⚙ icon)');
-    openSettingsModal();
-    return;
-  }
-
-  const note = notes.find(n => n.id === currentNoteId);
-  if (!note) return;
-
-  try {
-    const response = await fetch('https://api.notion.com/v1/pages', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${settings.notionApiKey}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
-      },
-      body: JSON.stringify({
-        parent: { database_id: settings.notionDatabaseId },
-        properties: {
-          title: {
-            title: [
-              {
-                text: {
-                  content: note.title || 'Untitled'
-                }
-              }
-            ]
-          }
-        },
-        children: [
-          {
-            object: 'block',
-            type: 'paragraph',
-            paragraph: {
-              rich_text: [
-                {
-                  type: 'text',
-                  text: {
-                    content: note.content || ''
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      })
-    });
-
-    if (response.ok) {
-      alert('Note exported to Notion successfully!');
-    } else {
-      const error = await response.json();
-      console.error('Notion API error:', error);
-      alert(`Failed to export to Notion: ${error.message || 'Unknown error'}`);
-    }
-  } catch (error) {
-    console.error('Export error:', error);
-    alert('Failed to export to Notion. Check your API settings and try again.');
-  }
 }
 
 // Clock functions
