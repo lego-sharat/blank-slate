@@ -247,7 +247,6 @@ body {
 /* TODO View */
 #todoView .view-body {
   padding: 80px 120px;
-  max-width: 900px;
   min-width: 100%;
   margin: 0 auto;
 }
