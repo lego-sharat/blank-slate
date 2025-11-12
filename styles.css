@@ -290,26 +290,28 @@ body {
 
 #todoList {
   list-style: none;
+  border-top: 1px solid #e8e8e8;
 }
 
 .todo-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 12px;
   border-bottom: 1px solid #e8e8e8;
   gap: 12px;
   transition: all 0.2s ease;
+  margin: 0 -12px;
 }
 
-.todo-item:last-child {
-  border-bottom: none;
+.todo-item:hover {
+  background-color: #fafafa;
 }
 
 .todo-item.editing {
   background-color: #f9f9f9;
   padding: 16px 12px;
-  margin: 0 -12px;
   border-radius: 4px;
+  border-bottom: 1px solid #d0d0d0;
 }
 
 .todo-checkbox {
