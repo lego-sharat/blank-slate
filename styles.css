@@ -12,6 +12,22 @@ body {
   height: 100vh;
 }
 
+body.handwriting-font {
+  font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
+}
+
+body.handwriting-font .note-title-input,
+body.handwriting-font .note-content-input,
+body.handwriting-font .note-preview {
+  font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
+}
+
+body.handwriting-font .todo-text,
+body.handwriting-font .todo-edit-input,
+body.handwriting-font #todoInput {
+  font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
+}
+
 /* App Container - VS Code Style Layout */
 .app-container {
   display: flex;
@@ -27,6 +43,27 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 48px;
+}
+
+.sidebar.collapsed .sidebar-header h1,
+.sidebar.collapsed .sidebar-header .add-note-btn,
+.sidebar.collapsed .sidebar-list,
+.sidebar.collapsed .sidebar-footer {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 16px 8px;
+}
+
+.sidebar.collapsed .collapse-sidebar-btn svg {
+  transform: rotate(180deg);
 }
 
 .sidebar-header {
@@ -47,6 +84,31 @@ body {
   border: none;
   padding: 0;
   margin: 0;
+}
+
+.collapse-sidebar-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #c0c0c0;
+  background-color: #fff;
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.collapse-sidebar-btn:hover {
+  background-color: #d0d0d0;
+  border-color: #808080;
+}
+
+.collapse-sidebar-btn svg {
+  transition: transform 0.3s ease;
+  display: block;
 }
 
 .add-note-btn {
@@ -75,6 +137,15 @@ body {
   list-style: none;
   overflow-y: auto;
   flex: 1;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid #c0c0c0;
+  background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sidebar-item {
@@ -281,6 +352,15 @@ body {
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
+}
+
+.todo-heading {
+  font-size: 16px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 24px 0;
+  color: #4a4a4a;
 }
 
 .todo-input-container {
@@ -555,7 +635,7 @@ body {
 /* Note Editor View */
 .note-editor {
   padding: 80px 16px;
-  max-width: 900px;
+  max-width: 720px;
   margin: 0 auto;
   width: 100%;
 }
