@@ -44,20 +44,13 @@
 
       <!-- Note Editor View -->
       <div id="noteView" class="content-view hidden">
-        <div class="view-header">
-          <h2 id="noteViewTitle">Note</h2>
-          <div class="view-actions">
-            <button id="copyMarkdown" class="btn-secondary" title="Copy as Markdown">Copy</button>
-            <button id="previewToggle" class="btn-secondary">Preview</button>
-            <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
-            <button id="deleteNoteBtn" class="btn-danger hidden">Delete</button>
-            <button id="saveNoteBtn" class="btn-primary">Save</button>
+        <div class="note-editor">
+          <input type="text" id="noteTitleInput" placeholder="Untitled" class="note-title-input" />
+          <div class="note-actions">
+            <button id="deleteNoteBtn" class="btn-icon hidden" title="Delete note">×</button>
           </div>
-        </div>
-        <div class="view-body">
-          <input type="text" id="noteTitleInput" placeholder="Note title..." class="note-title-input" />
           <div class="editor-container">
-            <textarea id="noteContentInput" placeholder="Write your note here... (Markdown supported)" class="note-content-input"></textarea>
+            <textarea id="noteContentInput" placeholder="Start writing..." class="note-content-input"></textarea>
             <div id="notePreview" class="note-preview hidden"></div>
           </div>
         </div>

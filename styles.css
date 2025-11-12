@@ -219,6 +219,10 @@ body {
   padding: 40px;
 }
 
+#noteView .view-body {
+  padding: 0;
+}
+
 /* TODO View */
 .todo-input-container {
   display: flex;
@@ -312,57 +316,99 @@ body {
 }
 
 /* Note Editor View */
+.note-editor {
+  padding: 80px 120px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .note-title-input {
   width: 100%;
-  padding: 16px 20px;
-  border: 1px solid #c0c0c0;
-  background-color: #fff;
+  padding: 0;
+  border: none;
+  background-color: transparent;
   color: #2a2a2a;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 24px;
+  font-size: 40px;
   font-weight: bold;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   outline: none;
 }
 
-.note-title-input:focus {
-  border-color: #808080;
+.note-title-input::placeholder {
+  color: #d0d0d0;
+}
+
+.note-actions {
+  position: absolute;
+  top: 80px;
+  right: 120px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.note-editor:hover .note-actions {
+  opacity: 1;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background-color: #e8e8e8;
+  color: #6a6a6a;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background-color: #d0d0d0;
+  color: #2a2a2a;
 }
 
 .editor-container {
   position: relative;
-  height: calc(100vh - 400px);
-  min-height: 300px;
+  min-height: 500px;
 }
 
 .note-content-input {
   width: 100%;
   height: 100%;
-  padding: 20px;
-  border: 1px solid #c0c0c0;
-  background-color: #fff;
+  min-height: 500px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
   color: #2a2a2a;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.8;
   resize: none;
   outline: none;
 }
 
-.note-content-input:focus {
-  border-color: #808080;
+.note-content-input::placeholder {
+  color: #d0d0d0;
 }
 
 .note-preview {
   width: 100%;
   height: 100%;
-  padding: 20px;
-  border: 1px solid #c0c0c0;
-  background-color: #fff;
+  min-height: 500px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
   color: #2a2a2a;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.8;
   overflow-y: auto;
 }
 
@@ -625,5 +671,22 @@ body {
 
   .view-body {
     padding: 20px;
+  }
+
+  .note-editor {
+    padding: 40px 20px;
+  }
+
+  .note-actions {
+    top: 40px;
+    right: 20px;
+  }
+
+  .note-title-input {
+    font-size: 32px;
+  }
+
+  .note-content-input {
+    font-size: 14px;
   }
 }
