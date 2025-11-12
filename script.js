@@ -75,6 +75,13 @@ function setupEventListeners() {
     showAddTodoActions();
   });
 
+  todoInput.addEventListener('blur', () => {
+    // Delay hiding to allow button clicks to register
+    setTimeout(() => {
+      hideAddTodoActions();
+    }, 150);
+  });
+
   todoInput.addEventListener('input', () => {
     if (todoInput.value.trim() !== '') {
       showAddTodoActions();
