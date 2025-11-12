@@ -25,7 +25,12 @@
           <div class="time" id="timeDisplay">00:00:00</div>
           <div class="date" id="dateDisplay">Monday, January 1, 2025</div>
         </div>
-        <button id="settingsBtn" class="settings-btn" title="Settings">≡</button>
+        <div class="header-actions">
+          <button id="deleteNoteBtn" class="btn-secondary hidden">Delete</button>
+          <button id="copyMarkdown" class="btn-secondary hidden">Copy Markdown</button>
+          <button id="exportToNotion" class="btn-secondary hidden">Export to Notion</button>
+          <button id="settingsBtn" class="settings-btn" title="Settings">≡</button>
+        </div>
       </div>
 
       <!-- TODO View -->
@@ -44,13 +49,6 @@
 
       <!-- Note Editor View -->
       <div id="noteView" class="content-view hidden">
-        <div class="note-header">
-          <div class="note-header-actions">
-            <button id="deleteNoteBtn" class="btn-secondary hidden">Delete</button>
-            <button id="copyMarkdown" class="btn-secondary">Copy Markdown</button>
-            <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
-          </div>
-        </div>
         <div class="note-editor">
           <textarea id="noteTitleInput" placeholder="Untitled" class="note-title-input" rows="1"></textarea>
           <div class="editor-container">
