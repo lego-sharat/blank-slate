@@ -554,7 +554,7 @@ body {
 
 /* Note Editor View */
 .note-editor {
-  padding: 80px 120px;
+  padding: 80px 16px;
   max-width: 900px;
   margin: 0 auto;
 }
