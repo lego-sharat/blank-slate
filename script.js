@@ -6,15 +6,17 @@ const SETTINGS_KEY = 'minimal_newtab_settings';
 // State
 let todos = [];
 let notes = [];
-let settings = { notionApiKey: '', notionDatabaseId: '' };
+let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
 let currentNoteId = null;
 let currentView = 'todo'; // 'todo' or 'note'
 let isPreviewMode = false;
 let copyButtonTimeout = null;
 
 // DOM elements - Sidebar
+const sidebar = document.querySelector('.sidebar');
 const sidebarList = document.getElementById('sidebarList');
 const addNoteBtn = document.getElementById('addNoteBtn');
+const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
 
 // DOM elements - Views
 const todoView = document.getElementById('todoView');
@@ -43,6 +45,7 @@ const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
 const saveSettings = document.getElementById('saveSettings');
+const fontStyle = document.getElementById('fontStyle');
 const notionApiKey = document.getElementById('notionApiKey');
 const notionDatabaseId = document.getElementById('notionDatabaseId');
 
@@ -65,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Setup event listeners
 function setupEventListeners() {
   // Sidebar
+  collapseSidebarBtn.addEventListener('click', toggleSidebar);
   addNoteBtn.addEventListener('click', () => createNewNote());
 
   // Todos
@@ -159,6 +163,12 @@ function setupEventListeners() {
 }
 
 // Sidebar functions
+function toggleSidebar() {
+  sidebar.classList.toggle('collapsed');
+  const isCollapsed = sidebar.classList.contains('collapsed');
+  collapseSidebarBtn.title = isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar';
+}
+
 function renderSidebar() {
   sidebarList.innerHTML = '';
 
@@ -886,13 +896,27 @@ function loadSettings() {
   if (stored) {
     try {
       settings = JSON.parse(stored);
+      // Ensure fontStyle exists for backwards compatibility
+      if (!settings.fontStyle) {
+        settings.fontStyle = 'mono';
+      }
     } catch (e) {
-      settings = { notionApiKey: '', notionDatabaseId: '' };
+      settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
     }
+  }
+  applyFontStyle();
+}
+
+function applyFontStyle() {
+  if (settings.fontStyle === 'handwriting') {
+    document.body.classList.add('handwriting-font');
+  } else {
+    document.body.classList.remove('handwriting-font');
   }
 }
 
 function openSettingsModal() {
+  fontStyle.value = settings.fontStyle || 'mono';
   notionApiKey.value = settings.notionApiKey || '';
   notionDatabaseId.value = settings.notionDatabaseId || '';
   settingsModal.classList.add('show');
@@ -903,9 +927,11 @@ function closeSettingsModal() {
 }
 
 function saveSettingsData() {
+  settings.fontStyle = fontStyle.value;
   settings.notionApiKey = notionApiKey.value.trim();
   settings.notionDatabaseId = notionDatabaseId.value.trim();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  applyFontStyle();
   closeSettingsModal();
   alert('Settings saved!');
 }
@@ -917,8 +943,7 @@ function updateClock() {
   // Format time
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+  timeDisplay.textContent = `${hours}:${minutes}`;
 
   // Format date
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
