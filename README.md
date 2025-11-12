@@ -69,4 +69,5 @@ All data is stored locally using browser localStorage:
 - All notes and todos are stored locally in your browser
 - Notion API credentials are stored locally and only used for your explicit export actions
 - No analytics or tracking
-- No external dependencies except marked.js (for markdown rendering) and Notion API (when exporting)
+- No external dependencies (uses lightweight built-in markdown parser)
+- Notion API is only contacted when you explicitly export a note
