@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Tab</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 </head>
 <body>
+  <button id="settingsBtn" class="settings-btn" title="Settings">⚙</button>
+
   <div class="clock-container">
     <div class="time" id="timeDisplay">00:00:00</div>
     <div class="date" id="dateDisplay">Monday, January 1, 2025</div>
@@ -24,12 +27,62 @@
 
     <section class="notes-section">
       <h1>NOTES</h1>
-      <div class="note-input-container">
-        <input type="text" id="noteInput" placeholder="Add a new note..." />
-        <button id="addNoteBtn">+</button>
-      </div>
+      <button id="addNoteBtn" class="add-note-btn">+ NEW NOTE</button>
       <ul id="notesList"></ul>
     </section>
+  </div>
+
+  <!-- Note Editor Modal -->
+  <div id="noteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Note</h2>
+        <div class="modal-actions">
+          <button id="previewToggle" class="btn-secondary">Preview</button>
+          <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
+          <button id="closeModal" class="btn-close">×</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="noteTitleInput" placeholder="Note title..." class="note-title-input" />
+        <div class="editor-container">
+          <textarea id="noteContentInput" placeholder="Write your note here... (Markdown supported)" class="note-content-input"></textarea>
+          <div id="notePreview" class="note-preview hidden"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="deleteNoteBtn" class="btn-danger hidden">Delete Note</button>
+        <div class="modal-footer-right">
+          <button id="cancelBtn" class="btn-secondary">Cancel</button>
+          <button id="saveNoteBtn" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button id="closeSettings" class="btn-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h3>Notion Integration</h3>
+          <label for="notionApiKey">API Key</label>
+          <input type="password" id="notionApiKey" placeholder="secret_..." class="settings-input" />
+          <label for="notionDatabaseId">Database ID</label>
+          <input type="text" id="notionDatabaseId" placeholder="abc123..." class="settings-input" />
+          <p class="settings-help">
+            <a href="https://developers.notion.com/docs/create-a-notion-integration" target="_blank">How to get your Notion API key</a>
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveSettings" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
