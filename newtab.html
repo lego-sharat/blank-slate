@@ -44,11 +44,15 @@
 
       <!-- Note Editor View -->
       <div id="noteView" class="content-view hidden">
+        <div class="note-header">
+          <div class="note-header-actions">
+            <button id="deleteNoteBtn" class="btn-secondary hidden">Delete</button>
+            <button id="copyMarkdown" class="btn-secondary">Copy Markdown</button>
+            <button id="exportToNotion" class="btn-secondary">Export to Notion</button>
+          </div>
+        </div>
         <div class="note-editor">
           <input type="text" id="noteTitleInput" placeholder="Untitled" class="note-title-input" />
-          <div class="note-actions">
-            <button id="deleteNoteBtn" class="btn-icon hidden" title="Delete note">×</button>
-          </div>
           <div class="editor-container">
             <textarea id="noteContentInput" placeholder="Start writing..." class="note-content-input"></textarea>
             <div id="notePreview" class="note-preview hidden"></div>

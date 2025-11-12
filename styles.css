@@ -316,6 +316,19 @@ body {
 }
 
 /* Note Editor View */
+.note-header {
+  padding: 16px 40px;
+  border-bottom: 1px solid #e8e8e8;
+  background-color: #fff;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.note-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .note-editor {
   padding: 80px 120px;
   max-width: 900px;
@@ -337,41 +350,6 @@ body {
 
 .note-title-input::placeholder {
   color: #d0d0d0;
-}
-
-.note-actions {
-  position: absolute;
-  top: 80px;
-  right: 120px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.note-editor:hover .note-actions {
-  opacity: 1;
-}
-
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background-color: #e8e8e8;
-  color: #6a6a6a;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-icon:hover {
-  background-color: #d0d0d0;
-  color: #2a2a2a;
 }
 
 .editor-container {
@@ -673,13 +651,16 @@ body {
     padding: 20px;
   }
 
-  .note-editor {
-    padding: 40px 20px;
+  .note-header {
+    padding: 12px 20px;
   }
 
-  .note-actions {
-    top: 40px;
-    right: 20px;
+  .note-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .note-editor {
+    padding: 40px 20px;
   }
 
   .note-title-input {
