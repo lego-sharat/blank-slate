@@ -327,6 +327,7 @@ body {
 .note-header-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .note-editor {
