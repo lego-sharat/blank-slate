@@ -421,15 +421,15 @@ function showCopyFeedback(message, isError = false) {
     clearTimeout(copyButtonTimeout);
   }
 
-  const originalText = copyMarkdown.textContent;
-  copyMarkdown.textContent = message;
+  // Change button style to show feedback
   copyMarkdown.style.backgroundColor = isError ? '#c04040' : '#4a4a4a';
   copyMarkdown.style.color = '#fff';
+  copyMarkdown.style.borderColor = isError ? '#c04040' : '#4a4a4a';
 
   copyButtonTimeout = setTimeout(() => {
-    copyMarkdown.textContent = originalText;
     copyMarkdown.style.backgroundColor = '';
     copyMarkdown.style.color = '';
+    copyMarkdown.style.borderColor = '';
     copyButtonTimeout = null;
   }, 2000);
 }
@@ -442,9 +442,9 @@ function resetCopyButton() {
   }
 
   // Reset button to original state
-  copyMarkdown.textContent = 'Copy Markdown';
   copyMarkdown.style.backgroundColor = '';
   copyMarkdown.style.color = '';
+  copyMarkdown.style.borderColor = '';
 }
 
 // Notion Integration
