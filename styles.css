@@ -632,6 +632,129 @@ body.handwriting-font #todoInput {
   border-color: #808080;
 }
 
+/* Today View - 2 Column Layout */
+.today-view-body {
+  padding: 40px 60px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.today-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.today-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.column-heading {
+  font-size: 16px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 24px 0;
+  color: #4a4a4a;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.icon-btn-small {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #c0c0c0;
+  background-color: #f5f5f5;
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn-small:hover {
+  background-color: #d0d0d0;
+  border-color: #808080;
+}
+
+.calendar-status {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6a6a6a;
+  font-size: 14px;
+}
+
+.calendar-events-list {
+  list-style: none;
+  border-top: 1px solid #e8e8e8;
+}
+
+.calendar-event-item {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  gap: 4px;
+  transition: all 0.2s ease;
+  margin: 0 -12px;
+}
+
+.calendar-event-item:hover {
+  background-color: #fafafa;
+}
+
+.calendar-event-time {
+  font-size: 12px;
+  color: #6a6a6a;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar-event-title {
+  font-size: 14px;
+  color: #2a2a2a;
+  font-weight: normal;
+}
+
+.calendar-event-location {
+  font-size: 12px;
+  color: #909090;
+  font-style: italic;
+}
+
+.calendar-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #909090;
+  font-size: 13px;
+}
+
+.calendar-error {
+  text-align: center;
+  padding: 40px 20px;
+  color: #c04040;
+  font-size: 13px;
+}
+
+.calendar-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #909090;
+  font-size: 14px;
+}
+
 /* Note Editor View */
 .note-editor {
   padding: 80px 16px;
@@ -1011,6 +1134,15 @@ body.handwriting-font #todoInput {
 
   #todoView .view-body {
     padding: 40px 20px;
+  }
+
+  .today-view-body {
+    padding: 40px 20px;
+  }
+
+  .today-columns {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
 
   .note-editor {

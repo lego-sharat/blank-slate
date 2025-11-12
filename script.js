@@ -2,15 +2,19 @@
 const TODOS_KEY = 'minimal_newtab_todos';
 const NOTES_KEY = 'minimal_newtab_notes';
 const SETTINGS_KEY = 'minimal_newtab_settings';
+const CALENDAR_TOKEN_KEY = 'minimal_newtab_calendar_token';
 
 // State
 let todos = [];
 let notes = [];
-let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
+let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono', googleClientId: '' };
 let currentNoteId = null;
-let currentView = 'todo'; // 'todo' or 'note'
+let currentView = 'today'; // 'today', 'todo' or 'note'
 let isPreviewMode = false;
 let copyButtonTimeout = null;
+let calendarEvents = [];
+let calendarToken = null;
+let isCalendarConnected = false;
 
 // DOM elements - Sidebar
 const sidebar = document.querySelector('.sidebar');
@@ -20,6 +24,7 @@ const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
 
 // DOM elements - Views
 const todoView = document.getElementById('todoView');
+const todayView = document.getElementById('todayView');
 const noteView = document.getElementById('noteView');
 const welcomeView = document.getElementById('welcomeView');
 
@@ -30,6 +35,18 @@ const todoList = document.getElementById('todoList');
 const todoInputActions = document.getElementById('todoInputActions');
 const saveAddTodoBtn = document.getElementById('saveAddTodoBtn');
 const cancelAddTodoBtn = document.getElementById('cancelAddTodoBtn');
+
+// DOM elements - Today View
+const todayTodoInput = document.getElementById('todayTodoInput');
+const addTodayTodoBtn = document.getElementById('addTodayTodoBtn');
+const todayTodoList = document.getElementById('todayTodoList');
+const todayTodoInputActions = document.getElementById('todayTodoInputActions');
+const saveAddTodayTodoBtn = document.getElementById('saveAddTodayTodoBtn');
+const cancelAddTodayTodoBtn = document.getElementById('cancelAddTodayTodoBtn');
+const connectCalendar = document.getElementById('connectCalendar');
+const refreshCalendar = document.getElementById('refreshCalendar');
+const calendarStatus = document.getElementById('calendarStatus');
+const calendarEventsList = document.getElementById('calendarEventsList');
 
 // DOM elements - Notes
 const noteTitleInput = document.getElementById('noteTitleInput');
@@ -46,6 +63,7 @@ const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
 const saveSettings = document.getElementById('saveSettings');
 const fontStyle = document.getElementById('fontStyle');
+const googleClientId = document.getElementById('googleClientId');
 const notionApiKey = document.getElementById('notionApiKey');
 const notionDatabaseId = document.getElementById('notionDatabaseId');
 
@@ -58,11 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTodos();
   loadNotes();
   loadSettings();
+  loadCalendarToken();
   setupEventListeners();
   updateClock();
   setInterval(updateClock, 1000);
   renderSidebar();
-  showView('todo');
+  showView('today');
 });
 
 // Setup event listeners
@@ -104,6 +123,43 @@ function setupEventListeners() {
       cancelAddTodo();
     }
   });
+
+  // Today View Todos
+  addTodayTodoBtn.addEventListener('click', addTodo);
+  saveAddTodayTodoBtn.addEventListener('click', addTodo);
+  cancelAddTodayTodoBtn.addEventListener('click', cancelAddTodayTodo);
+
+  todayTodoInput.addEventListener('focus', () => {
+    showAddTodayTodoActions();
+  });
+
+  todayTodoInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      hideAddTodayTodoActions();
+    }, 150);
+  });
+
+  todayTodoInput.addEventListener('input', () => {
+    if (todayTodoInput.value.trim() !== '') {
+      showAddTodayTodoActions();
+    }
+  });
+
+  todayTodoInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addTodo();
+    }
+  });
+
+  todayTodoInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cancelAddTodayTodo();
+    }
+  });
+
+  // Calendar
+  connectCalendar.addEventListener('click', connectGoogleCalendar);
+  refreshCalendar.addEventListener('click', fetchCalendarEvents);
 
   // Notes
   deleteNoteBtn.addEventListener('click', confirmDeleteNote);
@@ -172,7 +228,21 @@ function toggleSidebar() {
 function renderSidebar() {
   sidebarList.innerHTML = '';
 
-  // Add TODO item first (special item)
+  // Add TODAY item first (special item)
+  const todayItem = document.createElement('li');
+  todayItem.className = `sidebar-item${currentView === 'today' ? ' active' : ''}`;
+  const todayCount = todos.filter(t => !t.completed).length;
+  const eventCount = calendarEvents.length;
+  todayItem.innerHTML = `
+    <div class="sidebar-item-content">
+      <div class="sidebar-item-title">TODAY</div>
+      <div class="sidebar-item-preview">${todayCount} task${todayCount !== 1 ? 's' : ''} • ${eventCount} event${eventCount !== 1 ? 's' : ''}</div>
+    </div>
+  `;
+  todayItem.addEventListener('click', () => showTodayView());
+  sidebarList.appendChild(todayItem);
+
+  // Add TODO item (special item)
   const todoItem = document.createElement('li');
   todoItem.className = `sidebar-item${currentView === 'todo' ? ' active' : ''}`;
   todoItem.innerHTML = `
@@ -229,14 +299,24 @@ function renderSidebar() {
 function showView(view) {
   // Hide all views and remove fade-in
   todoView.classList.remove('fade-in');
+  todayView.classList.remove('fade-in');
   noteView.classList.remove('fade-in');
   welcomeView.classList.remove('fade-in');
   todoView.classList.add('hidden');
+  todayView.classList.add('hidden');
   noteView.classList.add('hidden');
   welcomeView.classList.add('hidden');
 
   // Show selected view with fade animation
-  if (view === 'todo') {
+  if (view === 'today') {
+    todayView.classList.remove('hidden');
+    setTimeout(() => todayView.classList.add('fade-in'), 10);
+    // Hide note action buttons
+    deleteNoteBtn.classList.add('hidden');
+    copyMarkdown.classList.add('hidden');
+    togglePreview.classList.add('hidden');
+    exportToNotion.classList.add('hidden');
+  } else if (view === 'todo') {
     todoView.classList.remove('hidden');
     setTimeout(() => todoView.classList.add('fade-in'), 10);
     // Hide note action buttons
@@ -268,6 +348,15 @@ function showView(view) {
 function showTodoView() {
   showView('todo');
   currentNoteId = null;
+}
+
+function showTodayView() {
+  showView('today');
+  currentNoteId = null;
+  renderTodayTodos();
+  if (isCalendarConnected) {
+    fetchCalendarEvents();
+  }
 }
 
 function showNoteView(noteId) {
@@ -394,8 +483,27 @@ function cancelAddTodo() {
   todoInput.blur();
 }
 
+function showAddTodayTodoActions() {
+  todayTodoInputActions.classList.remove('hidden');
+}
+
+function hideAddTodayTodoActions() {
+  todayTodoInputActions.classList.add('hidden');
+}
+
+function cancelAddTodayTodo() {
+  todayTodoInput.value = '';
+  hideAddTodayTodoActions();
+  todayTodoInput.blur();
+}
+
 function addTodo() {
-  const text = todoInput.value.trim();
+  // Check which input is being used
+  const isFromTodayView = document.activeElement === todayTodoInput ||
+                           document.activeElement === saveAddTodayTodoBtn ||
+                           (currentView === 'today' && todayTodoInput.value.trim() !== '');
+
+  const text = isFromTodayView ? todayTodoInput.value.trim() : todoInput.value.trim();
   if (text === '') return;
 
   const todo = {
@@ -407,9 +515,17 @@ function addTodo() {
   todos.push(todo);
   saveTodos();
   renderTodos();
-  todoInput.value = '';
-  hideAddTodoActions();
-  todoInput.focus();
+
+  if (isFromTodayView) {
+    renderTodayTodos();
+    todayTodoInput.value = '';
+    hideAddTodayTodoActions();
+    todayTodoInput.focus();
+  } else {
+    todoInput.value = '';
+    hideAddTodoActions();
+    todoInput.focus();
+  }
 }
 
 function toggleTodo(id) {
@@ -418,6 +534,9 @@ function toggleTodo(id) {
     todo.completed = !todo.completed;
     saveTodos();
     renderTodos();
+    if (currentView === 'today') {
+      renderTodayTodos();
+    }
   }
 }
 
@@ -425,6 +544,9 @@ function deleteTodo(id) {
   todos = todos.filter(t => t.id !== id);
   saveTodos();
   renderTodos();
+  if (currentView === 'today') {
+    renderTodayTodos();
+  }
 }
 
 function editTodo(id, newText) {
@@ -433,6 +555,9 @@ function editTodo(id, newText) {
     todo.text = newText;
     saveTodos();
     renderTodos();
+    if (currentView === 'today') {
+      renderTodayTodos();
+    }
   }
 }
 
@@ -584,6 +709,142 @@ function enterEditMode(li, todo) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       renderTodos();
+    }
+  });
+}
+
+// Render today's todos (incomplete tasks only)
+function renderTodayTodos() {
+  todayTodoList.innerHTML = '';
+
+  const incompleteTodos = todos.filter(t => !t.completed);
+
+  if (incompleteTodos.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = '#909090';
+    emptyMsg.style.fontSize = '14px';
+    emptyMsg.style.textAlign = 'center';
+    emptyMsg.style.padding = '40px 20px';
+    emptyMsg.textContent = 'No tasks for today. Enjoy your day!';
+    todayTodoList.appendChild(emptyMsg);
+    return;
+  }
+
+  incompleteTodos.forEach(todo => {
+    const li = document.createElement('li');
+    li.className = 'todo-item';
+    li.draggable = false;
+    li.dataset.id = todo.id;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'todo-checkbox';
+    checkbox.checked = false;
+    checkbox.addEventListener('change', () => toggleTodo(todo.id));
+
+    const text = document.createElement('span');
+    text.className = 'todo-text';
+    text.textContent = todo.text;
+
+    // Create edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'todo-edit-btn';
+    editBtn.title = 'Edit';
+    editBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    `;
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enterEditModeToday(li, todo);
+    });
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'todo-delete';
+    deleteBtn.title = 'Delete';
+    deleteBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
+        <line x1="10" y1="11" x2="10" y2="17"/>
+        <line x1="14" y1="11" x2="14" y2="17"/>
+      </svg>
+    `;
+    deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+
+    li.appendChild(checkbox);
+    li.appendChild(text);
+    li.appendChild(editBtn);
+    li.appendChild(deleteBtn);
+    todayTodoList.appendChild(li);
+  });
+}
+
+function enterEditModeToday(li, todo) {
+  li.classList.add('editing');
+
+  const text = li.querySelector('.todo-text');
+  const editBtn = li.querySelector('.todo-edit-btn');
+  const deleteBtn = li.querySelector('.todo-delete');
+
+  text.style.display = 'none';
+  editBtn.style.display = 'none';
+  deleteBtn.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'todo-edit-input';
+  input.value = todo.text;
+
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'todo-edit-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'todo-edit-cancel';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => {
+    renderTodayTodos();
+  });
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'todo-edit-save';
+  saveBtn.textContent = 'Save';
+  saveBtn.addEventListener('click', () => {
+    const newText = input.value.trim();
+    if (newText !== '' && newText !== todo.text) {
+      editTodo(todo.id, newText);
+    } else {
+      renderTodayTodos();
+    }
+  });
+
+  actionsDiv.appendChild(cancelBtn);
+  actionsDiv.appendChild(saveBtn);
+
+  const checkbox = li.querySelector('.todo-checkbox');
+  checkbox.after(input);
+  input.after(actionsDiv);
+
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 50);
+
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const newText = input.value.trim();
+      if (newText !== '' && newText !== todo.text) {
+        editTodo(todo.id, newText);
+      } else {
+        renderTodayTodos();
+      }
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      renderTodayTodos();
     }
   });
 }
@@ -900,8 +1161,12 @@ function loadSettings() {
       if (!settings.fontStyle) {
         settings.fontStyle = 'mono';
       }
+      // Ensure googleClientId exists for backwards compatibility
+      if (!settings.googleClientId) {
+        settings.googleClientId = '';
+      }
     } catch (e) {
-      settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
+      settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono', googleClientId: '' };
     }
   }
   applyFontStyle();
@@ -917,6 +1182,7 @@ function applyFontStyle() {
 
 function openSettingsModal() {
   fontStyle.value = settings.fontStyle || 'mono';
+  googleClientId.value = settings.googleClientId || '';
   notionApiKey.value = settings.notionApiKey || '';
   notionDatabaseId.value = settings.notionDatabaseId || '';
   settingsModal.classList.add('show');
@@ -928,12 +1194,189 @@ function closeSettingsModal() {
 
 function saveSettingsData() {
   settings.fontStyle = fontStyle.value;
+  settings.googleClientId = googleClientId.value.trim();
   settings.notionApiKey = notionApiKey.value.trim();
   settings.notionDatabaseId = notionDatabaseId.value.trim();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   applyFontStyle();
   closeSettingsModal();
   alert('Settings saved!');
+}
+
+// Google Calendar Integration
+function loadCalendarToken() {
+  const stored = localStorage.getItem(CALENDAR_TOKEN_KEY);
+  if (stored) {
+    try {
+      calendarToken = JSON.parse(stored);
+      isCalendarConnected = true;
+      if (currentView === 'today') {
+        fetchCalendarEvents();
+      }
+    } catch (e) {
+      calendarToken = null;
+      isCalendarConnected = false;
+    }
+  }
+}
+
+function saveCalendarToken(token) {
+  calendarToken = token;
+  isCalendarConnected = true;
+  localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(token));
+}
+
+async function connectGoogleCalendar() {
+  // Check if client ID is configured
+  if (!settings.googleClientId || settings.googleClientId === 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
+    alert('Please configure your Google OAuth Client ID in Settings first.');
+    openSettingsModal();
+    return;
+  }
+
+  try {
+    // Use Chrome Identity API for OAuth
+    const redirectURL = chrome.identity.getRedirectURL();
+    const clientID = settings.googleClientId;
+    const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
+    let authURL = 'https://accounts.google.com/o/oauth2/auth';
+    authURL += `?client_id=${clientID}`;
+    authURL += `&response_type=token`;
+    authURL += `&redirect_uri=${encodeURIComponent(redirectURL)}`;
+    authURL += `&scope=${encodeURIComponent(scopes.join(' '))}`;
+
+    chrome.identity.launchWebAuthFlow(
+      {
+        url: authURL,
+        interactive: true
+      },
+      function(responseURL) {
+        if (chrome.runtime.lastError) {
+          console.error('Auth error:', chrome.runtime.lastError);
+          calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect. Please try again.</p>';
+          return;
+        }
+
+        // Extract access token from response URL
+        const token = responseURL.split('access_token=')[1]?.split('&')[0];
+        if (token) {
+          saveCalendarToken({ access_token: token, timestamp: Date.now() });
+          calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
+          fetchCalendarEvents();
+        } else {
+          calendarStatus.innerHTML = '<p class="calendar-error">Failed to get access token.</p>';
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Calendar connection error:', error);
+    calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect to Google Calendar.</p>';
+  }
+}
+
+async function fetchCalendarEvents() {
+  if (!isCalendarConnected || !calendarToken) {
+    calendarStatus.classList.remove('hidden');
+    calendarEventsList.classList.add('hidden');
+    return;
+  }
+
+  calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
+  calendarStatus.classList.remove('hidden');
+  calendarEventsList.classList.add('hidden');
+
+  try {
+    // Get today's start and end times
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
+      `timeMin=${startOfDay.toISOString()}&` +
+      `timeMax=${endOfDay.toISOString()}&` +
+      `singleEvents=true&` +
+      `orderBy=startTime`,
+      {
+        headers: {
+          'Authorization': `Bearer ${calendarToken.access_token}`
+        }
+      }
+    );
+
+    if (response.status === 401) {
+      // Token expired, clear it
+      localStorage.removeItem(CALENDAR_TOKEN_KEY);
+      calendarToken = null;
+      isCalendarConnected = false;
+      calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button>';
+      document.getElementById('connectCalendar').addEventListener('click', connectGoogleCalendar);
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch calendar events');
+    }
+
+    const data = await response.json();
+    calendarEvents = data.items || [];
+    renderCalendarEvents();
+  } catch (error) {
+    console.error('Error fetching calendar events:', error);
+    calendarStatus.innerHTML = '<p class="calendar-error">Failed to load events. <button id="retryCalendar" class="btn-secondary" style="margin-top: 12px;">Retry</button></p>';
+    document.getElementById('retryCalendar')?.addEventListener('click', fetchCalendarEvents);
+  }
+}
+
+function renderCalendarEvents() {
+  calendarEventsList.innerHTML = '';
+  calendarStatus.classList.add('hidden');
+  calendarEventsList.classList.remove('hidden');
+
+  if (calendarEvents.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'calendar-empty';
+    emptyMsg.textContent = 'No events scheduled for today';
+    calendarEventsList.appendChild(emptyMsg);
+    renderSidebar();
+    return;
+  }
+
+  calendarEvents.forEach(event => {
+    const li = document.createElement('li');
+    li.className = 'calendar-event-item';
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'calendar-event-time';
+
+    if (event.start.dateTime) {
+      const start = new Date(event.start.dateTime);
+      const end = new Date(event.end.dateTime);
+      const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      timeDiv.textContent = `${startTime} - ${endTime}`;
+    } else {
+      timeDiv.textContent = 'All day';
+    }
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'calendar-event-title';
+    titleDiv.textContent = event.summary || 'Untitled Event';
+
+    li.appendChild(timeDiv);
+    li.appendChild(titleDiv);
+
+    if (event.location) {
+      const locationDiv = document.createElement('div');
+      locationDiv.className = 'calendar-event-location';
+      locationDiv.textContent = event.location;
+      li.appendChild(locationDiv);
+    }
+
+    calendarEventsList.appendChild(li);
+  });
+
+  renderSidebar();
 }
 
 // Clock functions
