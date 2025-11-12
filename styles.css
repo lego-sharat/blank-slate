@@ -557,6 +557,7 @@ body {
   padding: 80px 16px;
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .note-title-input {
