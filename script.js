@@ -306,6 +306,15 @@ function deleteTodo(id) {
   renderTodos();
 }
 
+function editTodo(id, newText) {
+  const todo = todos.find(t => t.id === id);
+  if (todo) {
+    todo.text = newText;
+    saveTodos();
+    renderTodos();
+  }
+}
+
 function renderTodos() {
   todoList.innerHTML = '';
 
@@ -333,6 +342,54 @@ function renderTodos() {
     const text = document.createElement('span');
     text.className = 'todo-text';
     text.textContent = todo.text;
+    text.style.cursor = 'pointer';
+    text.addEventListener('click', () => {
+      // Create input field for editing
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'todo-edit-input';
+      input.value = todo.text;
+      input.style.flex = '1';
+      input.style.padding = '4px 8px';
+      input.style.border = '1px solid #c0c0c0';
+      input.style.backgroundColor = '#fff';
+      input.style.color = '#2a2a2a';
+      input.style.fontFamily = "'Courier New', Courier, monospace";
+      input.style.fontSize = '14px';
+      input.style.outline = 'none';
+
+      // Replace text with input
+      li.replaceChild(input, text);
+      input.focus();
+      input.select();
+
+      // Save on Enter key
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const newText = input.value.trim();
+          if (newText !== '') {
+            editTodo(todo.id, newText);
+          }
+        }
+      });
+
+      // Save on blur (click away)
+      input.addEventListener('blur', () => {
+        const newText = input.value.trim();
+        if (newText !== '' && newText !== todo.text) {
+          editTodo(todo.id, newText);
+        } else {
+          renderTodos();
+        }
+      });
+
+      // Cancel on Escape key
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          renderTodos();
+        }
+      });
+    });
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'todo-delete';
