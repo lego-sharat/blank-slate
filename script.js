@@ -8,7 +8,17 @@ let todos = [];
 let notes = [];
 let settings = { notionApiKey: '', notionDatabaseId: '' };
 let currentNoteId = null;
+let currentView = 'todo'; // 'todo' or 'note'
 let isPreviewMode = false;
+
+// DOM elements - Sidebar
+const sidebarList = document.getElementById('sidebarList');
+const addNoteBtn = document.getElementById('addNoteBtn');
+
+// DOM elements - Views
+const todoView = document.getElementById('todoView');
+const noteView = document.getElementById('noteView');
+const welcomeView = document.getElementById('welcomeView');
 
 // DOM elements - Todos
 const todoInput = document.getElementById('todoInput');
@@ -16,9 +26,7 @@ const addTodoBtn = document.getElementById('addTodoBtn');
 const todoList = document.getElementById('todoList');
 
 // DOM elements - Notes
-const addNoteBtn = document.getElementById('addNoteBtn');
-const notesList = document.getElementById('notesList');
-const noteModal = document.getElementById('noteModal');
+const noteViewTitle = document.getElementById('noteViewTitle');
 const noteTitleInput = document.getElementById('noteTitleInput');
 const noteContentInput = document.getElementById('noteContentInput');
 const notePreview = document.getElementById('notePreview');
@@ -27,9 +35,6 @@ const copyMarkdown = document.getElementById('copyMarkdown');
 const exportToNotion = document.getElementById('exportToNotion');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
 const deleteNoteBtn = document.getElementById('deleteNoteBtn');
-const cancelBtn = document.getElementById('cancelBtn');
-const closeModal = document.getElementById('closeModal');
-const modalTitle = document.getElementById('modalTitle');
 
 // DOM elements - Settings
 const settingsBtn = document.getElementById('settingsBtn');
@@ -51,10 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateClock();
   setInterval(updateClock, 1000);
+  renderSidebar();
+  showView('todo');
 });
 
 // Setup event listeners
 function setupEventListeners() {
+  // Sidebar
+  addNoteBtn.addEventListener('click', () => createNewNote());
+
   // Todos
   addTodoBtn.addEventListener('click', addTodo);
   todoInput.addEventListener('keypress', (e) => {
@@ -64,11 +74,8 @@ function setupEventListeners() {
   });
 
   // Notes
-  addNoteBtn.addEventListener('click', () => openNoteModal());
   saveNoteBtn.addEventListener('click', saveNote);
   deleteNoteBtn.addEventListener('click', confirmDeleteNote);
-  cancelBtn.addEventListener('click', closeNoteModal);
-  closeModal.addEventListener('click', closeNoteModal);
   previewToggle.addEventListener('click', togglePreview);
   copyMarkdown.addEventListener('click', copyCurrentNoteToClipboard);
   exportToNotion.addEventListener('click', exportCurrentNoteToNotion);
@@ -79,11 +86,6 @@ function setupEventListeners() {
   saveSettings.addEventListener('click', saveSettingsData);
 
   // Modal backdrop click
-  noteModal.addEventListener('click', (e) => {
-    if (e.target === noteModal) {
-      closeNoteModal();
-    }
-  });
   settingsModal.addEventListener('click', (e) => {
     if (e.target === settingsModal) {
       closeSettingsModal();
@@ -93,9 +95,6 @@ function setupEventListeners() {
   // ESC key to close modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (noteModal.classList.contains('show')) {
-        closeNoteModal();
-      }
       if (settingsModal.classList.contains('show')) {
         closeSettingsModal();
       }
@@ -108,6 +107,148 @@ function setupEventListeners() {
       updatePreview();
     }
   });
+
+  // Auto-save on note title/content change
+  noteTitleInput.addEventListener('input', () => {
+    if (currentNoteId && currentView === 'note') {
+      autoSaveNote();
+    }
+  });
+
+  noteContentInput.addEventListener('input', () => {
+    if (currentNoteId && currentView === 'note') {
+      autoSaveNote();
+    }
+  });
+}
+
+// Sidebar functions
+function renderSidebar() {
+  sidebarList.innerHTML = '';
+
+  // Add TODO item first (special item)
+  const todoItem = document.createElement('li');
+  todoItem.className = `sidebar-item${currentView === 'todo' ? ' active' : ''}`;
+  todoItem.innerHTML = `
+    <span class="sidebar-item-icon">☑</span>
+    <div class="sidebar-item-content">
+      <div class="sidebar-item-title">TODO</div>
+      <div class="sidebar-item-preview">${todos.length} task${todos.length !== 1 ? 's' : ''}</div>
+    </div>
+  `;
+  todoItem.addEventListener('click', () => showTodoView());
+  sidebarList.appendChild(todoItem);
+
+  // Add notes
+  notes.forEach(note => {
+    const li = document.createElement('li');
+    li.className = `sidebar-item${currentView === 'note' && currentNoteId === note.id ? ' active' : ''}`;
+
+    const previewText = note.content ? note.content.substring(0, 50) : '';
+    li.innerHTML = `
+      <span class="sidebar-item-icon">📝</span>
+      <div class="sidebar-item-content">
+        <div class="sidebar-item-title">${note.title || 'Untitled'}</div>
+        <div class="sidebar-item-preview">${previewText}${note.content && note.content.length > 50 ? '...' : ''}</div>
+      </div>
+    `;
+    li.addEventListener('click', () => showNoteView(note.id));
+    sidebarList.appendChild(li);
+  });
+
+  // Show message if no notes
+  if (notes.length === 0) {
+    const emptyMsg = document.createElement('li');
+    emptyMsg.className = 'sidebar-item';
+    emptyMsg.style.cursor = 'default';
+    emptyMsg.style.opacity = '0.6';
+    emptyMsg.innerHTML = `
+      <div class="sidebar-item-content">
+        <div class="sidebar-item-preview" style="text-align: center;">No notes yet. Click + to create one.</div>
+      </div>
+    `;
+    sidebarList.appendChild(emptyMsg);
+  }
+}
+
+// View switching functions
+function showView(view) {
+  // Hide all views
+  todoView.classList.add('hidden');
+  noteView.classList.add('hidden');
+  welcomeView.classList.add('hidden');
+
+  // Show selected view
+  if (view === 'todo') {
+    todoView.classList.remove('hidden');
+  } else if (view === 'note') {
+    noteView.classList.remove('hidden');
+  } else {
+    welcomeView.classList.remove('hidden');
+  }
+
+  currentView = view;
+  renderSidebar();
+}
+
+function showTodoView() {
+  showView('todo');
+  currentNoteId = null;
+}
+
+function showNoteView(noteId) {
+  const note = notes.find(n => n.id === noteId);
+  if (!note) return;
+
+  currentNoteId = noteId;
+  isPreviewMode = false;
+
+  noteViewTitle.textContent = note.title || 'Note';
+  noteTitleInput.value = note.title || '';
+  noteContentInput.value = note.content || '';
+
+  noteContentInput.classList.remove('hidden');
+  notePreview.classList.add('hidden');
+  previewToggle.textContent = 'Preview';
+
+  deleteNoteBtn.classList.remove('hidden');
+
+  showView('note');
+  setTimeout(() => noteTitleInput.focus(), 100);
+}
+
+function createNewNote() {
+  const note = {
+    id: Date.now(),
+    title: 'Untitled',
+    content: '',
+    createdAt: Date.now()
+  };
+  notes.unshift(note);
+  saveNotesData();
+  renderSidebar();
+  showNoteView(note.id);
+}
+
+// Auto-save functionality
+let autoSaveTimeout = null;
+function autoSaveNote() {
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout);
+  }
+
+  autoSaveTimeout = setTimeout(() => {
+    if (currentNoteId) {
+      const note = notes.find(n => n.id === currentNoteId);
+      if (note) {
+        note.title = noteTitleInput.value.trim() || 'Untitled';
+        note.content = noteContentInput.value.trim();
+        note.updatedAt = Date.now();
+        saveNotesData();
+        renderSidebar(); // Update sidebar preview
+      }
+    }
+  }, 500); // Auto-save after 500ms of no typing
 }
 
 // Todo functions
@@ -121,6 +262,7 @@ function loadTodos() {
 
 function saveTodos() {
   localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+  renderSidebar(); // Update TODO count in sidebar
 }
 
 function addTodo() {
@@ -158,6 +300,17 @@ function deleteTodo(id) {
 function renderTodos() {
   todoList.innerHTML = '';
 
+  if (todos.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = '#909090';
+    emptyMsg.style.fontSize = '14px';
+    emptyMsg.style.textAlign = 'center';
+    emptyMsg.style.padding = '40px 20px';
+    emptyMsg.textContent = 'No tasks yet. Add one above!';
+    todoList.appendChild(emptyMsg);
+    return;
+  }
+
   todos.forEach(todo => {
     const li = document.createElement('li');
     li.className = `todo-item${todo.completed ? ' completed' : ''}`;
@@ -191,7 +344,6 @@ function loadNotes() {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        // Migrate old format if needed
         notes = parsed.map(note => {
           if (!note.title && note.text) {
             return {
@@ -219,7 +371,7 @@ function loadNotes() {
         notes = [];
       }
     }
-    renderNotes();
+    renderSidebar();
   }
 }
 
@@ -227,65 +379,26 @@ function saveNotesData() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
 }
 
-function openNoteModal(noteId = null) {
-  currentNoteId = noteId;
-  isPreviewMode = false;
-
-  if (noteId) {
-    const note = notes.find(n => n.id === noteId);
-    if (note) {
-      modalTitle.textContent = 'Edit Note';
-      noteTitleInput.value = note.title || '';
-      noteContentInput.value = note.content || '';
-      deleteNoteBtn.classList.remove('hidden');
-    }
-  } else {
-    modalTitle.textContent = 'New Note';
-    noteTitleInput.value = '';
-    noteContentInput.value = '';
-    deleteNoteBtn.classList.add('hidden');
-  }
-
-  noteContentInput.classList.remove('hidden');
-  notePreview.classList.add('hidden');
-  previewToggle.textContent = 'Preview';
-
-  noteModal.classList.add('show');
-  setTimeout(() => noteTitleInput.focus(), 100);
-}
-
-function closeNoteModal() {
-  noteModal.classList.remove('show');
-  currentNoteId = null;
-  isPreviewMode = false;
-}
-
 function saveNote() {
-  const title = noteTitleInput.value.trim();
-  const content = noteContentInput.value.trim();
+  if (!currentNoteId) return;
 
-  if (title === '' && content === '') return;
-
-  if (currentNoteId) {
-    const note = notes.find(n => n.id === currentNoteId);
-    if (note) {
-      note.title = title || 'Untitled';
-      note.content = content;
-      note.updatedAt = Date.now();
-    }
-  } else {
-    const note = {
-      id: Date.now(),
-      title: title || 'Untitled',
-      content: content,
-      createdAt: Date.now()
-    };
-    notes.unshift(note);
+  const note = notes.find(n => n.id === currentNoteId);
+  if (note) {
+    note.title = noteTitleInput.value.trim() || 'Untitled';
+    note.content = noteContentInput.value.trim();
+    note.updatedAt = Date.now();
+    saveNotesData();
+    renderSidebar();
   }
 
-  saveNotesData();
-  renderNotes();
-  closeNoteModal();
+  // Show feedback
+  const originalText = saveNoteBtn.textContent;
+  saveNoteBtn.textContent = 'Saved!';
+  saveNoteBtn.style.backgroundColor = '#4a4a4a';
+  setTimeout(() => {
+    saveNoteBtn.textContent = originalText;
+    saveNoteBtn.style.backgroundColor = '';
+  }, 1500);
 }
 
 function confirmDeleteNote() {
@@ -294,8 +407,10 @@ function confirmDeleteNote() {
   if (confirm('Are you sure you want to delete this note?')) {
     notes = notes.filter(n => n.id !== currentNoteId);
     saveNotesData();
-    renderNotes();
-    closeNoteModal();
+    renderSidebar();
+
+    // Show TODO view after deleting
+    showTodoView();
   }
 }
 
@@ -319,21 +434,6 @@ function updatePreview() {
   notePreview.innerHTML = marked.parse(content);
 }
 
-async function copyNoteToClipboard(noteId) {
-  const note = notes.find(n => n.id === noteId);
-  if (!note) return;
-
-  const markdown = `# ${note.title || 'Untitled'}\n\n${note.content || ''}`;
-
-  try {
-    await navigator.clipboard.writeText(markdown);
-    showCopyFeedback('Copied to clipboard!');
-  } catch (err) {
-    console.error('Failed to copy:', err);
-    showCopyFeedback('Failed to copy', true);
-  }
-}
-
 async function copyCurrentNoteToClipboard() {
   const title = noteTitleInput.value.trim() || 'Untitled';
   const content = noteContentInput.value.trim();
@@ -341,10 +441,10 @@ async function copyCurrentNoteToClipboard() {
 
   try {
     await navigator.clipboard.writeText(markdown);
-    showCopyFeedback('Copied to clipboard!');
+    showCopyFeedback('Copied!');
   } catch (err) {
     console.error('Failed to copy:', err);
-    showCopyFeedback('Failed to copy', true);
+    showCopyFeedback('Failed', true);
   }
 }
 
@@ -359,86 +459,6 @@ function showCopyFeedback(message, isError = false) {
     copyMarkdown.style.backgroundColor = '';
     copyMarkdown.style.color = '';
   }, 2000);
-}
-
-function renderNotes() {
-  notesList.innerHTML = '';
-
-  if (notes.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.className = 'empty-message';
-    emptyMsg.textContent = 'No notes yet. Click "+ NEW NOTE" to create one.';
-    notesList.appendChild(emptyMsg);
-    return;
-  }
-
-  notes.forEach(note => {
-    const li = document.createElement('li');
-    li.className = 'note-item';
-
-    const content = document.createElement('div');
-    content.className = 'note-content';
-
-    const title = document.createElement('div');
-    title.className = 'note-title';
-    title.textContent = note.title || 'Untitled';
-
-    const preview = document.createElement('div');
-    preview.className = 'note-preview-text';
-    const previewText = note.content ? note.content.substring(0, 100) : '';
-    preview.textContent = previewText + (note.content && note.content.length > 100 ? '...' : '');
-
-    content.appendChild(title);
-    content.appendChild(preview);
-    content.addEventListener('click', () => openNoteModal(note.id));
-
-    const actions = document.createElement('div');
-    actions.className = 'note-actions';
-
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'note-action-btn';
-    copyBtn.textContent = '📋';
-    copyBtn.title = 'Copy as Markdown';
-    copyBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await copyNoteToClipboard(note.id);
-      // Visual feedback
-      const originalText = copyBtn.textContent;
-      copyBtn.textContent = '✓';
-      setTimeout(() => {
-        copyBtn.textContent = originalText;
-      }, 1500);
-    });
-
-    const exportBtn = document.createElement('button');
-    exportBtn.className = 'note-action-btn';
-    exportBtn.textContent = '↗';
-    exportBtn.title = 'Export to Notion';
-    exportBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exportNoteToNotion(note.id);
-    });
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'note-action-btn';
-    deleteBtn.textContent = 'DEL';
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (confirm('Delete this note?')) {
-        notes = notes.filter(n => n.id !== note.id);
-        saveNotesData();
-        renderNotes();
-      }
-    });
-
-    actions.appendChild(copyBtn);
-    actions.appendChild(exportBtn);
-    actions.appendChild(deleteBtn);
-
-    li.appendChild(content);
-    li.appendChild(actions);
-    notesList.appendChild(li);
-  });
 }
 
 // Settings functions
@@ -472,14 +492,19 @@ function saveSettingsData() {
 }
 
 // Notion Integration
-async function exportNoteToNotion(noteId) {
+async function exportCurrentNoteToNotion() {
+  if (!currentNoteId) {
+    alert('Please select a note first before exporting to Notion.');
+    return;
+  }
+
   if (!settings.notionApiKey || !settings.notionDatabaseId) {
     alert('Please configure Notion API settings first (click the ⚙ icon)');
     openSettingsModal();
     return;
   }
 
-  const note = notes.find(n => n.id === noteId);
+  const note = notes.find(n => n.id === currentNoteId);
   if (!note) return;
 
   try {
@@ -533,14 +558,6 @@ async function exportNoteToNotion(noteId) {
     console.error('Export error:', error);
     alert('Failed to export to Notion. Check your API settings and try again.');
   }
-}
-
-async function exportCurrentNoteToNotion() {
-  if (!currentNoteId) {
-    alert('Please save the note first before exporting to Notion.');
-    return;
-  }
-  await exportNoteToNotion(currentNoteId);
 }
 
 // Clock functions
