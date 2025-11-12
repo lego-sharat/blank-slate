@@ -23,6 +23,7 @@ const noteTitleInput = document.getElementById('noteTitleInput');
 const noteContentInput = document.getElementById('noteContentInput');
 const notePreview = document.getElementById('notePreview');
 const previewToggle = document.getElementById('previewToggle');
+const copyMarkdown = document.getElementById('copyMarkdown');
 const exportToNotion = document.getElementById('exportToNotion');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
 const deleteNoteBtn = document.getElementById('deleteNoteBtn');
@@ -69,6 +70,7 @@ function setupEventListeners() {
   cancelBtn.addEventListener('click', closeNoteModal);
   closeModal.addEventListener('click', closeNoteModal);
   previewToggle.addEventListener('click', togglePreview);
+  copyMarkdown.addEventListener('click', copyCurrentNoteToClipboard);
   exportToNotion.addEventListener('click', exportCurrentNoteToNotion);
 
   // Settings
@@ -317,6 +319,48 @@ function updatePreview() {
   notePreview.innerHTML = marked.parse(content);
 }
 
+async function copyNoteToClipboard(noteId) {
+  const note = notes.find(n => n.id === noteId);
+  if (!note) return;
+
+  const markdown = `# ${note.title || 'Untitled'}\n\n${note.content || ''}`;
+
+  try {
+    await navigator.clipboard.writeText(markdown);
+    showCopyFeedback('Copied to clipboard!');
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    showCopyFeedback('Failed to copy', true);
+  }
+}
+
+async function copyCurrentNoteToClipboard() {
+  const title = noteTitleInput.value.trim() || 'Untitled';
+  const content = noteContentInput.value.trim();
+  const markdown = `# ${title}\n\n${content}`;
+
+  try {
+    await navigator.clipboard.writeText(markdown);
+    showCopyFeedback('Copied to clipboard!');
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    showCopyFeedback('Failed to copy', true);
+  }
+}
+
+function showCopyFeedback(message, isError = false) {
+  const originalText = copyMarkdown.textContent;
+  copyMarkdown.textContent = message;
+  copyMarkdown.style.backgroundColor = isError ? '#c04040' : '#4a4a4a';
+  copyMarkdown.style.color = '#fff';
+
+  setTimeout(() => {
+    copyMarkdown.textContent = originalText;
+    copyMarkdown.style.backgroundColor = '';
+    copyMarkdown.style.color = '';
+  }, 2000);
+}
+
 function renderNotes() {
   notesList.innerHTML = '';
 
@@ -351,6 +395,21 @@ function renderNotes() {
     const actions = document.createElement('div');
     actions.className = 'note-actions';
 
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'note-action-btn';
+    copyBtn.textContent = '📋';
+    copyBtn.title = 'Copy as Markdown';
+    copyBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await copyNoteToClipboard(note.id);
+      // Visual feedback
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = '✓';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 1500);
+    });
+
     const exportBtn = document.createElement('button');
     exportBtn.className = 'note-action-btn';
     exportBtn.textContent = '↗';
@@ -372,6 +431,7 @@ function renderNotes() {
       }
     });
 
+    actions.appendChild(copyBtn);
     actions.appendChild(exportBtn);
     actions.appendChild(deleteBtn);
 
