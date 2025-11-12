@@ -306,6 +306,15 @@ function deleteTodo(id) {
   renderTodos();
 }
 
+function editTodo(id, newText) {
+  const todo = todos.find(t => t.id === id);
+  if (todo) {
+    todo.text = newText;
+    saveTodos();
+    renderTodos();
+  }
+}
+
 function renderTodos() {
   todoList.innerHTML = '';
 
@@ -334,6 +343,21 @@ function renderTodos() {
     text.className = 'todo-text';
     text.textContent = todo.text;
 
+    // Create edit button with pen icon
+    const editBtn = document.createElement('button');
+    editBtn.className = 'todo-edit-btn';
+    editBtn.title = 'Edit';
+    editBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    `;
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enterEditMode(li, todo);
+    });
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'todo-delete';
     deleteBtn.textContent = 'DEL';
@@ -341,8 +365,88 @@ function renderTodos() {
 
     li.appendChild(checkbox);
     li.appendChild(text);
+    li.appendChild(editBtn);
     li.appendChild(deleteBtn);
     todoList.appendChild(li);
+  });
+}
+
+function enterEditMode(li, todo) {
+  // Add editing class for styling
+  li.classList.add('editing');
+
+  // Find and hide the text, edit button, and delete button
+  const text = li.querySelector('.todo-text');
+  const editBtn = li.querySelector('.todo-edit-btn');
+  const deleteBtn = li.querySelector('.todo-delete');
+
+  text.style.display = 'none';
+  editBtn.style.display = 'none';
+  deleteBtn.style.display = 'none';
+
+  // Create input field
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'todo-edit-input';
+  input.value = todo.text;
+
+  // Create action buttons container
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'todo-edit-actions';
+
+  // Create Cancel button
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'todo-edit-cancel';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => {
+    renderTodos();
+  });
+
+  // Create Save button
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'todo-edit-save';
+  saveBtn.textContent = 'Save';
+  saveBtn.addEventListener('click', () => {
+    const newText = input.value.trim();
+    if (newText !== '' && newText !== todo.text) {
+      editTodo(todo.id, newText);
+    } else {
+      renderTodos();
+    }
+  });
+
+  // Add buttons to actions div
+  actionsDiv.appendChild(cancelBtn);
+  actionsDiv.appendChild(saveBtn);
+
+  // Insert input and actions after checkbox
+  const checkbox = li.querySelector('.todo-checkbox');
+  checkbox.after(input);
+  input.after(actionsDiv);
+
+  // Focus and select input
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 50);
+
+  // Save on Enter key
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const newText = input.value.trim();
+      if (newText !== '' && newText !== todo.text) {
+        editTodo(todo.id, newText);
+      } else {
+        renderTodos();
+      }
+    }
+  });
+
+  // Cancel on Escape key
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      renderTodos();
+    }
   });
 }
 
