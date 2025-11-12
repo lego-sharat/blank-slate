@@ -176,6 +176,16 @@ function renderSidebar() {
   notes.forEach(note => {
     const li = document.createElement('li');
     li.className = `sidebar-item${currentView === 'note' && currentNoteId === note.id ? ' active' : ''}`;
+    li.draggable = true;
+    li.dataset.noteId = note.id;
+
+    // Drag and drop event listeners for notes
+    li.addEventListener('dragstart', handleNoteDragStart);
+    li.addEventListener('dragover', handleNoteDragOver);
+    li.addEventListener('drop', handleNoteDrop);
+    li.addEventListener('dragenter', handleNoteDragEnter);
+    li.addEventListener('dragleave', handleNoteDragLeave);
+    li.addEventListener('dragend', handleNoteDragEnd);
 
     const previewText = note.content ? note.content.substring(0, 50) : '';
     li.innerHTML = `
@@ -391,6 +401,16 @@ function renderTodos() {
   todos.forEach(todo => {
     const li = document.createElement('li');
     li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+    li.draggable = true;
+    li.dataset.id = todo.id;
+
+    // Drag and drop event listeners
+    li.addEventListener('dragstart', handleTodoDragStart);
+    li.addEventListener('dragover', handleTodoDragOver);
+    li.addEventListener('drop', handleTodoDrop);
+    li.addEventListener('dragenter', handleTodoDragEnter);
+    li.addEventListener('dragleave', handleTodoDragLeave);
+    li.addEventListener('dragend', handleTodoDragEnd);
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -513,6 +533,138 @@ function enterEditMode(li, todo) {
     if (e.key === 'Escape') {
       renderTodos();
     }
+  });
+}
+
+// Drag and drop handlers for todos
+let draggedTodoElement = null;
+let draggedNoteElement = null;
+
+function handleTodoDragStart(e) {
+  draggedTodoElement = e.target;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', e.target.innerHTML);
+}
+
+function handleTodoDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleTodoDragEnter(e) {
+  if (e.target.classList.contains('todo-item') && e.target !== draggedTodoElement) {
+    e.target.classList.add('drag-over');
+  }
+}
+
+function handleTodoDragLeave(e) {
+  if (e.target.classList.contains('todo-item')) {
+    e.target.classList.remove('drag-over');
+  }
+}
+
+function handleTodoDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+
+  if (draggedTodoElement !== e.target && e.target.classList.contains('todo-item')) {
+    const draggedId = parseInt(draggedTodoElement.dataset.id);
+    const targetId = parseInt(e.target.dataset.id);
+
+    const draggedIndex = todos.findIndex(t => t.id === draggedId);
+    const targetIndex = todos.findIndex(t => t.id === targetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove dragged item and insert at new position
+      const [draggedItem] = todos.splice(draggedIndex, 1);
+      todos.splice(targetIndex, 0, draggedItem);
+
+      saveTodos();
+      renderTodos();
+    }
+  }
+
+  e.target.classList.remove('drag-over');
+  return false;
+}
+
+function handleTodoDragEnd(e) {
+  e.target.classList.remove('dragging');
+  // Remove drag-over class from all items
+  document.querySelectorAll('.todo-item').forEach(item => {
+    item.classList.remove('drag-over');
+  });
+}
+
+// Drag and drop handlers for notes
+function handleNoteDragStart(e) {
+  draggedNoteElement = e.currentTarget;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+}
+
+function handleNoteDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleNoteDragEnter(e) {
+  const target = e.currentTarget;
+  if (target.classList.contains('sidebar-item') && target.draggable && target !== draggedNoteElement) {
+    target.classList.add('drag-over');
+  }
+}
+
+function handleNoteDragLeave(e) {
+  const target = e.currentTarget;
+  if (target.classList.contains('sidebar-item')) {
+    target.classList.remove('drag-over');
+  }
+}
+
+function handleNoteDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+
+  const target = e.currentTarget;
+  if (draggedNoteElement !== target && target.classList.contains('sidebar-item') && target.draggable) {
+    const draggedId = parseInt(draggedNoteElement.dataset.noteId);
+    const targetId = parseInt(target.dataset.noteId);
+
+    const draggedIndex = notes.findIndex(n => n.id === draggedId);
+    const targetIndex = notes.findIndex(n => n.id === targetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove dragged item and insert at new position
+      const [draggedItem] = notes.splice(draggedIndex, 1);
+      notes.splice(targetIndex, 0, draggedItem);
+
+      saveNotesData();
+      renderSidebar();
+    }
+  }
+
+  target.classList.remove('drag-over');
+  return false;
+}
+
+function handleNoteDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  // Remove drag-over class from all sidebar items
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('drag-over');
   });
 }
 

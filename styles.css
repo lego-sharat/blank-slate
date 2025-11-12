@@ -86,6 +86,10 @@ body {
   align-items: center;
 }
 
+.sidebar-item[draggable="true"] {
+  cursor: move;
+}
+
 .sidebar-item:hover {
   background-color: #d8d8d8;
 }
@@ -93,6 +97,16 @@ body {
 .sidebar-item.active {
   background-color: #c0c0c0;
   border-left: 3px solid #2a2a2a;
+}
+
+.sidebar-item.dragging {
+  opacity: 0.4;
+  background-color: #d0d0d0;
+}
+
+.sidebar-item.drag-over {
+  border-top: 2px solid #2a2a2a;
+  background-color: #c8c8c8;
 }
 
 .sidebar-item-content {
@@ -363,10 +377,21 @@ body {
   gap: 12px;
   transition: all 0.2s ease;
   margin: 0 -12px;
+  cursor: move;
 }
 
 .todo-item:hover {
   background-color: #fafafa;
+}
+
+.todo-item.dragging {
+  opacity: 0.4;
+  background-color: #e8e8e8;
+}
+
+.todo-item.drag-over {
+  border-top: 2px solid #2a2a2a;
+  background-color: #f0f0f0;
 }
 
 .todo-item.editing {
