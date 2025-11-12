@@ -347,6 +347,10 @@ body {
   font-weight: bold;
   margin-bottom: 24px;
   outline: none;
+  resize: none;
+  overflow: hidden;
+  min-height: 50px;
+  line-height: 1.2;
 }
 
 .note-title-input::placeholder {

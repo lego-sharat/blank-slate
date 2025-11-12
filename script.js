@@ -98,6 +98,7 @@ function setupEventListeners() {
 
   // Auto-save on note title/content change
   noteTitleInput.addEventListener('input', () => {
+    autoResizeTitle();
     if (currentNoteId && currentView === 'note') {
       autoSaveNote();
     }
@@ -198,7 +199,10 @@ function showNoteView(noteId) {
   deleteNoteBtn.classList.remove('hidden');
 
   showView('note');
-  setTimeout(() => noteTitleInput.focus(), 100);
+  setTimeout(() => {
+    autoResizeTitle();
+    noteTitleInput.focus();
+  }, 100);
 }
 
 function createNewNote() {
@@ -212,6 +216,12 @@ function createNewNote() {
   saveNotesData();
   renderSidebar();
   showNoteView(note.id);
+}
+
+// Auto-resize title textarea
+function autoResizeTitle() {
+  noteTitleInput.style.height = 'auto';
+  noteTitleInput.style.height = noteTitleInput.scrollHeight + 'px';
 }
 
 // Auto-save functionality
