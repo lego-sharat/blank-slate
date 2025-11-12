@@ -10,6 +10,7 @@ let settings = { notionApiKey: '', notionDatabaseId: '' };
 let currentNoteId = null;
 let currentView = 'todo'; // 'todo' or 'note'
 let isPreviewMode = false;
+let copyButtonTimeout = null;
 
 // DOM elements - Sidebar
 const sidebarList = document.getElementById('sidebarList');
@@ -168,10 +169,21 @@ function showView(view) {
   // Show selected view
   if (view === 'todo') {
     todoView.classList.remove('hidden');
+    // Hide note action buttons
+    deleteNoteBtn.classList.add('hidden');
+    copyMarkdown.classList.add('hidden');
+    exportToNotion.classList.add('hidden');
   } else if (view === 'note') {
     noteView.classList.remove('hidden');
+    // Show note action buttons (delete button visibility handled in showNoteView)
+    copyMarkdown.classList.remove('hidden');
+    exportToNotion.classList.remove('hidden');
   } else {
     welcomeView.classList.remove('hidden');
+    // Hide note action buttons
+    deleteNoteBtn.classList.add('hidden');
+    copyMarkdown.classList.add('hidden');
+    exportToNotion.classList.add('hidden');
   }
 
   currentView = view;
@@ -197,6 +209,9 @@ function showNoteView(noteId) {
   notePreview.classList.add('hidden');
 
   deleteNoteBtn.classList.remove('hidden');
+
+  // Reset copy button state when switching notes
+  resetCopyButton();
 
   showView('note');
   setTimeout(() => {
@@ -401,16 +416,35 @@ async function copyCurrentNoteToClipboard() {
 }
 
 function showCopyFeedback(message, isError = false) {
+  // Clear any existing timeout
+  if (copyButtonTimeout) {
+    clearTimeout(copyButtonTimeout);
+  }
+
   const originalText = copyMarkdown.textContent;
   copyMarkdown.textContent = message;
   copyMarkdown.style.backgroundColor = isError ? '#c04040' : '#4a4a4a';
   copyMarkdown.style.color = '#fff';
 
-  setTimeout(() => {
+  copyButtonTimeout = setTimeout(() => {
     copyMarkdown.textContent = originalText;
     copyMarkdown.style.backgroundColor = '';
     copyMarkdown.style.color = '';
+    copyButtonTimeout = null;
   }, 2000);
+}
+
+function resetCopyButton() {
+  // Clear any pending timeout
+  if (copyButtonTimeout) {
+    clearTimeout(copyButtonTimeout);
+    copyButtonTimeout = null;
+  }
+
+  // Reset button to original state
+  copyMarkdown.textContent = 'Copy Markdown';
+  copyMarkdown.style.backgroundColor = '';
+  copyMarkdown.style.color = '';
 }
 
 // Notion Integration

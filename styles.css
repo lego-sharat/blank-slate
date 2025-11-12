@@ -131,7 +131,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 40px;
+  padding: 12px 40px;
   border-bottom: 1px solid #d0d0d0;
   background-color: #fff;
 }
@@ -159,10 +159,18 @@ body {
   text-transform: uppercase;
 }
 
+/* Header Actions */
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* Settings Button */
 .settings-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 1px solid #c0c0c0;
   background-color: #f5f5f5;
   color: #4a4a4a;
@@ -316,20 +324,6 @@ body {
 }
 
 /* Note Editor View */
-.note-header {
-  padding: 16px 40px;
-  border-bottom: 1px solid #e8e8e8;
-  background-color: #fff;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.note-header-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .note-editor {
   padding: 80px 120px;
   max-width: 900px;
@@ -654,14 +648,6 @@ body {
 
   .view-body {
     padding: 20px;
-  }
-
-  .note-header {
-    padding: 12px 20px;
-  }
-
-  .note-header-actions {
-    flex-wrap: wrap;
   }
 
   .note-editor {
