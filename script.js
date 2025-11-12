@@ -126,6 +126,21 @@ function setupEventListeners() {
     }
   });
 
+  // Enter key to focus on todo input when on todo page
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && currentView === 'todo') {
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement.tagName === 'INPUT' ||
+                            activeElement.tagName === 'TEXTAREA' ||
+                            activeElement.tagName === 'BUTTON';
+
+      if (!isInputFocused) {
+        e.preventDefault();
+        todoInput.focus();
+      }
+    }
+  });
+
   // Auto-save on note title/content change
   noteTitleInput.addEventListener('input', () => {
     autoResizeTitle();
