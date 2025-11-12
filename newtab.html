@@ -87,6 +87,44 @@
         </div>
       </div>
 
+      <!-- Today View (2-column: Todos + Calendar) -->
+      <div id="todayView" class="content-view hidden">
+        <div class="view-body today-view-body">
+          <div class="today-columns">
+            <!-- Left Column: Today's Tasks -->
+            <div class="today-column">
+              <h2 class="column-heading">Tasks</h2>
+              <ul id="todayTodoList"></ul>
+              <div class="todo-input-container">
+                <button id="addTodayTodoBtn" class="add-todo-icon">+</button>
+                <input type="text" id="todayTodoInput" placeholder="Add task..." />
+                <div id="todayTodoInputActions" class="todo-input-actions hidden">
+                  <button id="cancelAddTodayTodoBtn" class="todo-input-cancel">Cancel</button>
+                  <button id="saveAddTodayTodoBtn" class="todo-input-save">Save</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Calendar Events -->
+            <div class="today-column">
+              <div class="calendar-header">
+                <h2 class="column-heading">Calendar</h2>
+                <button id="refreshCalendar" class="icon-btn-small" title="Refresh Calendar">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                </button>
+              </div>
+              <div id="calendarStatus" class="calendar-status">
+                <button id="connectCalendar" class="btn-primary">Connect Google Calendar</button>
+              </div>
+              <ul id="calendarEventsList" class="calendar-events-list hidden"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Note Editor View -->
       <div id="noteView" class="content-view hidden">
         <div class="note-editor">
@@ -126,6 +164,15 @@
           <p class="settings-help">
             Choose between a clean monospace font or a casual handwriting style.
           </p>
+        </div>
+        <div class="settings-section">
+          <h3>Google Calendar</h3>
+          <label for="googleClientId">OAuth Client ID</label>
+          <input type="text" id="googleClientId" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com" class="settings-input" />
+          <p class="settings-help">
+            <a href="https://developers.google.com/calendar/api/quickstart/js" target="_blank">How to get your Google Calendar API credentials</a>
+          </p>
+          <div id="calendarConnectionStatus" class="settings-help"></div>
         </div>
         <div class="settings-section">
           <h3>Notion Integration</h3>
