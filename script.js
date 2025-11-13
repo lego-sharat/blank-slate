@@ -1218,6 +1218,9 @@ function renderCalendarEvents() {
       linksDiv.className = 'calendar-event-links';
 
       links.forEach(link => {
+        const linkContainer = document.createElement('div');
+        linkContainer.className = 'calendar-event-link-container';
+
         const linkElement = document.createElement('a');
         linkElement.href = link.url;
         linkElement.target = '_blank';
@@ -1225,17 +1228,50 @@ function renderCalendarEvents() {
         linkElement.className = 'calendar-event-link';
         linkElement.title = link.title;
 
-        if (link.isVideoCall) {
+        // Set icon based on link type
+        let iconSvg = '';
+
+        if (link.linkType === 'video') {
           // Video call icon
-          linkElement.innerHTML = `
+          iconSvg = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M23 7l-7 5 7 5V7z"/>
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
             </svg>
           `;
+        } else if (link.linkType === 'docs') {
+          // Google Docs icon
+          iconSvg = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          `;
+        } else if (link.linkType === 'pdf') {
+          // PDF icon
+          iconSvg = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="M10 12h4"/>
+              <path d="M10 16h2"/>
+            </svg>
+          `;
+        } else if (link.linkType === 'notion') {
+          // Notion icon
+          iconSvg = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/>
+              <path d="M9 12h10"/>
+              <path d="M9 16h6"/>
+            </svg>
+          `;
         } else {
           // Generic link icon
-          linkElement.innerHTML = `
+          iconSvg = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
@@ -1243,7 +1279,16 @@ function renderCalendarEvents() {
           `;
         }
 
-        linksDiv.appendChild(linkElement);
+        linkElement.innerHTML = iconSvg;
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'calendar-event-link-tooltip';
+        tooltip.textContent = link.url;
+
+        linkContainer.appendChild(linkElement);
+        linkContainer.appendChild(tooltip);
+        linksDiv.appendChild(linkContainer);
       });
 
       li.appendChild(linksDiv);
@@ -1265,33 +1310,46 @@ function extractEventLinks(event) {
   const links = [];
   const seenUrls = new Set();
 
-  // Helper to add link if not already seen
-  const addLink = (url, title, isVideoCall = false) => {
-    if (url && !seenUrls.has(url)) {
+  // Helper to check if URL is a tel link or phone meeting link
+  const isTelOrPhoneLink = (url) => {
+    if (!url) return false;
+    const urlLower = url.toLowerCase();
+    // Filter out tel: links
+    if (urlLower.startsWith('tel:')) return true;
+    // Filter out URLs with /tel/ in path (e.g., meet.google.com/tel/...)
+    if (urlLower.includes('/tel/')) return true;
+    // Filter out phone dial-in patterns
+    if (urlLower.includes('dial') && urlLower.includes('pin')) return true;
+    return false;
+  };
+
+  // Helper to add link if not already seen and not a phone link
+  const addLink = (url, title) => {
+    if (url && !seenUrls.has(url) && !isTelOrPhoneLink(url)) {
       seenUrls.add(url);
-      links.push({ url, title, isVideoCall });
+      const linkType = getLinkType(url);
+      links.push({ url, title, linkType });
     }
   };
 
   // Check for Google Meet link (hangoutLink)
   if (event.hangoutLink) {
-    addLink(event.hangoutLink, 'Join Google Meet', true);
+    addLink(event.hangoutLink, 'Join Google Meet');
   }
 
   // Check for conference data (Zoom, Teams, etc.)
   if (event.conferenceData?.entryPoints) {
     event.conferenceData.entryPoints.forEach(entry => {
-      if (entry.uri) {
-        const isVideoCall = isVideoCallUrl(entry.uri);
-        addLink(entry.uri, entry.label || 'Join meeting', isVideoCall);
+      // Skip phone entry points
+      if (entry.uri && entry.entryPointType !== 'phone') {
+        addLink(entry.uri, entry.label || 'Join meeting');
       }
     });
   }
 
   // Check location field for URLs
   if (event.location && isUrl(event.location)) {
-    const isVideoCall = isVideoCallUrl(event.location);
-    addLink(event.location, 'Location', isVideoCall);
+    addLink(event.location, 'Location');
   }
 
   // Check description for URLs
@@ -1300,8 +1358,7 @@ function extractEventLinks(event) {
     const matches = event.description.match(urlRegex);
     if (matches) {
       matches.forEach(url => {
-        const isVideoCall = isVideoCallUrl(url);
-        addLink(url, 'Link', isVideoCall);
+        addLink(url, 'Link');
       });
     }
   }
@@ -1316,6 +1373,34 @@ function isUrl(str) {
   } catch {
     return false;
   }
+}
+
+function getLinkType(url) {
+  const urlLower = url.toLowerCase();
+
+  // Check for Google Docs
+  if (urlLower.includes('docs.google.com/document') ||
+      urlLower.includes('docs.google.com/spreadsheets') ||
+      urlLower.includes('docs.google.com/presentation')) {
+    return 'docs';
+  }
+
+  // Check for PDF
+  if (urlLower.endsWith('.pdf') || urlLower.includes('.pdf?') || urlLower.includes('.pdf#')) {
+    return 'pdf';
+  }
+
+  // Check for Notion
+  if (urlLower.includes('notion.so') || urlLower.includes('notion.site')) {
+    return 'notion';
+  }
+
+  // Check for video calls
+  if (isVideoCallUrl(url)) {
+    return 'video';
+  }
+
+  return 'generic';
 }
 
 function isVideoCallUrl(url) {

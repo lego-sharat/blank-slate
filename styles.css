@@ -421,7 +421,8 @@ body.handwriting-font #todoInput {
   border-color: #808080;
 }
 
-#todoInput {
+#todoInput,
+#plannerTodoInput {
   flex: 1;
   padding: 0;
   border: none;
@@ -432,11 +433,13 @@ body.handwriting-font #todoInput {
   outline: none;
 }
 
-#todoInput::placeholder {
+#todoInput::placeholder,
+#plannerTodoInput::placeholder {
   color: #909090;
 }
 
-#addTodoBtn {
+#addTodoBtn,
+.add-todo-icon {
   width: 18px;
   height: 18px;
   padding: 0;
@@ -455,7 +458,8 @@ body.handwriting-font #todoInput {
   flex-shrink: 0;
 }
 
-#addTodoBtn:hover {
+#addTodoBtn:hover,
+.add-todo-icon:hover {
   border-color: #2a2a2a;
   color: #2a2a2a;
   background-color: #f0f0f0;
@@ -740,6 +744,11 @@ body.handwriting-font #todoInput {
   margin-top: 6px;
 }
 
+.calendar-event-link-container {
+  position: relative;
+  display: inline-block;
+}
+
 .calendar-event-link {
   display: inline-flex;
   align-items: center;
@@ -763,6 +772,43 @@ body.handwriting-font #todoInput {
 
 .calendar-event-link svg {
   display: block;
+}
+
+.calendar-event-link-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background-color: #2a2a2a;
+  color: #ffffff;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-event-link-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2a2a2a;
+}
+
+.calendar-event-link-container:hover .calendar-event-link-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .calendar-loading {
