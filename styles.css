@@ -632,22 +632,22 @@ body.handwriting-font #todoInput {
   border-color: #808080;
 }
 
-/* Today View - 2 Column Layout */
-.today-view-body {
+/* Planner View - 2 Column Layout */
+.planner-view-body {
   padding: 40px 60px;
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.today-columns {
+.planner-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
   align-items: start;
 }
 
-.today-column {
+.planner-column {
   display: flex;
   flex-direction: column;
   min-height: 400px;
@@ -1136,11 +1136,11 @@ body.handwriting-font #todoInput {
     padding: 40px 20px;
   }
 
-  .today-view-body {
+  .planner-view-body {
     padding: 40px 20px;
   }
 
-  .today-columns {
+  .planner-columns {
     grid-template-columns: 1fr;
     gap: 40px;
   }

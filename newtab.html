@@ -71,42 +71,26 @@
         </div>
       </div>
 
-      <!-- TODO View -->
-      <div id="todoView" class="content-view">
-        <div class="view-body">
-          <h2 class="todo-heading">TODO</h2>
-          <ul id="todoList"></ul>
-          <div class="todo-input-container">
-            <button id="addTodoBtn" class="add-todo-icon">+</button>
-            <input type="text" id="todoInput" placeholder="Add task..." />
-            <div id="todoInputActions" class="todo-input-actions hidden">
-              <button id="cancelAddTodoBtn" class="todo-input-cancel">Cancel</button>
-              <button id="saveAddTodoBtn" class="todo-input-save">Save</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Today View (2-column: Todos + Calendar) -->
-      <div id="todayView" class="content-view hidden">
-        <div class="view-body today-view-body">
-          <div class="today-columns">
-            <!-- Left Column: Today's Tasks -->
-            <div class="today-column">
+      <!-- Planner View (2-column: Todos + Calendar) -->
+      <div id="plannerView" class="content-view">
+        <div class="view-body planner-view-body">
+          <div class="planner-columns">
+            <!-- Left Column: Tasks -->
+            <div class="planner-column">
               <h2 class="column-heading">Tasks</h2>
-              <ul id="todayTodoList"></ul>
+              <ul id="plannerTodoList"></ul>
               <div class="todo-input-container">
-                <button id="addTodayTodoBtn" class="add-todo-icon">+</button>
-                <input type="text" id="todayTodoInput" placeholder="Add task..." />
-                <div id="todayTodoInputActions" class="todo-input-actions hidden">
-                  <button id="cancelAddTodayTodoBtn" class="todo-input-cancel">Cancel</button>
-                  <button id="saveAddTodayTodoBtn" class="todo-input-save">Save</button>
+                <button id="addPlannerTodoBtn" class="add-todo-icon">+</button>
+                <input type="text" id="plannerTodoInput" placeholder="Add task..." />
+                <div id="plannerTodoInputActions" class="todo-input-actions hidden">
+                  <button id="cancelAddPlannerTodoBtn" class="todo-input-cancel">Cancel</button>
+                  <button id="saveAddPlannerTodoBtn" class="todo-input-save">Save</button>
                 </div>
               </div>
             </div>
 
             <!-- Right Column: Calendar Events -->
-            <div class="today-column">
+            <div class="planner-column">
               <div class="calendar-header">
                 <h2 class="column-heading">Calendar</h2>
                 <button id="refreshCalendar" class="icon-btn-small" title="Refresh Calendar">
