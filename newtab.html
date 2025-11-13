@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lunr/lunr.js"></script>
   <script src="markdown-parser.js"></script>
 </head>
 <body>
@@ -22,15 +23,30 @@
           </svg>
         </button>
         <h1>SLATE</h1>
-        <button id="addNoteBtn" class="add-note-btn" title="New Note">+</button>
+      </div>
+      <div class="sidebar-actions">
+        <button id="addNoteBtn" class="sidebar-action-btn" title="New Note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          <span>Add Note</span>
+        </button>
+        <div class="search-container">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search notes..." />
+        </div>
       </div>
       <ul id="sidebarList" class="sidebar-list"></ul>
       <div class="sidebar-footer">
-        <button id="settingsBtn" class="icon-btn" title="Settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button id="settingsBtn" class="settings-btn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/>
             <path d="M12 1v6m0 6v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
           </svg>
+          <span>Settings</span>
         </button>
       </div>
     </aside>

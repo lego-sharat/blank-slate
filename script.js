@@ -17,12 +17,15 @@ let calendarEvents = [];
 let calendarToken = null;
 let isCalendarConnected = false;
 let calendarFetchInterval = null;
+let searchIndex = null;
+let searchQuery = '';
 
 // DOM elements - Sidebar
 const sidebar = document.querySelector('.sidebar');
 const sidebarList = document.getElementById('sidebarList');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
+const searchInput = document.getElementById('searchInput');
 
 // DOM elements - Views
 const plannerView = document.getElementById('plannerView');
@@ -84,6 +87,7 @@ function setupEventListeners() {
   // Sidebar
   collapseSidebarBtn.addEventListener('click', toggleSidebar);
   addNoteBtn.addEventListener('click', () => createNewNote());
+  searchInput.addEventListener('input', handleSearch);
 
   // Planner View Todos
   addPlannerTodoBtn.addEventListener('click', addTodo);
@@ -222,8 +226,9 @@ function renderSidebar() {
   plannerItem.addEventListener('click', () => showPlannerView());
   sidebarList.appendChild(plannerItem);
 
-  // Add notes
-  notes.forEach(note => {
+  // Add notes (filtered by search query)
+  const filteredNotes = getFilteredNotes();
+  filteredNotes.forEach(note => {
     const li = document.createElement('li');
     li.className = `sidebar-item${currentView === 'note' && currentNoteId === note.id ? ' active' : ''}`;
     li.draggable = true;
@@ -248,18 +253,63 @@ function renderSidebar() {
     sidebarList.appendChild(li);
   });
 
-  // Show message if no notes
-  if (notes.length === 0) {
+  // Show message if no notes or no search results
+  if (filteredNotes.length === 0) {
     const emptyMsg = document.createElement('li');
     emptyMsg.className = 'sidebar-item';
     emptyMsg.style.cursor = 'default';
     emptyMsg.style.opacity = '0.6';
+    const message = searchQuery
+      ? `No notes found for "${searchQuery}"`
+      : 'No notes yet. Click "Add Note" to create one.';
     emptyMsg.innerHTML = `
       <div class="sidebar-item-content">
-        <div class="sidebar-item-preview" style="text-align: center;">No notes yet. Click + to create one.</div>
+        <div class="sidebar-item-preview" style="text-align: center;">${message}</div>
       </div>
     `;
     sidebarList.appendChild(emptyMsg);
+  }
+}
+
+// Search functionality
+function buildSearchIndex() {
+  if (notes.length === 0) {
+    searchIndex = null;
+    return;
+  }
+
+  searchIndex = lunr(function () {
+    this.ref('id');
+    this.field('title', { boost: 10 });
+    this.field('content');
+
+    notes.forEach(note => {
+      this.add({
+        id: note.id,
+        title: note.title || 'Untitled',
+        content: note.content || ''
+      });
+    });
+  });
+}
+
+function handleSearch(e) {
+  searchQuery = e.target.value.trim();
+  renderSidebar();
+}
+
+function getFilteredNotes() {
+  if (!searchQuery || !searchIndex) {
+    return notes;
+  }
+
+  try {
+    const results = searchIndex.search(searchQuery + '*'); // Add wildcard for partial matches
+    const resultIds = new Set(results.map(r => r.ref));
+    return notes.filter(note => resultIds.has(note.id));
+  } catch (e) {
+    // If search fails (invalid query), return all notes
+    return notes;
   }
 }
 
@@ -798,12 +848,14 @@ function loadNotes() {
         notes = [];
       }
     }
+    buildSearchIndex();
     renderSidebar();
   }
 }
 
 function saveNotesData() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+  buildSearchIndex();
 }
 
 function confirmDeleteNote() {
