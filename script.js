@@ -17,12 +17,19 @@ let calendarEvents = [];
 let calendarToken = null;
 let isCalendarConnected = false;
 let calendarFetchInterval = null;
+let searchIndex = null;
 
 // DOM elements - Sidebar
 const sidebar = document.querySelector('.sidebar');
 const sidebarList = document.getElementById('sidebarList');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
+const searchNotesBtn = document.getElementById('searchNotesBtn');
+
+// DOM elements - Search Modal
+const searchModal = document.getElementById('searchModal');
+const searchModalInput = document.getElementById('searchModalInput');
+const searchResults = document.getElementById('searchResults');
 
 // DOM elements - Views
 const plannerView = document.getElementById('plannerView');
@@ -84,6 +91,24 @@ function setupEventListeners() {
   // Sidebar
   collapseSidebarBtn.addEventListener('click', toggleSidebar);
   addNoteBtn.addEventListener('click', () => createNewNote());
+  searchNotesBtn.addEventListener('click', openSearchModal);
+
+  // Search Modal
+  searchModalInput.addEventListener('input', handleSearchModalInput);
+  searchModal.querySelector('.search-modal-backdrop').addEventListener('click', closeSearchModal);
+
+  // Global keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // ESC to close search modal
+    if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+      closeSearchModal();
+    }
+    // Cmd/Ctrl+K to open search
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      openSearchModal();
+    }
+  });
 
   // Planner View Todos
   addPlannerTodoBtn.addEventListener('click', addTodo);
@@ -256,10 +281,97 @@ function renderSidebar() {
     emptyMsg.style.opacity = '0.6';
     emptyMsg.innerHTML = `
       <div class="sidebar-item-content">
-        <div class="sidebar-item-preview" style="text-align: center;">No notes yet. Click + to create one.</div>
+        <div class="sidebar-item-preview" style="text-align: center;">No notes yet. Click "Add Note" to create one.</div>
       </div>
     `;
     sidebarList.appendChild(emptyMsg);
+  }
+}
+
+// Search functionality
+function buildSearchIndex() {
+  if (notes.length === 0) {
+    searchIndex = null;
+    return;
+  }
+
+  searchIndex = lunr(function () {
+    this.ref('id');
+    this.field('title', { boost: 10 });
+    this.field('content');
+
+    notes.forEach(note => {
+      this.add({
+        id: note.id,
+        title: note.title || 'Untitled',
+        content: note.content || ''
+      });
+    });
+  });
+}
+
+// Search Modal functions
+function openSearchModal() {
+  searchModal.classList.remove('hidden');
+  searchModalInput.value = '';
+  searchModalInput.focus();
+  renderSearchResults('');
+}
+
+function closeSearchModal() {
+  searchModal.classList.add('hidden');
+  searchModalInput.value = '';
+  searchResults.innerHTML = '';
+}
+
+function handleSearchModalInput(e) {
+  const query = e.target.value.trim();
+  renderSearchResults(query);
+}
+
+function renderSearchResults(query) {
+  searchResults.innerHTML = '';
+
+  if (!query) {
+    searchResults.innerHTML = '<div class="search-results-empty">Start typing to search notes...</div>';
+    return;
+  }
+
+  if (!searchIndex || notes.length === 0) {
+    searchResults.innerHTML = '<div class="search-results-empty">No notes to search</div>';
+    return;
+  }
+
+  try {
+    const results = searchIndex.search(query + '*'); // Add wildcard for partial matches
+
+    if (results.length === 0) {
+      searchResults.innerHTML = `<div class="search-results-empty">No notes found for "${query}"</div>`;
+      return;
+    }
+
+    const resultIds = new Set(results.map(r => r.ref));
+    const filteredNotes = notes.filter(note => resultIds.has(note.id));
+
+    filteredNotes.forEach(note => {
+      const resultItem = document.createElement('div');
+      resultItem.className = 'search-result-item';
+
+      const previewText = note.content ? note.content.substring(0, 100) : '';
+      resultItem.innerHTML = `
+        <div class="search-result-title">${note.title || 'Untitled'}</div>
+        <div class="search-result-preview">${previewText}${note.content && note.content.length > 100 ? '...' : ''}</div>
+      `;
+
+      resultItem.addEventListener('click', () => {
+        showNoteView(note.id);
+        closeSearchModal();
+      });
+
+      searchResults.appendChild(resultItem);
+    });
+  } catch (e) {
+    searchResults.innerHTML = '<div class="search-results-empty">Invalid search query</div>';
   }
 }
 
@@ -798,12 +910,14 @@ function loadNotes() {
         notes = [];
       }
     }
+    buildSearchIndex();
     renderSidebar();
   }
 }
 
 function saveNotesData() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+  buildSearchIndex();
 }
 
 function confirmDeleteNote() {
