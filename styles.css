@@ -994,6 +994,7 @@ body.handwriting-font #todoInput {
 /* Note Editor View */
 #noteView {
   overflow-y: auto; /* Scrollbar at screen edge */
+  background-color: #1d1f21; /* Tomorrow Night theme background */
 }
 
 .note-editor {
@@ -1010,7 +1011,7 @@ body.handwriting-font #todoInput {
   margin: 0 auto 24px auto; /* Center and add bottom margin */
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: #c5c8c6; /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 40px;
   font-weight: bold;
@@ -1023,7 +1024,7 @@ body.handwriting-font #todoInput {
 }
 
 .note-title-input::placeholder {
-  color: #d0d0d0;
+  color: #555555; /* Darker placeholder for dark theme */
 }
 
 .editor-container {
@@ -1044,7 +1045,7 @@ body.handwriting-font #todoInput {
   padding: 0;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: #c5c8c6; /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   line-height: 1.8;
@@ -1054,7 +1055,13 @@ body.handwriting-font #todoInput {
 }
 
 .note-content-input::placeholder {
-  color: #d0d0d0;
+  color: #555555; /* Darker placeholder for dark theme */
+}
+
+/* Text selection color for dark theme */
+.note-content-input::selection,
+.note-title-input::selection {
+  background-color: #373b41; /* Tomorrow Night theme selection color */
 }
 
 .note-preview {
@@ -1063,12 +1070,16 @@ body.handwriting-font #todoInput {
   padding: 0;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: #c5c8c6; /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   line-height: 1.8;
   overflow-y: auto; /* Internal scrolling for preview */
   box-sizing: border-box;
+}
+
+.note-preview::selection {
+  background-color: #373b41; /* Tomorrow Night theme selection color */
 }
 
 .note-preview h1 {
@@ -1106,23 +1117,24 @@ body.handwriting-font #todoInput {
 }
 
 .note-preview a {
-  color: #4a4a4a;
+  color: #81a2be; /* Tomorrow Night theme blue for links */
   text-decoration: underline;
 }
 
 .note-preview a:hover {
-  color: #2a2a2a;
+  color: #b294bb; /* Tomorrow Night theme purple on hover */
 }
 
 .note-preview code {
-  background-color: #e8e8e8;
+  background-color: #282a2e; /* Darker background for inline code */
+  color: #f0c674; /* Tomorrow Night theme yellow for code */
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 14px;
 }
 
 .note-preview pre {
-  background-color: #e8e8e8;
+  background-color: #282a2e; /* Darker background for code blocks */
   padding: 12px;
   overflow-x: auto;
   margin-bottom: 12px;
@@ -1130,8 +1142,9 @@ body.handwriting-font #todoInput {
 }
 
 .note-preview pre code {
-  background-color: transparent;
-  padding: 0;
+  background-color: transparent; /* Remove double background */
+  padding: 0; /* Remove double padding */
+  color: #c5c8c6; /* Regular text color for code blocks */
 }
 
 .note-preview strong {
