@@ -1115,7 +1115,6 @@ body.handwriting-font #todoInput {
 
 .note-content-input {
   width: 100%;
-  flex: 1; /* Fill available space in editor-container */
   padding: 0;
   border: none;
   background-color: transparent;
@@ -1127,6 +1126,7 @@ body.handwriting-font #todoInput {
   outline: none;
   box-sizing: border-box;
   overflow: hidden; /* Prevent textarea scrollbar, let parent handle scrolling */
+  min-height: 400px; /* Minimum height */
 }
 
 .note-content-input::placeholder {
