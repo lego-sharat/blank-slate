@@ -1314,9 +1314,12 @@ function extractEventLinks(event) {
   const isTelOrPhoneLink = (url) => {
     if (!url) return false;
     const urlLower = url.toLowerCase();
-    // Filter out tel: links
+    // Filter out tel: protocol links
     if (urlLower.startsWith('tel:')) return true;
-    // Filter out URLs with /tel/ in path (e.g., meet.google.com/tel/...)
+    // Filter out Google Meet tel links (e.g., https://meet.google.com/tel/...)
+    if (urlLower.startsWith('https://meet.google.com/tel/') ||
+        urlLower.startsWith('http://meet.google.com/tel/')) return true;
+    // Filter out URLs with /tel/ in path
     if (urlLower.includes('/tel/')) return true;
     // Filter out phone dial-in patterns
     if (urlLower.includes('dial') && urlLower.includes('pin')) return true;
