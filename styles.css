@@ -1155,6 +1155,66 @@ body.handwriting-font #todoInput {
   font-style: italic;
 }
 
+/* Note View - Dark Theme for Header and Buttons */
+body:has(#noteView:not(.hidden)) .main-content {
+  background-color: #1d1f21; /* Tomorrow Night background for entire content area */
+}
+
+#noteView:not(.hidden) ~ .main-content .main-header,
+body:has(#noteView:not(.hidden)) .main-header {
+  background-color: #1d1f21; /* Tomorrow Night background */
+  border-bottom-color: #373b41; /* Darker border */
+}
+
+body:has(#noteView:not(.hidden)) .main-header .time {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#noteView:not(.hidden)) .main-header .date {
+  color: #969896; /* Muted text for date */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn {
+  background-color: #282a2e; /* Darker button background */
+  border-color: #373b41; /* Subtle border */
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn:hover {
+  background-color: #373b41; /* Lighter on hover */
+  border-color: #4e5559; /* Visible border on hover */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn.active {
+  background-color: #81a2be; /* Tomorrow Night blue for active state */
+  color: #1d1f21; /* Dark text on bright background */
+  border-color: #81a2be;
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn.active:hover {
+  background-color: #9db8cc; /* Lighter blue on hover */
+  border-color: #9db8cc;
+}
+
+/* Custom scrollbar for dark theme note view */
+#noteView::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+#noteView::-webkit-scrollbar-track {
+  background: #1d1f21; /* Tomorrow Night background */
+}
+
+#noteView::-webkit-scrollbar-thumb {
+  background: #373b41; /* Subtle gray for scrollbar */
+  border-radius: 6px;
+}
+
+#noteView::-webkit-scrollbar-thumb:hover {
+  background: #4e5559; /* Lighter on hover */
+}
+
 /* Welcome View */
 .welcome-message {
   text-align: center;
