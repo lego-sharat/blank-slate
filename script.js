@@ -1172,8 +1172,19 @@ async function connectGoogleCalendar() {
     authURL += `&redirect_uri=${encodeURIComponent(redirectURL)}`;
     authURL += `&scope=${encodeURIComponent(scopes.join(' '))}`;
 
-    console.log('Starting OAuth flow...');
+    console.log('=== Google Calendar OAuth Configuration ===');
+    console.log('Extension ID:', chrome.runtime.id);
     console.log('Redirect URI:', redirectURL);
+    console.log('Client ID:', clientID);
+    console.log('\n📋 COPY THIS REDIRECT URI TO GOOGLE CLOUD CONSOLE:');
+    console.log(redirectURL);
+    console.log('\n📖 Instructions:');
+    console.log('1. Go to: https://console.cloud.google.com/apis/credentials');
+    console.log('2. Click on your OAuth 2.0 Client ID');
+    console.log('3. Under "Authorized redirect URIs", click "ADD URI"');
+    console.log('4. Paste the redirect URI above');
+    console.log('5. Click Save');
+    console.log('==========================================\n');
 
     chrome.identity.launchWebAuthFlow(
       {
