@@ -8,7 +8,7 @@ const CALENDAR_EVENTS_KEY = 'minimal_newtab_calendar_events';
 // State
 let todos = [];
 let notes = [];
-let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
+let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono', googleClientId: '' };
 let currentNoteId = null;
 let currentView = 'planner'; // 'planner' or 'note'
 let isPreviewMode = false;
@@ -62,6 +62,7 @@ const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
 const saveSettings = document.getElementById('saveSettings');
 const fontStyle = document.getElementById('fontStyle');
+const googleClientId = document.getElementById('googleClientId');
 const notionApiKey = document.getElementById('notionApiKey');
 const notionDatabaseId = document.getElementById('notionDatabaseId');
 
@@ -1039,8 +1040,12 @@ function loadSettings() {
       if (!settings.fontStyle) {
         settings.fontStyle = 'mono';
       }
+      // Ensure googleClientId exists for backwards compatibility
+      if (!settings.googleClientId) {
+        settings.googleClientId = '';
+      }
     } catch (e) {
-      settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono' };
+      settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono', googleClientId: '' };
     }
   }
   applyFontStyle();
@@ -1056,6 +1061,7 @@ function applyFontStyle() {
 
 function openSettingsModal() {
   fontStyle.value = settings.fontStyle || 'mono';
+  googleClientId.value = settings.googleClientId || '';
   notionApiKey.value = settings.notionApiKey || '';
   notionDatabaseId.value = settings.notionDatabaseId || '';
   settingsModal.classList.add('show');
@@ -1067,6 +1073,7 @@ function closeSettingsModal() {
 
 function saveSettingsData() {
   settings.fontStyle = fontStyle.value;
+  settings.googleClientId = googleClientId.value.trim();
   settings.notionApiKey = notionApiKey.value.trim();
   settings.notionDatabaseId = notionDatabaseId.value.trim();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -1147,48 +1154,64 @@ function startCalendarBackgroundFetch() {
 }
 
 async function connectGoogleCalendar() {
+  // Check if client ID is configured
+  if (!settings.googleClientId || settings.googleClientId === 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
+    alert('Please configure your Google OAuth Client ID in Settings first.');
+    openSettingsModal();
+    return;
+  }
+
   try {
-    // Log extension details for OAuth setup debugging
-    const extensionId = chrome.runtime.id;
-    const redirectUri = chrome.identity.getRedirectURL();
-    console.log('Extension ID:', extensionId);
-    console.log('Redirect URI for Google Cloud Console:', redirectUri);
-    console.log('Add this redirect URI to your OAuth Client in Google Cloud Console');
+    // Use Chrome Identity API for OAuth
+    const redirectURL = chrome.identity.getRedirectURL();
+    const clientID = settings.googleClientId;
+    const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
+    let authURL = 'https://accounts.google.com/o/oauth2/auth';
+    authURL += `?client_id=${clientID}`;
+    authURL += `&response_type=token`;
+    authURL += `&redirect_uri=${encodeURIComponent(redirectURL)}`;
+    authURL += `&scope=${encodeURIComponent(scopes.join(' '))}`;
 
-    // Use Chrome Identity API with automatic token refresh
-    // This uses the oauth2 configuration from manifest.json
-    chrome.identity.getAuthToken({ interactive: true }, function(token) {
-      if (chrome.runtime.lastError) {
-        const errorMessage = chrome.runtime.lastError.message;
-        console.error('Auth error details:', chrome.runtime.lastError);
-        console.error('Error message:', errorMessage);
+    console.log('Starting OAuth flow...');
+    console.log('Redirect URI:', redirectURL);
 
-        // Provide more specific error messages
-        let userMessage = 'Failed to connect. ';
-        if (errorMessage.includes('OAuth2') || errorMessage.includes('invalid_client')) {
-          userMessage += 'Please check your OAuth Client ID configuration in Google Cloud Console.';
-        } else if (errorMessage.includes('redirect_uri')) {
-          userMessage += `Add redirect URI "${redirectUri}" to your OAuth Client in Google Cloud Console.`;
-        } else if (errorMessage.includes('access_denied')) {
-          userMessage += 'Access was denied. Please approve the calendar permissions.';
-        } else {
-          userMessage += 'Check the browser console for details.';
+    chrome.identity.launchWebAuthFlow(
+      {
+        url: authURL,
+        interactive: true
+      },
+      function(responseURL) {
+        if (chrome.runtime.lastError) {
+          console.error('Auth error:', chrome.runtime.lastError);
+          calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect. Please try again.</p>';
+          return;
         }
 
-        calendarStatus.innerHTML = `<p class="calendar-error">${userMessage}</p>`;
-        return;
-      }
+        console.log('OAuth response received');
 
-      if (token) {
-        // Chrome automatically manages token refresh
-        console.log('Successfully obtained access token');
-        saveCalendarToken({ access_token: token, timestamp: Date.now() });
-        calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
-        startCalendarBackgroundFetch();
-      } else {
-        calendarStatus.innerHTML = '<p class="calendar-error">Failed to get access token.</p>';
+        // Parse all parameters from URL hash
+        const urlParams = new URLSearchParams(responseURL.split('#')[1]);
+        const accessToken = urlParams.get('access_token');
+        const expiresIn = parseInt(urlParams.get('expires_in') || '3600', 10); // Default to 1 hour
+
+        if (accessToken) {
+          const expiresAt = Date.now() + (expiresIn * 1000);
+          console.log(`Token obtained, expires in ${expiresIn} seconds (at ${new Date(expiresAt).toLocaleString()})`);
+
+          saveCalendarToken({
+            access_token: accessToken,
+            timestamp: Date.now(),
+            expires_at: expiresAt,
+            expires_in: expiresIn
+          });
+          calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
+          startCalendarBackgroundFetch();
+        } else {
+          console.error('No access token in response');
+          calendarStatus.innerHTML = '<p class="calendar-error">Failed to get access token.</p>';
+        }
       }
-    });
+    );
   } catch (error) {
     console.error('Calendar connection error:', error);
     calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect to Google Calendar.</p>';
@@ -1202,6 +1225,32 @@ async function fetchCalendarEvents(showLoading = false) {
     return;
   }
 
+  // Check if token has expired
+  const now = Date.now();
+  if (calendarToken.expires_at && now >= calendarToken.expires_at) {
+    console.log('Token has expired, clearing connection');
+    localStorage.removeItem(CALENDAR_TOKEN_KEY);
+    localStorage.removeItem(CALENDAR_EVENTS_KEY);
+    calendarToken = null;
+    isCalendarConnected = false;
+    calendarEvents = [];
+    if (calendarFetchInterval) {
+      clearInterval(calendarFetchInterval);
+      calendarFetchInterval = null;
+    }
+    calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button><p class="calendar-error">Session expired. Please reconnect.</p>';
+    calendarStatus.classList.remove('hidden');
+    calendarEventsList.classList.add('hidden');
+    document.getElementById('connectCalendar').addEventListener('click', connectGoogleCalendar);
+    return;
+  }
+
+  // Check if token will expire soon (within 5 minutes) and log warning
+  const timeUntilExpiry = calendarToken.expires_at ? calendarToken.expires_at - now : Infinity;
+  if (timeUntilExpiry < 5 * 60 * 1000) {
+    console.warn(`Token will expire in ${Math.floor(timeUntilExpiry / 1000)} seconds. Consider re-authenticating.`);
+  }
+
   // Only show loading indicator if explicitly requested (e.g., manual refresh)
   if (showLoading) {
     calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
@@ -1210,28 +1259,10 @@ async function fetchCalendarEvents(showLoading = false) {
   }
 
   try {
-    // Get a fresh token (Chrome will automatically refresh if needed)
-    const freshToken = await new Promise((resolve, reject) => {
-      chrome.identity.getAuthToken({ interactive: false }, function(token) {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(token);
-        }
-      });
-    });
-
-    if (!freshToken) {
-      throw new Error('Failed to get valid token');
-    }
-
-    // Update stored token
-    saveCalendarToken({ access_token: freshToken, timestamp: Date.now() });
-
     // Get today's start and end times
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const currentDate = new Date();
+    const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0);
+    const endOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59);
 
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
@@ -1241,22 +1272,14 @@ async function fetchCalendarEvents(showLoading = false) {
       `orderBy=startTime`,
       {
         headers: {
-          'Authorization': `Bearer ${freshToken}`
+          'Authorization': `Bearer ${calendarToken.access_token}`
         }
       }
     );
 
     if (response.status === 401) {
       // Token expired or invalid, clear it
-      const tokenToRevoke = calendarToken.access_token;
-
-      // Remove cached token from Chrome's identity system
-      if (tokenToRevoke) {
-        chrome.identity.removeCachedAuthToken({ token: tokenToRevoke }, function() {
-          console.log('Token removed from cache');
-        });
-      }
-
+      console.log('Received 401 Unauthorized, token is invalid');
       localStorage.removeItem(CALENDAR_TOKEN_KEY);
       localStorage.removeItem(CALENDAR_EVENTS_KEY);
       calendarToken = null;
@@ -1266,7 +1289,7 @@ async function fetchCalendarEvents(showLoading = false) {
         clearInterval(calendarFetchInterval);
         calendarFetchInterval = null;
       }
-      calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button>';
+      calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button><p class="calendar-error">Session expired. Please reconnect.</p>';
       calendarStatus.classList.remove('hidden');
       calendarEventsList.classList.add('hidden');
       document.getElementById('connectCalendar').addEventListener('click', connectGoogleCalendar);
