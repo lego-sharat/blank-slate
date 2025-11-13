@@ -9,7 +9,7 @@ let todos = [];
 let notes = [];
 let settings = { notionApiKey: '', notionDatabaseId: '', fontStyle: 'mono', googleClientId: '' };
 let currentNoteId = null;
-let currentView = 'today'; // 'today', 'todo' or 'note'
+let currentView = 'planner'; // 'planner' or 'note'
 let isPreviewMode = false;
 let copyButtonTimeout = null;
 let calendarEvents = [];
@@ -23,26 +23,17 @@ const addNoteBtn = document.getElementById('addNoteBtn');
 const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
 
 // DOM elements - Views
-const todoView = document.getElementById('todoView');
-const todayView = document.getElementById('todayView');
+const plannerView = document.getElementById('plannerView');
 const noteView = document.getElementById('noteView');
 const welcomeView = document.getElementById('welcomeView');
 
-// DOM elements - Todos
-const todoInput = document.getElementById('todoInput');
-const addTodoBtn = document.getElementById('addTodoBtn');
-const todoList = document.getElementById('todoList');
-const todoInputActions = document.getElementById('todoInputActions');
-const saveAddTodoBtn = document.getElementById('saveAddTodoBtn');
-const cancelAddTodoBtn = document.getElementById('cancelAddTodoBtn');
-
-// DOM elements - Today View
-const todayTodoInput = document.getElementById('todayTodoInput');
-const addTodayTodoBtn = document.getElementById('addTodayTodoBtn');
-const todayTodoList = document.getElementById('todayTodoList');
-const todayTodoInputActions = document.getElementById('todayTodoInputActions');
-const saveAddTodayTodoBtn = document.getElementById('saveAddTodayTodoBtn');
-const cancelAddTodayTodoBtn = document.getElementById('cancelAddTodayTodoBtn');
+// DOM elements - Planner View
+const plannerTodoInput = document.getElementById('plannerTodoInput');
+const addPlannerTodoBtn = document.getElementById('addPlannerTodoBtn');
+const plannerTodoList = document.getElementById('plannerTodoList');
+const plannerTodoInputActions = document.getElementById('plannerTodoInputActions');
+const saveAddPlannerTodoBtn = document.getElementById('saveAddPlannerTodoBtn');
+const cancelAddPlannerTodoBtn = document.getElementById('cancelAddPlannerTodoBtn');
 const connectCalendar = document.getElementById('connectCalendar');
 const refreshCalendar = document.getElementById('refreshCalendar');
 const calendarStatus = document.getElementById('calendarStatus');
@@ -81,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateClock();
   setInterval(updateClock, 1000);
   renderSidebar();
-  showView('today');
+  showPlannerView();
 });
 
 // Setup event listeners
@@ -90,70 +81,36 @@ function setupEventListeners() {
   collapseSidebarBtn.addEventListener('click', toggleSidebar);
   addNoteBtn.addEventListener('click', () => createNewNote());
 
-  // Todos
-  addTodoBtn.addEventListener('click', addTodo);
-  saveAddTodoBtn.addEventListener('click', addTodo);
-  cancelAddTodoBtn.addEventListener('click', cancelAddTodo);
+  // Planner View Todos
+  addPlannerTodoBtn.addEventListener('click', addTodo);
+  saveAddPlannerTodoBtn.addEventListener('click', addTodo);
+  cancelAddPlannerTodoBtn.addEventListener('click', cancelAddPlannerTodo);
 
-  todoInput.addEventListener('focus', () => {
-    showAddTodoActions();
+  plannerTodoInput.addEventListener('focus', () => {
+    showAddPlannerTodoActions();
   });
 
-  todoInput.addEventListener('blur', () => {
-    // Delay hiding to allow button clicks to register
+  plannerTodoInput.addEventListener('blur', () => {
     setTimeout(() => {
-      hideAddTodoActions();
+      hideAddPlannerTodoActions();
     }, 150);
   });
 
-  todoInput.addEventListener('input', () => {
-    if (todoInput.value.trim() !== '') {
-      showAddTodoActions();
+  plannerTodoInput.addEventListener('input', () => {
+    if (plannerTodoInput.value.trim() !== '') {
+      showAddPlannerTodoActions();
     }
   });
 
-  todoInput.addEventListener('keypress', (e) => {
+  plannerTodoInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       addTodo();
     }
   });
 
-  todoInput.addEventListener('keydown', (e) => {
+  plannerTodoInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      cancelAddTodo();
-    }
-  });
-
-  // Today View Todos
-  addTodayTodoBtn.addEventListener('click', addTodo);
-  saveAddTodayTodoBtn.addEventListener('click', addTodo);
-  cancelAddTodayTodoBtn.addEventListener('click', cancelAddTodayTodo);
-
-  todayTodoInput.addEventListener('focus', () => {
-    showAddTodayTodoActions();
-  });
-
-  todayTodoInput.addEventListener('blur', () => {
-    setTimeout(() => {
-      hideAddTodayTodoActions();
-    }, 150);
-  });
-
-  todayTodoInput.addEventListener('input', () => {
-    if (todayTodoInput.value.trim() !== '') {
-      showAddTodayTodoActions();
-    }
-  });
-
-  todayTodoInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      addTodo();
-    }
-  });
-
-  todayTodoInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      cancelAddTodayTodo();
+      cancelAddPlannerTodo();
     }
   });
 
@@ -188,9 +145,9 @@ function setupEventListeners() {
     }
   });
 
-  // Enter key to focus on todo input when on todo page
+  // Enter key to focus on planner input when on planner page
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && currentView === 'todo') {
+    if (e.key === 'Enter' && currentView === 'planner') {
       const activeElement = document.activeElement;
       const isInputFocused = activeElement.tagName === 'INPUT' ||
                             activeElement.tagName === 'TEXTAREA' ||
@@ -198,7 +155,7 @@ function setupEventListeners() {
 
       if (!isInputFocused) {
         e.preventDefault();
-        todoInput.focus();
+        plannerTodoInput.focus();
       }
     }
   });
@@ -228,31 +185,19 @@ function toggleSidebar() {
 function renderSidebar() {
   sidebarList.innerHTML = '';
 
-  // Add TODAY item first (special item)
-  const todayItem = document.createElement('li');
-  todayItem.className = `sidebar-item${currentView === 'today' ? ' active' : ''}`;
-  const todayCount = todos.filter(t => !t.completed).length;
+  // Add PLANNER item first (special item)
+  const plannerItem = document.createElement('li');
+  plannerItem.className = `sidebar-item${currentView === 'planner' ? ' active' : ''}`;
+  const taskCount = todos.length;
   const eventCount = calendarEvents.length;
-  todayItem.innerHTML = `
+  plannerItem.innerHTML = `
     <div class="sidebar-item-content">
-      <div class="sidebar-item-title">TODAY</div>
-      <div class="sidebar-item-preview">${todayCount} task${todayCount !== 1 ? 's' : ''} • ${eventCount} event${eventCount !== 1 ? 's' : ''}</div>
+      <div class="sidebar-item-title">PLANNER</div>
+      <div class="sidebar-item-preview">${taskCount} task${taskCount !== 1 ? 's' : ''} • ${eventCount} event${eventCount !== 1 ? 's' : ''}</div>
     </div>
   `;
-  todayItem.addEventListener('click', () => showTodayView());
-  sidebarList.appendChild(todayItem);
-
-  // Add TODO item (special item)
-  const todoItem = document.createElement('li');
-  todoItem.className = `sidebar-item${currentView === 'todo' ? ' active' : ''}`;
-  todoItem.innerHTML = `
-    <div class="sidebar-item-content">
-      <div class="sidebar-item-title">TODO</div>
-      <div class="sidebar-item-preview">${todos.length} task${todos.length !== 1 ? 's' : ''}</div>
-    </div>
-  `;
-  todoItem.addEventListener('click', () => showTodoView());
-  sidebarList.appendChild(todoItem);
+  plannerItem.addEventListener('click', () => showPlannerView());
+  sidebarList.appendChild(plannerItem);
 
   // Add notes
   notes.forEach(note => {
@@ -298,27 +243,17 @@ function renderSidebar() {
 // View switching functions
 function showView(view) {
   // Hide all views and remove fade-in
-  todoView.classList.remove('fade-in');
-  todayView.classList.remove('fade-in');
+  plannerView.classList.remove('fade-in');
   noteView.classList.remove('fade-in');
   welcomeView.classList.remove('fade-in');
-  todoView.classList.add('hidden');
-  todayView.classList.add('hidden');
+  plannerView.classList.add('hidden');
   noteView.classList.add('hidden');
   welcomeView.classList.add('hidden');
 
   // Show selected view with fade animation
-  if (view === 'today') {
-    todayView.classList.remove('hidden');
-    setTimeout(() => todayView.classList.add('fade-in'), 10);
-    // Hide note action buttons
-    deleteNoteBtn.classList.add('hidden');
-    copyMarkdown.classList.add('hidden');
-    togglePreview.classList.add('hidden');
-    exportToNotion.classList.add('hidden');
-  } else if (view === 'todo') {
-    todoView.classList.remove('hidden');
-    setTimeout(() => todoView.classList.add('fade-in'), 10);
+  if (view === 'planner') {
+    plannerView.classList.remove('hidden');
+    setTimeout(() => plannerView.classList.add('fade-in'), 10);
     // Hide note action buttons
     deleteNoteBtn.classList.add('hidden');
     copyMarkdown.classList.add('hidden');
@@ -345,15 +280,10 @@ function showView(view) {
   renderSidebar();
 }
 
-function showTodoView() {
-  showView('todo');
+function showPlannerView() {
+  showView('planner');
   currentNoteId = null;
-}
-
-function showTodayView() {
-  showView('today');
-  currentNoteId = null;
-  renderTodayTodos();
+  renderPlannerTodos();
   if (isCalendarConnected) {
     fetchCalendarEvents();
   }
@@ -460,50 +390,30 @@ function loadTodos() {
   const stored = localStorage.getItem(TODOS_KEY);
   if (stored) {
     todos = JSON.parse(stored);
-    renderTodos();
   }
 }
 
 function saveTodos() {
   localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
-  renderSidebar(); // Update TODO count in sidebar
+  renderSidebar(); // Update task count in sidebar
 }
 
-function showAddTodoActions() {
-  todoInputActions.classList.remove('hidden');
+function showAddPlannerTodoActions() {
+  plannerTodoInputActions.classList.remove('hidden');
 }
 
-function hideAddTodoActions() {
-  todoInputActions.classList.add('hidden');
+function hideAddPlannerTodoActions() {
+  plannerTodoInputActions.classList.add('hidden');
 }
 
-function cancelAddTodo() {
-  todoInput.value = '';
-  hideAddTodoActions();
-  todoInput.blur();
-}
-
-function showAddTodayTodoActions() {
-  todayTodoInputActions.classList.remove('hidden');
-}
-
-function hideAddTodayTodoActions() {
-  todayTodoInputActions.classList.add('hidden');
-}
-
-function cancelAddTodayTodo() {
-  todayTodoInput.value = '';
-  hideAddTodayTodoActions();
-  todayTodoInput.blur();
+function cancelAddPlannerTodo() {
+  plannerTodoInput.value = '';
+  hideAddPlannerTodoActions();
+  plannerTodoInput.blur();
 }
 
 function addTodo() {
-  // Check which input is being used
-  const isFromTodayView = document.activeElement === todayTodoInput ||
-                           document.activeElement === saveAddTodayTodoBtn ||
-                           (currentView === 'today' && todayTodoInput.value.trim() !== '');
-
-  const text = isFromTodayView ? todayTodoInput.value.trim() : todoInput.value.trim();
+  const text = plannerTodoInput.value.trim();
   if (text === '') return;
 
   const todo = {
@@ -514,18 +424,10 @@ function addTodo() {
 
   todos.push(todo);
   saveTodos();
-  renderTodos();
-
-  if (isFromTodayView) {
-    renderTodayTodos();
-    todayTodoInput.value = '';
-    hideAddTodayTodoActions();
-    todayTodoInput.focus();
-  } else {
-    todoInput.value = '';
-    hideAddTodoActions();
-    todoInput.focus();
-  }
+  renderPlannerTodos();
+  plannerTodoInput.value = '';
+  hideAddPlannerTodoActions();
+  plannerTodoInput.focus();
 }
 
 function toggleTodo(id) {
@@ -533,20 +435,14 @@ function toggleTodo(id) {
   if (todo) {
     todo.completed = !todo.completed;
     saveTodos();
-    renderTodos();
-    if (currentView === 'today') {
-      renderTodayTodos();
-    }
+    renderPlannerTodos();
   }
 }
 
 function deleteTodo(id) {
   todos = todos.filter(t => t.id !== id);
   saveTodos();
-  renderTodos();
-  if (currentView === 'today') {
-    renderTodayTodos();
-  }
+  renderPlannerTodos();
 }
 
 function editTodo(id, newText) {
@@ -554,15 +450,13 @@ function editTodo(id, newText) {
   if (todo) {
     todo.text = newText;
     saveTodos();
-    renderTodos();
-    if (currentView === 'today') {
-      renderTodayTodos();
-    }
+    renderPlannerTodos();
   }
 }
 
-function renderTodos() {
-  todoList.innerHTML = '';
+// Render planner todos (all tasks)
+function renderPlannerTodos() {
+  plannerTodoList.innerHTML = '';
 
   if (todos.length === 0) {
     const emptyMsg = document.createElement('p');
@@ -571,7 +465,7 @@ function renderTodos() {
     emptyMsg.style.textAlign = 'center';
     emptyMsg.style.padding = '40px 20px';
     emptyMsg.textContent = 'No tasks yet. Add one above!';
-    todoList.appendChild(emptyMsg);
+    plannerTodoList.appendChild(emptyMsg);
     return;
   }
 
@@ -611,7 +505,7 @@ function renderTodos() {
     `;
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      enterEditMode(li, todo);
+      enterEditModePlanner(li, todo);
     });
 
     const deleteBtn = document.createElement('button');
@@ -630,11 +524,11 @@ function renderTodos() {
     li.appendChild(text);
     li.appendChild(editBtn);
     li.appendChild(deleteBtn);
-    todoList.appendChild(li);
+    plannerTodoList.appendChild(li);
   });
 }
 
-function enterEditMode(li, todo) {
+function enterEditModePlanner(li, todo) {
   // Add editing class for styling
   li.classList.add('editing');
 
@@ -662,7 +556,7 @@ function enterEditMode(li, todo) {
   cancelBtn.className = 'todo-edit-cancel';
   cancelBtn.textContent = 'Cancel';
   cancelBtn.addEventListener('click', () => {
-    renderTodos();
+    renderPlannerTodos();
   });
 
   // Create Save button
@@ -674,7 +568,7 @@ function enterEditMode(li, todo) {
     if (newText !== '' && newText !== todo.text) {
       editTodo(todo.id, newText);
     } else {
-      renderTodos();
+      renderPlannerTodos();
     }
   });
 
@@ -700,7 +594,7 @@ function enterEditMode(li, todo) {
       if (newText !== '' && newText !== todo.text) {
         editTodo(todo.id, newText);
       } else {
-        renderTodos();
+        renderPlannerTodos();
       }
     }
   });
@@ -708,143 +602,7 @@ function enterEditMode(li, todo) {
   // Cancel on Escape key
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      renderTodos();
-    }
-  });
-}
-
-// Render today's todos (incomplete tasks only)
-function renderTodayTodos() {
-  todayTodoList.innerHTML = '';
-
-  const incompleteTodos = todos.filter(t => !t.completed);
-
-  if (incompleteTodos.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.style.color = '#909090';
-    emptyMsg.style.fontSize = '14px';
-    emptyMsg.style.textAlign = 'center';
-    emptyMsg.style.padding = '40px 20px';
-    emptyMsg.textContent = 'No tasks for today. Enjoy your day!';
-    todayTodoList.appendChild(emptyMsg);
-    return;
-  }
-
-  incompleteTodos.forEach(todo => {
-    const li = document.createElement('li');
-    li.className = 'todo-item';
-    li.draggable = false;
-    li.dataset.id = todo.id;
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'todo-checkbox';
-    checkbox.checked = false;
-    checkbox.addEventListener('change', () => toggleTodo(todo.id));
-
-    const text = document.createElement('span');
-    text.className = 'todo-text';
-    text.textContent = todo.text;
-
-    // Create edit button
-    const editBtn = document.createElement('button');
-    editBtn.className = 'todo-edit-btn';
-    editBtn.title = 'Edit';
-    editBtn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
-    `;
-    editBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      enterEditModeToday(li, todo);
-    });
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'todo-delete';
-    deleteBtn.title = 'Delete';
-    deleteBtn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
-        <line x1="10" y1="11" x2="10" y2="17"/>
-        <line x1="14" y1="11" x2="14" y2="17"/>
-      </svg>
-    `;
-    deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
-
-    li.appendChild(checkbox);
-    li.appendChild(text);
-    li.appendChild(editBtn);
-    li.appendChild(deleteBtn);
-    todayTodoList.appendChild(li);
-  });
-}
-
-function enterEditModeToday(li, todo) {
-  li.classList.add('editing');
-
-  const text = li.querySelector('.todo-text');
-  const editBtn = li.querySelector('.todo-edit-btn');
-  const deleteBtn = li.querySelector('.todo-delete');
-
-  text.style.display = 'none';
-  editBtn.style.display = 'none';
-  deleteBtn.style.display = 'none';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'todo-edit-input';
-  input.value = todo.text;
-
-  const actionsDiv = document.createElement('div');
-  actionsDiv.className = 'todo-edit-actions';
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'todo-edit-cancel';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => {
-    renderTodayTodos();
-  });
-
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'todo-edit-save';
-  saveBtn.textContent = 'Save';
-  saveBtn.addEventListener('click', () => {
-    const newText = input.value.trim();
-    if (newText !== '' && newText !== todo.text) {
-      editTodo(todo.id, newText);
-    } else {
-      renderTodayTodos();
-    }
-  });
-
-  actionsDiv.appendChild(cancelBtn);
-  actionsDiv.appendChild(saveBtn);
-
-  const checkbox = li.querySelector('.todo-checkbox');
-  checkbox.after(input);
-  input.after(actionsDiv);
-
-  setTimeout(() => {
-    input.focus();
-    input.select();
-  }, 50);
-
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      const newText = input.value.trim();
-      if (newText !== '' && newText !== todo.text) {
-        editTodo(todo.id, newText);
-      } else {
-        renderTodayTodos();
-      }
-    }
-  });
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      renderTodayTodos();
+      renderPlannerTodos();
     }
   });
 }
@@ -899,7 +657,7 @@ function handleTodoDrop(e) {
       todos.splice(targetIndex, 0, draggedItem);
 
       saveTodos();
-      renderTodos();
+      renderPlannerTodos();
     }
   }
 
@@ -1031,8 +789,8 @@ function confirmDeleteNote() {
     saveNotesData();
     renderSidebar();
 
-    // Show TODO view after deleting
-    showTodoView();
+    // Show Planner view after deleting
+    showPlannerView();
   }
 }
 
@@ -1210,7 +968,7 @@ function loadCalendarToken() {
     try {
       calendarToken = JSON.parse(stored);
       isCalendarConnected = true;
-      if (currentView === 'today') {
+      if (currentView === 'planner') {
         fetchCalendarEvents();
       }
     } catch (e) {
