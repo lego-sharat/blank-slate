@@ -3,6 +3,7 @@ const TODOS_KEY = 'minimal_newtab_todos';
 const NOTES_KEY = 'minimal_newtab_notes';
 const SETTINGS_KEY = 'minimal_newtab_settings';
 const CALENDAR_TOKEN_KEY = 'minimal_newtab_calendar_token';
+const CALENDAR_EVENTS_KEY = 'minimal_newtab_calendar_events';
 
 // State
 let todos = [];
@@ -15,6 +16,7 @@ let copyButtonTimeout = null;
 let calendarEvents = [];
 let calendarToken = null;
 let isCalendarConnected = false;
+let calendarFetchInterval = null;
 
 // DOM elements - Sidebar
 const sidebar = document.querySelector('.sidebar');
@@ -68,11 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNotes();
   loadSettings();
   loadCalendarToken();
+  loadCachedCalendarEvents();
   setupEventListeners();
   updateClock();
   setInterval(updateClock, 1000);
   renderSidebar();
   showPlannerView();
+  startCalendarBackgroundFetch();
 });
 
 // Setup event listeners
@@ -116,7 +120,7 @@ function setupEventListeners() {
 
   // Calendar
   connectCalendar.addEventListener('click', connectGoogleCalendar);
-  refreshCalendar.addEventListener('click', fetchCalendarEvents);
+  refreshCalendar.addEventListener('click', () => fetchCalendarEvents(true));
 
   // Notes
   deleteNoteBtn.addEventListener('click', confirmDeleteNote);
@@ -284,8 +288,10 @@ function showPlannerView() {
   showView('planner');
   currentNoteId = null;
   renderPlannerTodos();
-  if (isCalendarConnected) {
-    fetchCalendarEvents();
+  // No need to fetch here - background fetch handles it
+  // Just render what we have (either from cache or from background fetch)
+  if (isCalendarConnected && calendarEvents.length > 0) {
+    renderCalendarEvents();
   }
 }
 
@@ -968,9 +974,7 @@ function loadCalendarToken() {
     try {
       calendarToken = JSON.parse(stored);
       isCalendarConnected = true;
-      if (currentView === 'planner') {
-        fetchCalendarEvents();
-      }
+      // Don't fetch here - background fetch will handle it
     } catch (e) {
       calendarToken = null;
       isCalendarConnected = false;
@@ -982,6 +986,56 @@ function saveCalendarToken(token) {
   calendarToken = token;
   isCalendarConnected = true;
   localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(token));
+}
+
+function loadCachedCalendarEvents() {
+  const stored = localStorage.getItem(CALENDAR_EVENTS_KEY);
+  if (stored) {
+    try {
+      const cached = JSON.parse(stored);
+      if (cached && cached.events && cached.timestamp) {
+        // Only use cached events if they're less than 5 minutes old
+        const age = Date.now() - cached.timestamp;
+        if (age < 5 * 60 * 1000) {
+          calendarEvents = cached.events;
+          renderCalendarEvents();
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load cached calendar events:', e);
+    }
+  }
+}
+
+function saveCachedCalendarEvents(events) {
+  try {
+    const cache = {
+      events: events,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(CALENDAR_EVENTS_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error('Failed to cache calendar events:', e);
+  }
+}
+
+function startCalendarBackgroundFetch() {
+  // Clear any existing interval
+  if (calendarFetchInterval) {
+    clearInterval(calendarFetchInterval);
+  }
+
+  // Fetch immediately if connected
+  if (isCalendarConnected) {
+    fetchCalendarEvents();
+  }
+
+  // Set up periodic fetch every minute
+  calendarFetchInterval = setInterval(() => {
+    if (isCalendarConnected) {
+      fetchCalendarEvents();
+    }
+  }, 60 * 1000); // 60 seconds
 }
 
 async function connectGoogleCalendar() {
@@ -1020,7 +1074,7 @@ async function connectGoogleCalendar() {
         if (token) {
           saveCalendarToken({ access_token: token, timestamp: Date.now() });
           calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
-          fetchCalendarEvents();
+          startCalendarBackgroundFetch();
         } else {
           calendarStatus.innerHTML = '<p class="calendar-error">Failed to get access token.</p>';
         }
@@ -1032,16 +1086,19 @@ async function connectGoogleCalendar() {
   }
 }
 
-async function fetchCalendarEvents() {
+async function fetchCalendarEvents(showLoading = false) {
   if (!isCalendarConnected || !calendarToken) {
     calendarStatus.classList.remove('hidden');
     calendarEventsList.classList.add('hidden');
     return;
   }
 
-  calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
-  calendarStatus.classList.remove('hidden');
-  calendarEventsList.classList.add('hidden');
+  // Only show loading indicator if explicitly requested (e.g., manual refresh)
+  if (showLoading) {
+    calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
+    calendarStatus.classList.remove('hidden');
+    calendarEventsList.classList.add('hidden');
+  }
 
   try {
     // Get today's start and end times
@@ -1065,9 +1122,17 @@ async function fetchCalendarEvents() {
     if (response.status === 401) {
       // Token expired, clear it
       localStorage.removeItem(CALENDAR_TOKEN_KEY);
+      localStorage.removeItem(CALENDAR_EVENTS_KEY);
       calendarToken = null;
       isCalendarConnected = false;
+      calendarEvents = [];
+      if (calendarFetchInterval) {
+        clearInterval(calendarFetchInterval);
+        calendarFetchInterval = null;
+      }
       calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button>';
+      calendarStatus.classList.remove('hidden');
+      calendarEventsList.classList.add('hidden');
       document.getElementById('connectCalendar').addEventListener('click', connectGoogleCalendar);
       return;
     }
@@ -1077,12 +1142,34 @@ async function fetchCalendarEvents() {
     }
 
     const data = await response.json();
-    calendarEvents = data.items || [];
+    const allEvents = data.items || [];
+
+    // Filter to show only ongoing or upcoming events
+    const currentTime = new Date();
+    calendarEvents = allEvents.filter(event => {
+      if (event.start.dateTime) {
+        const endTime = new Date(event.end.dateTime);
+        // Include event if it hasn't ended yet
+        return endTime >= currentTime;
+      } else {
+        // All-day events are always included
+        return true;
+      }
+    });
+
+    // Save to cache
+    saveCachedCalendarEvents(calendarEvents);
+
     renderCalendarEvents();
   } catch (error) {
     console.error('Error fetching calendar events:', error);
-    calendarStatus.innerHTML = '<p class="calendar-error">Failed to load events. <button id="retryCalendar" class="btn-secondary" style="margin-top: 12px;">Retry</button></p>';
-    document.getElementById('retryCalendar')?.addEventListener('click', fetchCalendarEvents);
+    // Only show error if we don't have cached events to display
+    if (calendarEvents.length === 0) {
+      calendarStatus.innerHTML = '<p class="calendar-error">Failed to load events. <button id="retryCalendar" class="btn-secondary" style="margin-top: 12px;">Retry</button></p>';
+      calendarStatus.classList.remove('hidden');
+      calendarEventsList.classList.add('hidden');
+      document.getElementById('retryCalendar')?.addEventListener('click', () => fetchCalendarEvents(true));
+    }
   }
 }
 
@@ -1094,7 +1181,7 @@ function renderCalendarEvents() {
   if (calendarEvents.length === 0) {
     const emptyMsg = document.createElement('p');
     emptyMsg.className = 'calendar-empty';
-    emptyMsg.textContent = 'No events scheduled for today';
+    emptyMsg.textContent = 'No upcoming events for today';
     calendarEventsList.appendChild(emptyMsg);
     renderSidebar();
     return;
@@ -1124,7 +1211,44 @@ function renderCalendarEvents() {
     li.appendChild(timeDiv);
     li.appendChild(titleDiv);
 
-    if (event.location) {
+    // Extract links from event
+    const links = extractEventLinks(event);
+    if (links.length > 0) {
+      const linksDiv = document.createElement('div');
+      linksDiv.className = 'calendar-event-links';
+
+      links.forEach(link => {
+        const linkElement = document.createElement('a');
+        linkElement.href = link.url;
+        linkElement.target = '_blank';
+        linkElement.rel = 'noopener noreferrer';
+        linkElement.className = 'calendar-event-link';
+        linkElement.title = link.title;
+
+        if (link.isVideoCall) {
+          // Video call icon
+          linkElement.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          `;
+        } else {
+          // Generic link icon
+          linkElement.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          `;
+        }
+
+        linksDiv.appendChild(linkElement);
+      });
+
+      li.appendChild(linksDiv);
+    } else if (event.location && !isUrl(event.location)) {
+      // Only show location text if it's not a URL
       const locationDiv = document.createElement('div');
       locationDiv.className = 'calendar-event-location';
       locationDiv.textContent = event.location;
@@ -1135,6 +1259,83 @@ function renderCalendarEvents() {
   });
 
   renderSidebar();
+}
+
+function extractEventLinks(event) {
+  const links = [];
+  const seenUrls = new Set();
+
+  // Helper to add link if not already seen
+  const addLink = (url, title, isVideoCall = false) => {
+    if (url && !seenUrls.has(url)) {
+      seenUrls.add(url);
+      links.push({ url, title, isVideoCall });
+    }
+  };
+
+  // Check for Google Meet link (hangoutLink)
+  if (event.hangoutLink) {
+    addLink(event.hangoutLink, 'Join Google Meet', true);
+  }
+
+  // Check for conference data (Zoom, Teams, etc.)
+  if (event.conferenceData?.entryPoints) {
+    event.conferenceData.entryPoints.forEach(entry => {
+      if (entry.uri) {
+        const isVideoCall = isVideoCallUrl(entry.uri);
+        addLink(entry.uri, entry.label || 'Join meeting', isVideoCall);
+      }
+    });
+  }
+
+  // Check location field for URLs
+  if (event.location && isUrl(event.location)) {
+    const isVideoCall = isVideoCallUrl(event.location);
+    addLink(event.location, 'Location', isVideoCall);
+  }
+
+  // Check description for URLs
+  if (event.description) {
+    const urlRegex = /https?:\/\/[^\s<>"]+/g;
+    const matches = event.description.match(urlRegex);
+    if (matches) {
+      matches.forEach(url => {
+        const isVideoCall = isVideoCallUrl(url);
+        addLink(url, 'Link', isVideoCall);
+      });
+    }
+  }
+
+  return links;
+}
+
+function isUrl(str) {
+  try {
+    new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isVideoCallUrl(url) {
+  const videoCallDomains = [
+    'meet.google.com',
+    'zoom.us',
+    'teams.microsoft.com',
+    'teams.live.com',
+    'webex.com',
+    'whereby.com',
+    'gotomeeting.com',
+    'bluejeans.com'
+  ];
+
+  try {
+    const urlObj = new URL(url);
+    return videoCallDomains.some(domain => urlObj.hostname.includes(domain));
+  } catch {
+    return false;
+  }
 }
 
 // Clock functions

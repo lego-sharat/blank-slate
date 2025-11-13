@@ -734,6 +734,37 @@ body.handwriting-font #todoInput {
   font-style: italic;
 }
 
+.calendar-event-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.calendar-event-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #fafafa;
+  color: #4a4a4a;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.calendar-event-link:hover {
+  background-color: #e8e8e8;
+  border-color: #b0b0b0;
+  color: #2a2a2a;
+}
+
+.calendar-event-link svg {
+  display: block;
+}
+
 .calendar-loading {
   text-align: center;
   padding: 40px 20px;
