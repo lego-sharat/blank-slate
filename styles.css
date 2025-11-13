@@ -4,10 +4,66 @@
   box-sizing: border-box;
 }
 
+/* CSS Variables - Tomorrow Night Theme Colors */
+:root {
+  /* Background colors */
+  --bg-primary: #1d1f21;        /* Main dark background */
+  --bg-secondary: #282a2e;      /* Secondary/elevated background */
+  --bg-tertiary: #373b41;       /* Tertiary background */
+  --bg-elevated: #4e5559;       /* Elevated elements */
+  --bg-light: #f5f5f5;          /* Light background (default view) */
+  --bg-light-secondary: #fafafa; /* Light secondary background */
+  --bg-light-tertiary: #e8e8e8; /* Light tertiary background */
+  --bg-light-elevated: #d0d0d0; /* Light elevated elements */
+  --bg-white: #fff;             /* Pure white */
+
+  /* Text colors */
+  --text-primary: #c5c8c6;      /* Primary text (dark theme) */
+  --text-secondary: #969896;    /* Secondary/muted text (dark theme) */
+  --text-tertiary: #555555;     /* Placeholder text (dark theme) */
+  --text-inverted: #1d1f21;     /* Dark text on bright background */
+  --text-light-primary: #2a2a2a; /* Primary text (light theme) */
+  --text-light-secondary: #4a4a4a; /* Secondary text (light theme) */
+  --text-light-tertiary: #6a6a6a; /* Tertiary text (light theme) */
+  --text-light-muted: #909090;  /* Muted text (light theme) */
+
+  /* Border colors */
+  --border-subtle: #373b41;     /* Subtle borders (dark theme) */
+  --border-default: #4e5559;    /* Default borders (dark theme) */
+  --border-emphasis: #81a2be;   /* Emphasized borders */
+  --border-light-subtle: #e8e8e8; /* Subtle borders (light theme) */
+  --border-light-default: #c0c0c0; /* Default borders (light theme) */
+  --border-light-emphasis: #808080; /* Emphasized borders (light theme) */
+
+  /* Accent colors */
+  --accent-primary: #81a2be;    /* Tomorrow Night blue */
+  --accent-primary-hover: #9db8cc; /* Lighter blue on hover */
+  --accent-secondary: #b294bb;  /* Tomorrow Night purple */
+  --accent-yellow: #f0c674;     /* Tomorrow Night yellow (for code) */
+  --accent-red: #cc6666;        /* Tomorrow Night red (for danger) */
+  --accent-green: #b5bd68;      /* Tomorrow Night green (for success) */
+  --accent-danger: #c04040;     /* Danger/error red */
+
+  /* Interactive states */
+  --hover-bg: #282a2e;          /* Hover background (dark theme) */
+  --hover-bg-light: #f0f0f0;    /* Hover background (light theme) */
+  --hover-bg-light-alt: #d8d8d8; /* Alternative light hover background */
+  --active-bg: #373b41;         /* Active background (dark theme) */
+  --focus-outline: #81a2be;     /* Focus outline color */
+  --drag-over-bg: #c8c8c8;      /* Drag over background (light theme) */
+  --editing-bg: #f9f9f9;        /* Editing state background (light theme) */
+  --border-hover-alt: #b0b0b0;  /* Alternative border on hover */
+
+  /* Scrollbar colors */
+  --scrollbar-track: #1d1f21;   /* Scrollbar track (dark theme) */
+  --scrollbar-thumb: #373b41;   /* Scrollbar thumb (dark theme) */
+  --scrollbar-thumb-hover: #4e5559; /* Scrollbar thumb hover (dark theme) */
+}
+
 body {
   font-family: 'Courier New', Courier, monospace;
-  background-color: #f5f5f5;
-  color: #2a2a2a;
+  background-color: var(--bg-light);
+  color: var(--text-light-primary);
   overflow: hidden;
   height: 100vh;
 }
@@ -38,8 +94,8 @@ body.handwriting-font #todoInput {
 /* Sidebar - Left Column */
 .sidebar {
   width: 280px;
-  background-color: #e8e8e8;
-  border-right: 1px solid #c0c0c0;
+  background-color: var(--bg-light-tertiary);
+  border-right: 1px solid var(--border-light-default);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -71,8 +127,8 @@ body.handwriting-font #todoInput {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
+  border-bottom: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
 }
 
 .sidebar-header h1 {
@@ -80,7 +136,7 @@ body.handwriting-font #todoInput {
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 3px;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   border: none;
   padding: 0;
   margin: 0;
@@ -92,9 +148,9 @@ body.handwriting-font #todoInput {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid #c0c0c0;
-  background-color: #fff;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-white);
+  color: var(--text-light-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -104,8 +160,8 @@ body.handwriting-font #todoInput {
 }
 
 .collapse-sidebar-btn:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .collapse-sidebar-btn svg {
@@ -119,8 +175,8 @@ body.handwriting-font #todoInput {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border-bottom: 1px solid #c0c0c0;
-  background-color: #e8e8e8;
+  border-bottom: 1px solid var(--border-light-default);
+  background-color: var(--bg-light-tertiary);
 }
 
 .sidebar-action-btn {
@@ -128,9 +184,9 @@ body.handwriting-font #todoInput {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
-  color: #2a2a2a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
+  color: var(--text-light-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
   font-weight: normal;
@@ -140,9 +196,9 @@ body.handwriting-font #todoInput {
 }
 
 .sidebar-action-btn:hover {
-  background-color: #2a2a2a;
-  color: #fff;
-  border-color: #2a2a2a;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
+  border-color: var(--text-light-primary);
 }
 
 .sidebar-action-btn svg {
@@ -181,7 +237,7 @@ body.handwriting-font #todoInput {
   position: relative;
   width: 90%;
   max-width: 600px;
-  background-color: #fff;
+  background-color: var(--bg-white);
   border-radius: 12px;
   box-shadow: 0 16px 70px rgba(0, 0, 0, 0.4);
   overflow: hidden;
@@ -204,13 +260,13 @@ body.handwriting-font #todoInput {
   display: flex;
   align-items: center;
   padding: 20px 20px 16px 20px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border-light-subtle);
 }
 
 .search-modal-icon {
   position: absolute;
   left: 24px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   pointer-events: none;
 }
 
@@ -219,14 +275,14 @@ body.handwriting-font #todoInput {
   padding: 8px 12px 8px 36px;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   outline: none;
 }
 
 .search-modal-input::placeholder {
-  color: #909090;
+  color: var(--text-light-muted);
 }
 
 .search-results {
@@ -236,14 +292,14 @@ body.handwriting-font #todoInput {
 
 .search-result-item {
   padding: 12px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--hover-bg-light);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .search-result-item:hover,
 .search-result-item.selected {
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
 }
 
 .search-result-item:last-child {
@@ -254,21 +310,21 @@ body.handwriting-font #todoInput {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   font-weight: bold;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   margin-bottom: 4px;
 }
 
 .search-result-preview {
   font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   line-height: 1.4;
 }
 
 .search-results-empty {
   padding: 40px 20px;
   text-align: center;
-  color: #909090;
+  color: var(--text-light-muted);
   font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
 }
@@ -281,8 +337,8 @@ body.handwriting-font #todoInput {
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
+  border-top: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -290,7 +346,7 @@ body.handwriting-font #todoInput {
 
 .sidebar-item {
   padding: 12px 16px;
-  border-bottom: 1px solid #d0d0d0;
+  border-bottom: 1px solid var(--bg-light-elevated);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -302,22 +358,22 @@ body.handwriting-font #todoInput {
 }
 
 .sidebar-item:hover {
-  background-color: #d8d8d8;
+  background-color: var(--hover-bg-light-alt);
 }
 
 .sidebar-item.active {
-  background-color: #c0c0c0;
-  border-left: 3px solid #2a2a2a;
+  background-color: var(--border-light-default);
+  border-left: 3px solid var(--text-light-primary);
 }
 
 .sidebar-item.dragging {
   opacity: 0.4;
-  background-color: #d0d0d0;
+  background-color: var(--bg-light-elevated);
 }
 
 .sidebar-item.drag-over {
-  border-top: 2px solid #2a2a2a;
-  background-color: #c8c8c8;
+  border-top: 2px solid var(--text-light-primary);
+  background-color: var(--drag-over-bg);
 }
 
 .sidebar-item-content {
@@ -328,7 +384,7 @@ body.handwriting-font #todoInput {
 .sidebar-item-title {
   font-size: 13px;
   font-weight: bold;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -336,7 +392,7 @@ body.handwriting-font #todoInput {
 
 .sidebar-item-preview {
   font-size: 11px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -349,7 +405,7 @@ body.handwriting-font #todoInput {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
 }
 
 .main-header {
@@ -357,8 +413,8 @@ body.handwriting-font #todoInput {
   align-items: center;
   justify-content: space-between;
   padding: 16px 40px;
-  border-bottom: 1px solid #d0d0d0;
-  background-color: #fff;
+  border-bottom: 1px solid var(--bg-light-elevated);
+  background-color: var(--bg-white);
 }
 
 /* Clock in Main Header */
@@ -371,7 +427,7 @@ body.handwriting-font #todoInput {
 .time {
   font-size: 32px;
   font-weight: 300;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
 }
@@ -379,7 +435,7 @@ body.handwriting-font #todoInput {
 .date {
   font-size: 12px;
   font-weight: normal;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -397,9 +453,9 @@ body.handwriting-font #todoInput {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
+  color: var(--text-light-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -409,19 +465,19 @@ body.handwriting-font #todoInput {
 }
 
 .icon-btn:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .icon-btn.active {
-  background-color: #2a2a2a;
-  color: #fff;
-  border-color: #2a2a2a;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
+  border-color: var(--text-light-primary);
 }
 
 .icon-btn.active:hover {
-  background-color: #4a4a4a;
-  border-color: #4a4a4a;
+  background-color: var(--text-light-secondary);
+  border-color: var(--text-light-secondary);
 }
 
 .icon-btn svg {
@@ -434,9 +490,9 @@ body.handwriting-font #todoInput {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
+  color: var(--text-light-secondary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
   cursor: pointer;
@@ -445,8 +501,8 @@ body.handwriting-font #todoInput {
 }
 
 .settings-btn:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .settings-btn svg {
@@ -476,8 +532,8 @@ body.handwriting-font #todoInput {
   align-items: center;
   justify-content: space-between;
   padding: 24px 40px;
-  border-bottom: 1px solid #d0d0d0;
-  background-color: #fff;
+  border-bottom: 1px solid var(--bg-light-elevated);
+  background-color: var(--bg-white);
 }
 
 .view-header h2 {
@@ -486,7 +542,7 @@ body.handwriting-font #todoInput {
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0;
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
 }
 
 .view-actions {
@@ -519,7 +575,7 @@ body.handwriting-font #todoInput {
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0 0 24px 0;
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
 }
 
 .todo-input-container {
@@ -528,12 +584,12 @@ body.handwriting-font #todoInput {
   gap: 12px;
   padding: 14px 12px;
   margin: 0 -12px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border-light-subtle);
   transition: all 0.2s ease;
 }
 
 .todo-input-container:hover {
-  background-color: #fafafa;
+  background-color: var(--bg-light-secondary);
 }
 
 .todo-input-actions {
@@ -550,7 +606,7 @@ body.handwriting-font #todoInput {
 .todo-input-save,
 .todo-input-cancel {
   padding: 6px 12px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-light-default);
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
@@ -560,24 +616,24 @@ body.handwriting-font #todoInput {
 }
 
 .todo-input-save {
-  background-color: #2a2a2a;
-  color: #fff;
-  border-color: #2a2a2a;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
+  border-color: var(--text-light-primary);
 }
 
 .todo-input-save:hover {
-  background-color: #4a4a4a;
-  border-color: #4a4a4a;
+  background-color: var(--text-light-secondary);
+  border-color: var(--text-light-secondary);
 }
 
 .todo-input-cancel {
-  background-color: #e8e8e8;
-  color: #2a2a2a;
+  background-color: var(--bg-light-tertiary);
+  color: var(--text-light-primary);
 }
 
 .todo-input-cancel:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 #todoInput,
@@ -586,7 +642,7 @@ body.handwriting-font #todoInput {
   padding: 0;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   outline: none;
@@ -594,7 +650,7 @@ body.handwriting-font #todoInput {
 
 #todoInput::placeholder,
 #plannerTodoInput::placeholder {
-  color: #909090;
+  color: var(--text-light-muted);
 }
 
 #addTodoBtn,
@@ -602,9 +658,9 @@ body.handwriting-font #todoInput {
   width: 18px;
   height: 18px;
   padding: 0;
-  border: 2px solid #c0c0c0;
+  border: 2px solid var(--border-light-default);
   background-color: transparent;
-  color: #c0c0c0;
+  color: var(--border-light-default);
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   line-height: 1;
@@ -619,21 +675,21 @@ body.handwriting-font #todoInput {
 
 #addTodoBtn:hover,
 .add-todo-icon:hover {
-  border-color: #2a2a2a;
-  color: #2a2a2a;
-  background-color: #f0f0f0;
+  border-color: var(--text-light-primary);
+  color: var(--text-light-primary);
+  background-color: var(--hover-bg-light);
 }
 
 #todoList {
   list-style: none;
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid var(--border-light-subtle);
 }
 
 .todo-item {
   display: flex;
   align-items: center;
   padding: 14px 12px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border-light-subtle);
   gap: 12px;
   transition: all 0.2s ease;
   margin: 0 -12px;
@@ -641,30 +697,30 @@ body.handwriting-font #todoInput {
 }
 
 .todo-item:hover {
-  background-color: #fafafa;
+  background-color: var(--bg-light-secondary);
 }
 
 .todo-item.dragging {
   opacity: 0.4;
-  background-color: #e8e8e8;
+  background-color: var(--bg-light-tertiary);
 }
 
 .todo-item.drag-over {
-  border-top: 2px solid #2a2a2a;
-  background-color: #f0f0f0;
+  border-top: 2px solid var(--text-light-primary);
+  background-color: var(--hover-bg-light);
 }
 
 .todo-item.editing {
-  background-color: #f9f9f9;
+  background-color: var(--editing-bg);
   padding: 16px 12px;
   border-radius: 4px;
-  border-bottom: 1px solid #d0d0d0;
+  border-bottom: 1px solid var(--bg-light-elevated);
 }
 
 .todo-checkbox {
   width: 18px;
   height: 18px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-light-default);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -672,21 +728,21 @@ body.handwriting-font #todoInput {
 .todo-text {
   flex: 1;
   font-size: 14px;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   transition: opacity 0.2s ease;
 }
 
 .todo-item.completed .todo-text {
   text-decoration: line-through;
-  color: #909090;
+  color: var(--text-light-muted);
 }
 
 .todo-edit-input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #808080;
-  background-color: #fff;
-  color: #2a2a2a;
+  border: 1px solid var(--border-light-emphasis);
+  background-color: var(--bg-white);
+  color: var(--text-light-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   outline: none;
@@ -694,14 +750,14 @@ body.handwriting-font #todoInput {
 }
 
 .todo-edit-input:focus {
-  border-color: #4a4a4a;
+  border-color: var(--text-light-secondary);
 }
 
 .todo-edit-btn {
   padding: 4px 8px;
-  border: 1px solid #c0c0c0;
-  background-color: #e8e8e8;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light-tertiary);
+  color: var(--text-light-secondary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
@@ -720,8 +776,8 @@ body.handwriting-font #todoInput {
 }
 
 .todo-edit-btn:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .todo-edit-actions {
@@ -740,7 +796,7 @@ body.handwriting-font #todoInput {
 .todo-edit-save,
 .todo-edit-cancel {
   padding: 6px 12px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-light-default);
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
@@ -750,31 +806,31 @@ body.handwriting-font #todoInput {
 }
 
 .todo-edit-save {
-  background-color: #2a2a2a;
-  color: #fff;
-  border-color: #2a2a2a;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
+  border-color: var(--text-light-primary);
 }
 
 .todo-edit-save:hover {
-  background-color: #4a4a4a;
-  border-color: #4a4a4a;
+  background-color: var(--text-light-secondary);
+  border-color: var(--text-light-secondary);
 }
 
 .todo-edit-cancel {
-  background-color: #e8e8e8;
-  color: #2a2a2a;
+  background-color: var(--bg-light-tertiary);
+  color: var(--text-light-primary);
 }
 
 .todo-edit-cancel:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .todo-delete {
   padding: 0;
-  border: 1px solid #c0c0c0;
-  background-color: #e8e8e8;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light-tertiary);
+  color: var(--text-light-secondary);
   font-family: 'Courier New', Courier, monospace;
   cursor: pointer;
   opacity: 0;
@@ -791,8 +847,8 @@ body.handwriting-font #todoInput {
 }
 
 .todo-delete:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 /* Planner View - 2 Column Layout */
@@ -822,7 +878,7 @@ body.handwriting-font #todoInput {
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0 0 24px 0;
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
 }
 
 .calendar-header {
@@ -836,9 +892,9 @@ body.handwriting-font #todoInput {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid #c0c0c0;
-  background-color: #f5f5f5;
-  color: #4a4a4a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-light);
+  color: var(--text-light-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -847,39 +903,39 @@ body.handwriting-font #todoInput {
 }
 
 .icon-btn-small:hover {
-  background-color: #d0d0d0;
-  border-color: #808080;
+  background-color: var(--bg-light-elevated);
+  border-color: var(--border-light-emphasis);
 }
 
 .calendar-status {
   text-align: center;
   padding: 40px 20px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   font-size: 14px;
 }
 
 .calendar-events-list {
   list-style: none;
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid var(--border-light-subtle);
 }
 
 .calendar-event-item {
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--border-light-subtle);
   gap: 4px;
   transition: all 0.2s ease;
   margin: 0 -12px;
 }
 
 .calendar-event-item:hover {
-  background-color: #fafafa;
+  background-color: var(--bg-light-secondary);
 }
 
 .calendar-event-time {
   font-size: 12px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   font-weight: normal;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -887,13 +943,13 @@ body.handwriting-font #todoInput {
 
 .calendar-event-title {
   font-size: 14px;
-  color: #2a2a2a;
+  color: var(--text-light-primary);
   font-weight: normal;
 }
 
 .calendar-event-location {
   font-size: 12px;
-  color: #909090;
+  color: var(--text-light-muted);
   font-style: italic;
 }
 
@@ -914,19 +970,19 @@ body.handwriting-font #todoInput {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--bg-light-elevated);
   border-radius: 4px;
-  background-color: #fafafa;
-  color: #4a4a4a;
+  background-color: var(--bg-light-secondary);
+  color: var(--text-light-secondary);
   transition: all 0.2s ease;
   cursor: pointer;
   text-decoration: none;
 }
 
 .calendar-event-link:hover {
-  background-color: #e8e8e8;
-  border-color: #b0b0b0;
-  color: #2a2a2a;
+  background-color: var(--bg-light-tertiary);
+  border-color: var(--border-hover-alt);
+  color: var(--text-light-primary);
 }
 
 .calendar-event-link svg {
@@ -940,8 +996,8 @@ body.handwriting-font #todoInput {
   transform: translateX(-50%);
   margin-bottom: 8px;
   padding: 6px 10px;
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
   font-size: 11px;
   border-radius: 4px;
   white-space: nowrap;
@@ -962,7 +1018,7 @@ body.handwriting-font #todoInput {
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: #2a2a2a;
+  border-top-color: var(--text-light-primary);
 }
 
 .calendar-event-link-container:hover .calendar-event-link-tooltip {
@@ -973,89 +1029,113 @@ body.handwriting-font #todoInput {
 .calendar-loading {
   text-align: center;
   padding: 40px 20px;
-  color: #909090;
+  color: var(--text-light-muted);
   font-size: 13px;
 }
 
 .calendar-error {
   text-align: center;
   padding: 40px 20px;
-  color: #c04040;
+  color: var(--accent-danger);
   font-size: 13px;
 }
 
 .calendar-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #909090;
+  color: var(--text-light-muted);
   font-size: 14px;
 }
 
 /* Note Editor View */
+#noteView {
+  overflow-y: auto; /* Scrollbar at screen edge */
+  background-color: var(--bg-primary); /* Tomorrow Night theme background */
+}
+
 .note-editor {
-  padding: 80px 16px;
-  max-width: 720px;
-  margin: 0 auto;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%; /* Ensure it takes full height */
 }
 
 .note-title-input {
   width: 100%;
-  padding: 0;
+  max-width: 720px;
+  padding: 80px 16px 0 16px; /* Top padding moved from .note-editor */
+  margin: 0 auto 24px auto; /* Center and add bottom margin */
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: var(--text-primary); /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 40px;
   font-weight: bold;
-  margin-bottom: 24px;
   outline: none;
   resize: none;
   overflow: hidden;
   min-height: 50px;
   line-height: 1.2;
+  box-sizing: border-box;
 }
 
 .note-title-input::placeholder {
-  color: #d0d0d0;
+  color: var(--text-tertiary); /* Darker placeholder for dark theme */
 }
 
 .editor-container {
   position: relative;
-  min-height: 500px;
+  flex: 1; /* Fill remaining space */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  padding: 0 16px 80px 16px; /* Horizontal and bottom padding */
+  margin: 0 auto; /* Center the container */
+  box-sizing: border-box;
 }
 
 .note-content-input {
   width: 100%;
-  height: 100%;
-  min-height: 500px;
+  flex: 1; /* Fill available space in editor-container */
   padding: 0;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: var(--text-primary); /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   line-height: 1.8;
   resize: none;
   outline: none;
+  box-sizing: border-box;
 }
 
 .note-content-input::placeholder {
-  color: #d0d0d0;
+  color: var(--text-tertiary); /* Darker placeholder for dark theme */
+}
+
+/* Text selection color for dark theme */
+.note-content-input::selection,
+.note-title-input::selection {
+  background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
 .note-preview {
   width: 100%;
-  height: 100%;
-  min-height: 500px;
+  flex: 1; /* Fill available space in editor-container */
   padding: 0;
   border: none;
   background-color: transparent;
-  color: #2a2a2a;
+  color: var(--text-primary); /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   line-height: 1.8;
-  overflow-y: auto;
+  overflow-y: auto; /* Internal scrolling for preview */
+  box-sizing: border-box;
+}
+
+.note-preview::selection {
+  background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
 .note-preview h1 {
@@ -1093,23 +1173,24 @@ body.handwriting-font #todoInput {
 }
 
 .note-preview a {
-  color: #4a4a4a;
+  color: var(--accent-primary); /* Tomorrow Night theme blue for links */
   text-decoration: underline;
 }
 
 .note-preview a:hover {
-  color: #2a2a2a;
+  color: var(--accent-secondary); /* Tomorrow Night theme purple on hover */
 }
 
 .note-preview code {
-  background-color: #e8e8e8;
+  background-color: var(--bg-secondary); /* Darker background for inline code */
+  color: var(--accent-yellow); /* Tomorrow Night theme yellow for code */
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 14px;
 }
 
 .note-preview pre {
-  background-color: #e8e8e8;
+  background-color: var(--bg-secondary); /* Darker background for code blocks */
   padding: 12px;
   overflow-x: auto;
   margin-bottom: 12px;
@@ -1117,8 +1198,9 @@ body.handwriting-font #todoInput {
 }
 
 .note-preview pre code {
-  background-color: transparent;
-  padding: 0;
+  background-color: transparent; /* Remove double background */
+  padding: 0; /* Remove double padding */
+  color: var(--text-primary); /* Regular text color for code blocks */
 }
 
 .note-preview strong {
@@ -1129,18 +1211,301 @@ body.handwriting-font #todoInput {
   font-style: italic;
 }
 
+/* Note View - Dark Theme for Header and Buttons */
+body:has(#noteView:not(.hidden)) .main-content {
+  background-color: var(--bg-primary); /* Tomorrow Night background for entire content area */
+}
+
+#noteView:not(.hidden) ~ .main-content .main-header,
+body:has(#noteView:not(.hidden)) .main-header {
+  background-color: var(--bg-primary); /* Tomorrow Night background */
+  border-bottom-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#noteView:not(.hidden)) .main-header .time {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#noteView:not(.hidden)) .main-header .date {
+  color: var(--text-secondary); /* Muted text for date */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn {
+  background-color: var(--bg-secondary); /* Darker button background */
+  border-color: var(--border-subtle); /* Subtle border */
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn:hover {
+  background-color: var(--bg-tertiary); /* Lighter on hover */
+  border-color: var(--border-default); /* Visible border on hover */
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn.active {
+  background-color: var(--accent-primary); /* Tomorrow Night blue for active state */
+  color: var(--text-inverted); /* Dark text on bright background */
+  border-color: var(--accent-primary);
+}
+
+body:has(#noteView:not(.hidden)) .icon-btn.active:hover {
+  background-color: var(--accent-primary-hover); /* Lighter blue on hover */
+  border-color: var(--accent-primary-hover);
+}
+
+/* Custom scrollbar for dark theme note view */
+#noteView::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+#noteView::-webkit-scrollbar-track {
+  background: var(--scrollbar-track); /* Tomorrow Night background */
+}
+
+#noteView::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb); /* Subtle gray for scrollbar */
+  border-radius: 6px;
+}
+
+#noteView::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover); /* Lighter on hover */
+}
+
+/* Planner View - Dark Theme */
+body:has(#plannerView:not(.hidden)) .main-content {
+  background-color: var(--bg-primary); /* Tomorrow Night background for entire content area */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header {
+  background-color: var(--bg-primary); /* Tomorrow Night background */
+  border-bottom-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header .time {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header .date {
+  color: var(--text-secondary); /* Muted text for date */
+}
+
+body:has(#plannerView:not(.hidden)) .planner-view-body {
+  background-color: var(--bg-primary); /* Dark background */
+}
+
+body:has(#plannerView:not(.hidden)) .column-heading {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+/* Planner - Todo Items */
+body:has(#plannerView:not(.hidden)) .todo-item {
+  border-bottom-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item:hover {
+  background-color: var(--hover-bg); /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.dragging {
+  opacity: 0.4;
+  background-color: var(--bg-tertiary); /* Darker dragging state */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.drag-over {
+  border-top-color: var(--accent-primary); /* Tomorrow Night blue */
+  background-color: var(--hover-bg);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.editing {
+  background-color: var(--bg-secondary); /* Darker editing state */
+  border-bottom-color: var(--border-default);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-text {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.completed .todo-text {
+  color: var(--text-secondary); /* Muted text for completed */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-checkbox {
+  border-color: var(--border-default); /* Darker checkbox border */
+  background-color: var(--bg-secondary);
+}
+
+body:has(#plannerView:not(.hidden)) #todoList {
+  border-top-color: var(--border-subtle); /* Darker border */
+}
+
+/* Planner - Todo Input */
+body:has(#plannerView:not(.hidden)) .todo-input-container {
+  border-bottom-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-container:hover {
+  background-color: var(--hover-bg); /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) #todoInput,
+body:has(#plannerView:not(.hidden)) #plannerTodoInput {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) #todoInput::placeholder,
+body:has(#plannerView:not(.hidden)) #plannerTodoInput::placeholder {
+  color: var(--text-tertiary); /* Darker placeholder */
+}
+
+body:has(#plannerView:not(.hidden)) .add-todo-icon {
+  border-color: var(--border-default); /* Darker border */
+  color: var(--text-secondary); /* Muted icon color */
+  background-color: transparent;
+}
+
+body:has(#plannerView:not(.hidden)) .add-todo-icon:hover {
+  border-color: var(--accent-primary); /* Tomorrow Night blue */
+  color: var(--accent-primary);
+  background-color: var(--bg-secondary);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-input {
+  background-color: var(--bg-secondary); /* Darker input background */
+  border-color: var(--border-default); /* Darker border */
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-input:focus {
+  border-color: var(--accent-primary); /* Tomorrow Night blue on focus */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-btn {
+  background-color: var(--bg-tertiary); /* Darker button */
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-btn:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--accent-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-save {
+  background-color: var(--accent-primary); /* Tomorrow Night blue */
+  border-color: var(--accent-primary);
+  color: var(--text-inverted); /* Dark text on bright background */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-save:hover {
+  background-color: var(--accent-primary-hover); /* Lighter blue */
+  border-color: var(--accent-primary-hover);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-cancel {
+  background-color: var(--bg-tertiary); /* Darker button */
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-cancel:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--accent-primary);
+}
+
+/* Planner - Calendar */
+body:has(#plannerView:not(.hidden)) .calendar-events-list {
+  border-top-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-item {
+  border-bottom-color: var(--border-subtle); /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-item:hover {
+  background-color: var(--hover-bg); /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-time {
+  color: var(--text-secondary); /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-title {
+  color: var(--text-primary); /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-location {
+  color: var(--text-secondary); /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-status {
+  color: var(--text-secondary); /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-link {
+  background-color: var(--bg-secondary); /* Darker link background */
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-link:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .icon-btn-small {
+  background-color: var(--bg-secondary); /* Darker button background */
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .icon-btn-small:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+}
+
+body:has(#plannerView:not(.hidden)) .btn-primary {
+  background-color: var(--accent-primary); /* Tomorrow Night blue */
+  border-color: var(--accent-primary);
+  color: var(--text-inverted); /* Dark text on bright background */
+}
+
+body:has(#plannerView:not(.hidden)) .btn-primary:hover {
+  background-color: var(--accent-primary-hover); /* Lighter blue */
+  border-color: var(--accent-primary-hover);
+}
+
+/* Custom scrollbar for planner view */
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-track {
+  background: var(--scrollbar-track); /* Tomorrow Night background */
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb); /* Subtle gray for scrollbar */
+  border-radius: 6px;
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover); /* Lighter on hover */
+}
+
 /* Welcome View */
 .welcome-message {
   text-align: center;
   padding: 80px 40px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
 }
 
 .welcome-message h2 {
   font-size: 24px;
   font-weight: normal;
   margin-bottom: 16px;
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
 }
 
 .welcome-message p {
@@ -1151,7 +1516,7 @@ body.handwriting-font #todoInput {
 /* Button Styles */
 .btn-primary, .btn-secondary, .btn-danger, .btn-close {
   padding: 6px 12px;
-  border: 1px solid #c0c0c0;
+  border: 1px solid var(--border-light-default);
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   cursor: pointer;
@@ -1159,34 +1524,34 @@ body.handwriting-font #todoInput {
 }
 
 .btn-primary {
-  background-color: #2a2a2a;
-  color: #fff;
-  border-color: #2a2a2a;
+  background-color: var(--text-light-primary);
+  color: var(--bg-white);
+  border-color: var(--text-light-primary);
 }
 
 .btn-primary:hover {
-  background-color: #4a4a4a;
-  border-color: #4a4a4a;
+  background-color: var(--text-light-secondary);
+  border-color: var(--text-light-secondary);
 }
 
 .btn-secondary {
-  background-color: #e8e8e8;
-  color: #2a2a2a;
+  background-color: var(--bg-light-tertiary);
+  color: var(--text-light-primary);
 }
 
 .btn-secondary:hover {
-  background-color: #d0d0d0;
+  background-color: var(--bg-light-elevated);
 }
 
 .btn-danger {
-  background-color: #fff;
-  color: #c04040;
-  border-color: #c04040;
+  background-color: var(--bg-white);
+  color: var(--accent-danger);
+  border-color: var(--accent-danger);
 }
 
 .btn-danger:hover {
-  background-color: #c04040;
-  color: #fff;
+  background-color: var(--accent-danger);
+  color: var(--bg-white);
 }
 
 .btn-close {
@@ -1197,11 +1562,11 @@ body.handwriting-font #todoInput {
   padding: 0;
   width: 32px;
   height: 32px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
 }
 
 .btn-close:hover {
-  color: #2a2a2a;
+  color: var(--text-light-primary);
 }
 
 .hidden {
@@ -1230,13 +1595,13 @@ body.handwriting-font #todoInput {
 }
 
 .modal-content {
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border: 2px solid #2a2a2a;
+  border: 2px solid var(--text-light-primary);
   transform: scale(0.9);
   transition: transform 0.3s ease;
 }
@@ -1254,8 +1619,8 @@ body.handwriting-font #todoInput {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #d0d0d0;
-  background-color: #fff;
+  border-bottom: 1px solid var(--bg-light-elevated);
+  background-color: var(--bg-white);
 }
 
 .modal-header h2 {
@@ -1277,8 +1642,8 @@ body.handwriting-font #todoInput {
   justify-content: flex-end;
   align-items: center;
   padding: 16px 24px;
-  border-top: 1px solid #d0d0d0;
-  background-color: #fff;
+  border-top: 1px solid var(--bg-light-elevated);
+  background-color: var(--bg-white);
 }
 
 /* Settings */
@@ -1292,7 +1657,7 @@ body.handwriting-font #todoInput {
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 16px;
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
 }
 
 .settings-section label {
@@ -1302,38 +1667,38 @@ body.handwriting-font #todoInput {
   letter-spacing: 1px;
   margin-bottom: 6px;
   margin-top: 12px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
 }
 
 .settings-input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #c0c0c0;
-  background-color: #fff;
-  color: #2a2a2a;
+  border: 1px solid var(--border-light-default);
+  background-color: var(--bg-white);
+  color: var(--text-light-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   outline: none;
 }
 
 .settings-input:focus {
-  border-color: #808080;
+  border-color: var(--border-light-emphasis);
 }
 
 .settings-help {
   font-size: 12px;
-  color: #6a6a6a;
+  color: var(--text-light-tertiary);
   margin-top: 12px;
   line-height: 1.5;
 }
 
 .settings-help a {
-  color: #4a4a4a;
+  color: var(--text-light-secondary);
   text-decoration: underline;
 }
 
 .settings-help a:hover {
-  color: #2a2a2a;
+  color: var(--text-light-primary);
 }
 
 /* Responsive */
@@ -1381,15 +1746,16 @@ body.handwriting-font #todoInput {
     gap: 40px;
   }
 
-  .note-editor {
-    padding: 40px 20px;
+  .note-title-input {
+    padding: 40px 20px 0 20px; /* Reduced top padding on mobile */
+    font-size: 32px; /* Smaller title on mobile */
   }
 
-  .note-title-input {
-    font-size: 32px;
+  .editor-container {
+    padding: 0 20px 40px 20px; /* Reduced padding on mobile */
   }
 
   .note-content-input {
-    font-size: 14px;
+    font-size: 14px; /* Smaller content on mobile */
   }
 }
