@@ -76,14 +76,16 @@ body.handwriting-font #todoInput {
 }
 
 .sidebar-header h1 {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: #4a4a4a;
+  letter-spacing: 3px;
+  color: #2a2a2a;
   border: none;
   padding: 0;
   margin: 0;
+  flex: 1;
+  text-align: center;
 }
 
 .collapse-sidebar-btn {
