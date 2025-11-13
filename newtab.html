@@ -31,13 +31,13 @@
           </svg>
           <span>Add Note</span>
         </button>
-        <div class="search-container">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="searchNotesBtn" class="sidebar-action-btn" title="Search Notes">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
-          <input type="text" id="searchInput" class="search-input" placeholder="Search notes..." />
-        </div>
+          <span>Search Notes</span>
+        </button>
       </div>
       <ul id="sidebarList" class="sidebar-list"></ul>
       <div class="sidebar-footer">
@@ -145,6 +145,21 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Search Modal (Spotlight) -->
+  <div id="searchModal" class="search-modal hidden">
+    <div class="search-modal-backdrop"></div>
+    <div class="search-modal-content">
+      <div class="search-modal-input-wrapper">
+        <svg class="search-modal-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="searchModalInput" class="search-modal-input" placeholder="Search notes..." autocomplete="off" />
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </div>
   </div>
 
   <!-- Settings Modal -->
