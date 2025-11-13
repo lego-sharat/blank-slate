@@ -1316,6 +1316,8 @@ function extractEventLinks(event) {
     const urlLower = url.toLowerCase();
     // Filter out tel: links
     if (urlLower.startsWith('tel:')) return true;
+    // Filter out URLs with /tel/ in path (e.g., meet.google.com/tel/...)
+    if (urlLower.includes('/tel/')) return true;
     // Filter out phone dial-in patterns
     if (urlLower.includes('dial') && urlLower.includes('pin')) return true;
     return false;
