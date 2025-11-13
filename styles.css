@@ -229,7 +229,7 @@ body.handwriting-font #todoInput {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
 }
 
@@ -237,9 +237,10 @@ body.handwriting-font #todoInput {
   position: relative;
   width: 90%;
   max-width: 600px;
-  background-color: var(--bg-white);
+  background-color: var(--bg-secondary); /* Dark theme background */
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  box-shadow: 0 16px 70px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 70px rgba(0, 0, 0, 0.8);
   overflow: hidden;
   animation: searchModalSlideIn 0.2s ease-out;
 }
@@ -260,13 +261,13 @@ body.handwriting-font #todoInput {
   display: flex;
   align-items: center;
   padding: 20px 20px 16px 20px;
-  border-bottom: 1px solid var(--border-light-subtle);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .search-modal-icon {
   position: absolute;
   left: 24px;
-  color: var(--text-light-tertiary);
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -275,14 +276,14 @@ body.handwriting-font #todoInput {
   padding: 8px 12px 8px 36px;
   border: none;
   background-color: transparent;
-  color: var(--text-light-primary);
+  color: var(--text-primary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 16px;
   outline: none;
 }
 
 .search-modal-input::placeholder {
-  color: var(--text-light-muted);
+  color: var(--text-tertiary);
 }
 
 .search-results {
@@ -290,16 +291,34 @@ body.handwriting-font #todoInput {
   overflow-y: auto;
 }
 
+/* Custom scrollbar for search results */
+.search-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
 .search-result-item {
   padding: 12px 20px;
-  border-bottom: 1px solid var(--hover-bg-light);
+  border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .search-result-item:hover,
 .search-result-item.selected {
-  background-color: var(--bg-light);
+  background-color: var(--hover-bg);
 }
 
 .search-result-item:last-child {
@@ -310,21 +329,21 @@ body.handwriting-font #todoInput {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   font-weight: bold;
-  color: var(--text-light-primary);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .search-result-preview {
   font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
-  color: var(--text-light-tertiary);
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .search-results-empty {
   padding: 40px 20px;
   text-align: center;
-  color: var(--text-light-muted);
+  color: var(--text-secondary);
   font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
 }
