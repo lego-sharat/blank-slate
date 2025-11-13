@@ -1316,6 +1316,9 @@ function extractEventLinks(event) {
     const urlLower = url.toLowerCase();
     // Filter out tel: protocol links
     if (urlLower.startsWith('tel:')) return true;
+    // Filter out tel.meet links (e.g., https://tel.meet/...)
+    if (urlLower.startsWith('https://tel.meet') ||
+        urlLower.startsWith('http://tel.meet')) return true;
     // Filter out Google Meet tel links (e.g., https://meet.google.com/tel/...)
     if (urlLower.startsWith('https://meet.google.com/tel/') ||
         urlLower.startsWith('http://meet.google.com/tel/')) return true;
