@@ -1148,17 +1148,40 @@ function startCalendarBackgroundFetch() {
 
 async function connectGoogleCalendar() {
   try {
+    // Log extension details for OAuth setup debugging
+    const extensionId = chrome.runtime.id;
+    const redirectUri = chrome.identity.getRedirectURL();
+    console.log('Extension ID:', extensionId);
+    console.log('Redirect URI for Google Cloud Console:', redirectUri);
+    console.log('Add this redirect URI to your OAuth Client in Google Cloud Console');
+
     // Use Chrome Identity API with automatic token refresh
     // This uses the oauth2 configuration from manifest.json
     chrome.identity.getAuthToken({ interactive: true }, function(token) {
       if (chrome.runtime.lastError) {
-        console.error('Auth error:', chrome.runtime.lastError);
-        calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect. Please try again.</p>';
+        const errorMessage = chrome.runtime.lastError.message;
+        console.error('Auth error details:', chrome.runtime.lastError);
+        console.error('Error message:', errorMessage);
+
+        // Provide more specific error messages
+        let userMessage = 'Failed to connect. ';
+        if (errorMessage.includes('OAuth2') || errorMessage.includes('invalid_client')) {
+          userMessage += 'Please check your OAuth Client ID configuration in Google Cloud Console.';
+        } else if (errorMessage.includes('redirect_uri')) {
+          userMessage += `Add redirect URI "${redirectUri}" to your OAuth Client in Google Cloud Console.`;
+        } else if (errorMessage.includes('access_denied')) {
+          userMessage += 'Access was denied. Please approve the calendar permissions.';
+        } else {
+          userMessage += 'Check the browser console for details.';
+        }
+
+        calendarStatus.innerHTML = `<p class="calendar-error">${userMessage}</p>`;
         return;
       }
 
       if (token) {
         // Chrome automatically manages token refresh
+        console.log('Successfully obtained access token');
         saveCalendarToken({ access_token: token, timestamp: Date.now() });
         calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
         startCalendarBackgroundFetch();
