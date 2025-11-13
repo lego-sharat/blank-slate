@@ -1215,6 +1215,229 @@ body:has(#noteView:not(.hidden)) .icon-btn.active:hover {
   background: #4e5559; /* Lighter on hover */
 }
 
+/* Planner View - Dark Theme */
+body:has(#plannerView:not(.hidden)) .main-content {
+  background-color: #1d1f21; /* Tomorrow Night background for entire content area */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header {
+  background-color: #1d1f21; /* Tomorrow Night background */
+  border-bottom-color: #373b41; /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header .time {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .main-header .date {
+  color: #969896; /* Muted text for date */
+}
+
+body:has(#plannerView:not(.hidden)) .planner-view-body {
+  background-color: #1d1f21; /* Dark background */
+}
+
+body:has(#plannerView:not(.hidden)) .column-heading {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+/* Planner - Todo Items */
+body:has(#plannerView:not(.hidden)) .todo-item {
+  border-bottom-color: #373b41; /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item:hover {
+  background-color: #282a2e; /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.dragging {
+  opacity: 0.4;
+  background-color: #373b41; /* Darker dragging state */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.drag-over {
+  border-top-color: #81a2be; /* Tomorrow Night blue */
+  background-color: #282a2e;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.editing {
+  background-color: #282a2e; /* Darker editing state */
+  border-bottom-color: #4e5559;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-text {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-item.completed .todo-text {
+  color: #969896; /* Muted text for completed */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-checkbox {
+  border-color: #4e5559; /* Darker checkbox border */
+  background-color: #282a2e;
+}
+
+body:has(#plannerView:not(.hidden)) #todoList {
+  border-top-color: #373b41; /* Darker border */
+}
+
+/* Planner - Todo Input */
+body:has(#plannerView:not(.hidden)) .todo-input-container {
+  border-bottom-color: #373b41; /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-container:hover {
+  background-color: #282a2e; /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) #todoInput,
+body:has(#plannerView:not(.hidden)) #plannerTodoInput {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) #todoInput::placeholder,
+body:has(#plannerView:not(.hidden)) #plannerTodoInput::placeholder {
+  color: #555555; /* Darker placeholder */
+}
+
+body:has(#plannerView:not(.hidden)) .add-todo-icon {
+  border-color: #4e5559; /* Darker border */
+  color: #969896; /* Muted icon color */
+  background-color: transparent;
+}
+
+body:has(#plannerView:not(.hidden)) .add-todo-icon:hover {
+  border-color: #81a2be; /* Tomorrow Night blue */
+  color: #81a2be;
+  background-color: #282a2e;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-input {
+  background-color: #282a2e; /* Darker input background */
+  border-color: #4e5559; /* Darker border */
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-input:focus {
+  border-color: #81a2be; /* Tomorrow Night blue on focus */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-btn {
+  background-color: #373b41; /* Darker button */
+  border-color: #4e5559;
+  color: #c5c8c6;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-edit-btn:hover {
+  background-color: #4e5559;
+  border-color: #81a2be;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-save {
+  background-color: #81a2be; /* Tomorrow Night blue */
+  border-color: #81a2be;
+  color: #1d1f21; /* Dark text on bright background */
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-save:hover {
+  background-color: #9db8cc; /* Lighter blue */
+  border-color: #9db8cc;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-cancel {
+  background-color: #373b41; /* Darker button */
+  border-color: #4e5559;
+  color: #c5c8c6;
+}
+
+body:has(#plannerView:not(.hidden)) .todo-input-cancel:hover {
+  background-color: #4e5559;
+  border-color: #81a2be;
+}
+
+/* Planner - Calendar */
+body:has(#plannerView:not(.hidden)) .calendar-events-list {
+  border-top-color: #373b41; /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-item {
+  border-bottom-color: #373b41; /* Darker border */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-item:hover {
+  background-color: #282a2e; /* Subtle hover effect */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-time {
+  color: #969896; /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-title {
+  color: #c5c8c6; /* Tomorrow Night text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-location {
+  color: #969896; /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-status {
+  color: #969896; /* Muted text */
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-link {
+  background-color: #282a2e; /* Darker link background */
+  border-color: #4e5559;
+  color: #c5c8c6;
+}
+
+body:has(#plannerView:not(.hidden)) .calendar-event-link:hover {
+  background-color: #373b41;
+  border-color: #81a2be;
+  color: #81a2be;
+}
+
+body:has(#plannerView:not(.hidden)) .icon-btn-small {
+  background-color: #282a2e; /* Darker button background */
+  border-color: #4e5559;
+  color: #c5c8c6;
+}
+
+body:has(#plannerView:not(.hidden)) .icon-btn-small:hover {
+  background-color: #373b41;
+  border-color: #81a2be;
+}
+
+body:has(#plannerView:not(.hidden)) .btn-primary {
+  background-color: #81a2be; /* Tomorrow Night blue */
+  border-color: #81a2be;
+  color: #1d1f21; /* Dark text on bright background */
+}
+
+body:has(#plannerView:not(.hidden)) .btn-primary:hover {
+  background-color: #9db8cc; /* Lighter blue */
+  border-color: #9db8cc;
+}
+
+/* Custom scrollbar for planner view */
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-track {
+  background: #1d1f21; /* Tomorrow Night background */
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb {
+  background: #373b41; /* Subtle gray for scrollbar */
+  border-radius: 6px;
+}
+
+body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
+  background: #4e5559; /* Lighter on hover */
+}
+
 /* Welcome View */
 .welcome-message {
   text-align: center;
