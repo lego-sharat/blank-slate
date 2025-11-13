@@ -17,7 +17,6 @@ let calendarEvents = [];
 let calendarToken = null;
 let isCalendarConnected = false;
 let calendarFetchInterval = null;
-let searchIndex = null;
 
 // DOM elements - Sidebar
 const sidebar = document.querySelector('.sidebar');
@@ -288,26 +287,10 @@ function renderSidebar() {
   }
 }
 
-// Search functionality
+// Simple search functionality (without external dependencies)
 function buildSearchIndex() {
-  if (notes.length === 0) {
-    searchIndex = null;
-    return;
-  }
-
-  searchIndex = lunr(function () {
-    this.ref('id');
-    this.field('title', { boost: 10 });
-    this.field('content');
-
-    notes.forEach(note => {
-      this.add({
-        id: note.id,
-        title: note.title || 'Untitled',
-        content: note.content || ''
-      });
-    });
-  });
+  // No index building needed for simple text search
+  // This function exists for compatibility but does nothing
 }
 
 // Search Modal functions
@@ -337,42 +320,41 @@ function renderSearchResults(query) {
     return;
   }
 
-  if (!searchIndex || notes.length === 0) {
+  if (notes.length === 0) {
     searchResults.innerHTML = '<div class="search-results-empty">No notes to search</div>';
     return;
   }
 
-  try {
-    const results = searchIndex.search(query + '*'); // Add wildcard for partial matches
+  // Simple text-based search (case-insensitive)
+  const searchTerm = query.toLowerCase();
+  const filteredNotes = notes.filter(note => {
+    const title = (note.title || 'Untitled').toLowerCase();
+    const content = (note.content || '').toLowerCase();
+    return title.includes(searchTerm) || content.includes(searchTerm);
+  });
 
-    if (results.length === 0) {
-      searchResults.innerHTML = `<div class="search-results-empty">No notes found for "${query}"</div>`;
-      return;
-    }
-
-    const resultIds = new Set(results.map(r => r.ref));
-    const filteredNotes = notes.filter(note => resultIds.has(note.id));
-
-    filteredNotes.forEach(note => {
-      const resultItem = document.createElement('div');
-      resultItem.className = 'search-result-item';
-
-      const previewText = note.content ? note.content.substring(0, 100) : '';
-      resultItem.innerHTML = `
-        <div class="search-result-title">${note.title || 'Untitled'}</div>
-        <div class="search-result-preview">${previewText}${note.content && note.content.length > 100 ? '...' : ''}</div>
-      `;
-
-      resultItem.addEventListener('click', () => {
-        showNoteView(note.id);
-        closeSearchModal();
-      });
-
-      searchResults.appendChild(resultItem);
-    });
-  } catch (e) {
-    searchResults.innerHTML = '<div class="search-results-empty">Invalid search query</div>';
+  if (filteredNotes.length === 0) {
+    searchResults.innerHTML = `<div class="search-results-empty">No notes found for "${query}"</div>`;
+    return;
   }
+
+  filteredNotes.forEach(note => {
+    const resultItem = document.createElement('div');
+    resultItem.className = 'search-result-item';
+
+    const previewText = note.content ? note.content.substring(0, 100) : '';
+    resultItem.innerHTML = `
+      <div class="search-result-title">${note.title || 'Untitled'}</div>
+      <div class="search-result-preview">${previewText}${note.content && note.content.length > 100 ? '...' : ''}</div>
+    `;
+
+    resultItem.addEventListener('click', () => {
+      showNoteView(note.id);
+      closeSearchModal();
+    });
+
+    searchResults.appendChild(resultItem);
+  });
 }
 
 // View switching functions
