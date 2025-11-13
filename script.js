@@ -1310,9 +1310,20 @@ function extractEventLinks(event) {
   const links = [];
   const seenUrls = new Set();
 
-  // Helper to add link if not already seen
+  // Helper to check if URL is a tel link or phone meeting link
+  const isTelOrPhoneLink = (url) => {
+    if (!url) return false;
+    const urlLower = url.toLowerCase();
+    // Filter out tel: links
+    if (urlLower.startsWith('tel:')) return true;
+    // Filter out phone dial-in patterns
+    if (urlLower.includes('dial') && urlLower.includes('pin')) return true;
+    return false;
+  };
+
+  // Helper to add link if not already seen and not a phone link
   const addLink = (url, title) => {
-    if (url && !seenUrls.has(url)) {
+    if (url && !seenUrls.has(url) && !isTelOrPhoneLink(url)) {
       seenUrls.add(url);
       const linkType = getLinkType(url);
       links.push({ url, title, linkType });
@@ -1327,7 +1338,8 @@ function extractEventLinks(event) {
   // Check for conference data (Zoom, Teams, etc.)
   if (event.conferenceData?.entryPoints) {
     event.conferenceData.entryPoints.forEach(entry => {
-      if (entry.uri) {
+      // Skip phone entry points
+      if (entry.uri && entry.entryPointType !== 'phone') {
         addLink(entry.uri, entry.label || 'Join meeting');
       }
     });
