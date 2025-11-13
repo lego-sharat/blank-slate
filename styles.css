@@ -56,8 +56,8 @@
 
   /* Scrollbar colors */
   --scrollbar-track: #1d1f21;   /* Scrollbar track (dark theme) */
-  --scrollbar-thumb: #373b41;   /* Scrollbar thumb (dark theme) */
-  --scrollbar-thumb-hover: #4e5559; /* Scrollbar thumb hover (dark theme) */
+  --scrollbar-thumb: #4e5559;   /* Scrollbar thumb (dark theme) - more visible */
+  --scrollbar-thumb-hover: #81a2be; /* Scrollbar thumb hover (dark theme) - accent color */
 }
 
 body {
@@ -341,16 +341,16 @@ body.handwriting-font #todoInput {
 }
 
 .sidebar-list::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--scrollbar-track);
 }
 
 .sidebar-list::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 .sidebar-list::-webkit-scrollbar-thumb:hover {
-  background: var(--border-default);
+  background: var(--scrollbar-thumb-hover);
 }
 
 .sidebar-footer {
@@ -1126,6 +1126,7 @@ body.handwriting-font #todoInput {
   resize: none;
   outline: none;
   box-sizing: border-box;
+  overflow: hidden; /* Prevent textarea scrollbar, let parent handle scrolling */
 }
 
 .note-content-input::placeholder {
