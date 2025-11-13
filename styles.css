@@ -216,7 +216,7 @@ body.handwriting-font #todoInput {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 40px;
+  padding: 16px 40px;
   border-bottom: 1px solid #d0d0d0;
   background-color: #fff;
 }
@@ -1189,7 +1189,7 @@ body.handwriting-font #todoInput {
   }
 
   .main-header {
-    padding: 12px 20px;
+    padding: 16px 20px;
   }
 
   .clock-container {
