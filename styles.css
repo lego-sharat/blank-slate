@@ -421,7 +421,8 @@ body.handwriting-font #todoInput {
   border-color: #808080;
 }
 
-#todoInput {
+#todoInput,
+#plannerTodoInput {
   flex: 1;
   padding: 0;
   border: none;
@@ -432,11 +433,13 @@ body.handwriting-font #todoInput {
   outline: none;
 }
 
-#todoInput::placeholder {
+#todoInput::placeholder,
+#plannerTodoInput::placeholder {
   color: #909090;
 }
 
-#addTodoBtn {
+#addTodoBtn,
+.add-todo-icon {
   width: 18px;
   height: 18px;
   padding: 0;
@@ -455,7 +458,8 @@ body.handwriting-font #todoInput {
   flex-shrink: 0;
 }
 
-#addTodoBtn:hover {
+#addTodoBtn:hover,
+.add-todo-icon:hover {
   border-color: #2a2a2a;
   color: #2a2a2a;
   background-color: #f0f0f0;
