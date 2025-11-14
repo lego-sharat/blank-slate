@@ -84,7 +84,6 @@ const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
 const saveSettings = document.getElementById('saveSettings');
 const fontStyle = document.getElementById('fontStyle');
-const googleClientId = document.getElementById('googleClientId');
 const notionApiKey = document.getElementById('notionApiKey');
 const notionDatabaseId = document.getElementById('notionDatabaseId');
 
@@ -1124,7 +1123,6 @@ function applyFontStyle() {
 
 function openSettingsModal() {
   fontStyle.value = settings.fontStyle || 'mono';
-  googleClientId.value = settings.googleClientId || '';
   notionApiKey.value = settings.notionApiKey || '';
   notionDatabaseId.value = settings.notionDatabaseId || '';
   supabaseUrl.value = settings.supabaseUrl || '';
@@ -1139,7 +1137,6 @@ function closeSettingsModal() {
 
 async function saveSettingsData() {
   settings.fontStyle = fontStyle.value;
-  settings.googleClientId = googleClientId.value.trim();
   settings.notionApiKey = notionApiKey.value.trim();
   settings.notionDatabaseId = notionDatabaseId.value.trim();
   settings.supabaseUrl = supabaseUrl.value.trim();

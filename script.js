@@ -11297,7 +11297,6 @@ ${suffix}`;
   var closeSettings = document.getElementById("closeSettings");
   var saveSettings = document.getElementById("saveSettings");
   var fontStyle = document.getElementById("fontStyle");
-  var googleClientId = document.getElementById("googleClientId");
   var notionApiKey = document.getElementById("notionApiKey");
   var notionDatabaseId = document.getElementById("notionDatabaseId");
   var supabaseUrl = document.getElementById("supabaseUrl");
@@ -12126,7 +12125,6 @@ ${content}`;
   }
   function openSettingsModal() {
     fontStyle.value = settings.fontStyle || "mono";
-    googleClientId.value = settings.googleClientId || "";
     notionApiKey.value = settings.notionApiKey || "";
     notionDatabaseId.value = settings.notionDatabaseId || "";
     supabaseUrl.value = settings.supabaseUrl || "";
@@ -12139,7 +12137,6 @@ ${content}`;
   }
   async function saveSettingsData() {
     settings.fontStyle = fontStyle.value;
-    settings.googleClientId = googleClientId.value.trim();
     settings.notionApiKey = notionApiKey.value.trim();
     settings.notionDatabaseId = notionDatabaseId.value.trim();
     settings.supabaseUrl = supabaseUrl.value.trim();
