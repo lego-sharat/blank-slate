@@ -84,6 +84,7 @@ const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
 const saveSettings = document.getElementById('saveSettings');
 const fontStyle = document.getElementById('fontStyle');
+const googleClientId = document.getElementById('googleClientId');
 const notionApiKey = document.getElementById('notionApiKey');
 const notionDatabaseId = document.getElementById('notionDatabaseId');
 
@@ -1123,6 +1124,7 @@ function applyFontStyle() {
 
 function openSettingsModal() {
   fontStyle.value = settings.fontStyle || 'mono';
+  googleClientId.value = settings.googleClientId || '';
   notionApiKey.value = settings.notionApiKey || '';
   notionDatabaseId.value = settings.notionDatabaseId || '';
   supabaseUrl.value = settings.supabaseUrl || '';
@@ -1137,6 +1139,7 @@ function closeSettingsModal() {
 
 async function saveSettingsData() {
   settings.fontStyle = fontStyle.value;
+  settings.googleClientId = googleClientId.value.trim();
   settings.notionApiKey = notionApiKey.value.trim();
   settings.notionDatabaseId = notionDatabaseId.value.trim();
   settings.supabaseUrl = supabaseUrl.value.trim();
@@ -1752,15 +1755,33 @@ async function checkAuthStatus() {
  * Handle sign in with Google
  */
 async function handleSignInWithGoogle() {
+  if (!settings.googleClientId) {
+    showAuthStatus('Please configure Google Client ID in settings first', 'error');
+    return;
+  }
+
   try {
     showAuthStatus('Opening Google sign-in...', 'info');
-    const { url } = await signInWithGoogle();
+    const result = await signInWithGoogle(settings.googleClientId);
 
-    // Open OAuth popup
-    if (url) {
-      window.open(url, '_blank', 'width=500,height=600');
-      showAuthStatus('Complete sign-in in the popup window', 'info');
-    }
+    // Store the Google access token for Calendar API
+    calendarToken = {
+      access_token: result.accessToken,
+      timestamp: Date.now(),
+      expires_at: Date.now() + (result.expiresIn * 1000),
+      expires_in: result.expiresIn
+    };
+    localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
+    isCalendarConnected = true;
+
+    // Update current user
+    currentUser = result.user;
+    showAuthStatus('Signed in successfully!', 'success');
+    updateAuthUI();
+
+    // Sync data and start calendar fetch
+    await syncTokensFromSupabase();
+    await fetchCalendarEvents(true);
   } catch (error) {
     console.error('Sign in error:', error);
     showAuthStatus(error.message || 'Sign in failed', 'error');
@@ -1821,7 +1842,13 @@ async function handleAuthStateChange(event) {
 function updateAuthUI() {
   if (!isSupabaseInitialized) {
     authContainer.classList.add('hidden');
-    showAuthStatus('Configure Supabase credentials and enable Google OAuth in Supabase', 'info');
+    showAuthStatus('Configure Supabase URL and Anon Key to enable authentication', 'info');
+    return;
+  }
+
+  if (!settings.googleClientId) {
+    authContainer.classList.add('hidden');
+    showAuthStatus('Configure Google Client ID to enable sign-in', 'info');
     return;
   }
 

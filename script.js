@@ -11171,24 +11171,74 @@ ${suffix}`;
       return null;
     }
   }
-  async function signInWithGoogle() {
+  async function signInWithGoogle(googleClientId2) {
     if (!supabaseClient) {
       throw new Error("Supabase client not initialized");
     }
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: chrome.identity.getRedirectURL(),
-        scopes: "https://www.googleapis.com/auth/calendar.readonly",
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent"
+    if (!googleClientId2) {
+      throw new Error("Google Client ID is required");
+    }
+    const redirectURL = chrome.identity.getRedirectURL();
+    const scopes = [
+      "openid",
+      "email",
+      "profile",
+      "https://www.googleapis.com/auth/calendar.readonly"
+    ];
+    const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authURL.searchParams.set("client_id", googleClientId2);
+    authURL.searchParams.set("response_type", "token id_token");
+    authURL.searchParams.set("redirect_uri", redirectURL);
+    authURL.searchParams.set("scope", scopes.join(" "));
+    authURL.searchParams.set("access_type", "offline");
+    authURL.searchParams.set("prompt", "consent");
+    return new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: authURL.toString(),
+          interactive: true
+        },
+        async (responseURL) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (!responseURL) {
+            reject(new Error("No response from OAuth flow"));
+            return;
+          }
+          try {
+            const url = new URL(responseURL);
+            const hash = url.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get("access_token");
+            const idToken = params.get("id_token");
+            const expiresIn = parseInt(params.get("expires_in") || "3600");
+            if (!accessToken || !idToken) {
+              reject(new Error("Failed to get tokens from OAuth response"));
+              return;
+            }
+            const { data, error } = await supabaseClient.auth.signInWithIdToken({
+              provider: "google",
+              token: idToken,
+              access_token: accessToken
+            });
+            if (error) {
+              reject(error);
+              return;
+            }
+            resolve({
+              user: data.user,
+              session: data.session,
+              accessToken,
+              expiresIn
+            });
+          } catch (error) {
+            reject(error);
+          }
         }
-      }
+      );
     });
-    if (error)
-      throw error;
-    return data;
   }
   async function signOut() {
     if (!supabaseClient) {
@@ -11297,6 +11347,7 @@ ${suffix}`;
   var closeSettings = document.getElementById("closeSettings");
   var saveSettings = document.getElementById("saveSettings");
   var fontStyle = document.getElementById("fontStyle");
+  var googleClientId = document.getElementById("googleClientId");
   var notionApiKey = document.getElementById("notionApiKey");
   var notionDatabaseId = document.getElementById("notionDatabaseId");
   var supabaseUrl = document.getElementById("supabaseUrl");
@@ -12125,6 +12176,7 @@ ${content}`;
   }
   function openSettingsModal() {
     fontStyle.value = settings.fontStyle || "mono";
+    googleClientId.value = settings.googleClientId || "";
     notionApiKey.value = settings.notionApiKey || "";
     notionDatabaseId.value = settings.notionDatabaseId || "";
     supabaseUrl.value = settings.supabaseUrl || "";
@@ -12137,6 +12189,7 @@ ${content}`;
   }
   async function saveSettingsData() {
     settings.fontStyle = fontStyle.value;
+    settings.googleClientId = googleClientId.value.trim();
     settings.notionApiKey = notionApiKey.value.trim();
     settings.notionDatabaseId = notionDatabaseId.value.trim();
     settings.supabaseUrl = supabaseUrl.value.trim();
@@ -12610,13 +12663,26 @@ ${content}`;
     }
   }
   async function handleSignInWithGoogle() {
+    if (!settings.googleClientId) {
+      showAuthStatus("Please configure Google Client ID in settings first", "error");
+      return;
+    }
     try {
       showAuthStatus("Opening Google sign-in...", "info");
-      const { url } = await signInWithGoogle();
-      if (url) {
-        window.open(url, "_blank", "width=500,height=600");
-        showAuthStatus("Complete sign-in in the popup window", "info");
-      }
+      const result = await signInWithGoogle(settings.googleClientId);
+      calendarToken = {
+        access_token: result.accessToken,
+        timestamp: Date.now(),
+        expires_at: Date.now() + result.expiresIn * 1e3,
+        expires_in: result.expiresIn
+      };
+      localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
+      isCalendarConnected = true;
+      currentUser = result.user;
+      showAuthStatus("Signed in successfully!", "success");
+      updateAuthUI();
+      await syncTokensFromSupabase();
+      await fetchCalendarEvents(true);
     } catch (error) {
       console.error("Sign in error:", error);
       showAuthStatus(error.message || "Sign in failed", "error");
@@ -12657,7 +12723,12 @@ ${content}`;
   function updateAuthUI() {
     if (!isSupabaseInitialized) {
       authContainer.classList.add("hidden");
-      showAuthStatus("Configure Supabase credentials and enable Google OAuth in Supabase", "info");
+      showAuthStatus("Configure Supabase URL and Anon Key to enable authentication", "info");
+      return;
+    }
+    if (!settings.googleClientId) {
+      authContainer.classList.add("hidden");
+      showAuthStatus("Configure Google Client ID to enable sign-in", "info");
       return;
     }
     authContainer.classList.remove("hidden");
