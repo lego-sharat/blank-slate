@@ -1768,6 +1768,11 @@ async function handleSignOut() {
     showAuthStatus('Signing out...', 'info');
     await signOut();
     currentUser = null;
+    isCalendarConnected = false;
+
+    // Clear provider token from storage
+    await chrome.storage.local.remove('google_provider_token');
+
     showAuthStatus('Signed out successfully', 'success');
     updateAuthUI();
   } catch (error) {
@@ -1815,9 +1820,9 @@ async function handleOAuthCallback() {
   try {
     console.log('=== OAuth Callback Handler Started ===');
 
-    // Retrieve tokens from temporary storage
+    // Retrieve callback data from storage
     const result = await chrome.storage.local.get('supabase_auth_callback');
-    console.log('Storage data retrieved:', result);
+    console.log('Storage data retrieved');
 
     if (!result.supabase_auth_callback) {
       console.error('No callback data found in storage');
@@ -1825,19 +1830,32 @@ async function handleOAuthCallback() {
       return;
     }
 
-    const { access_token, refresh_token, provider_token, provider_refresh_token } = result.supabase_auth_callback;
+    const { hash } = result.supabase_auth_callback;
 
-    console.log('Tokens received:', {
-      hasAccessToken: !!access_token,
-      hasRefreshToken: !!refresh_token,
-      hasProviderToken: !!provider_token,
-      hasProviderRefreshToken: !!provider_refresh_token,
-      accessTokenLength: access_token?.length,
-      providerTokenLength: provider_token?.length
+    if (!hash) {
+      console.error('No hash fragment in callback data');
+      showAuthStatus('Authentication failed: Invalid callback data', 'error');
+      return;
+    }
+
+    // Parse all tokens from the hash fragment
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    const providerToken = params.get('provider_token');
+    const providerRefreshToken = params.get('provider_refresh_token');
+    const expiresIn = params.get('expires_in');
+
+    console.log('Parsed tokens from callback:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      hasProviderToken: !!providerToken,
+      hasProviderRefreshToken: !!providerRefreshToken,
+      expiresIn
     });
 
-    if (!access_token) {
-      console.error('No access token in callback data');
+    if (!accessToken) {
+      console.error('No access token in callback');
       showAuthStatus('Authentication failed: No access token', 'error');
       return;
     }
@@ -1850,12 +1868,12 @@ async function handleOAuthCallback() {
       return;
     }
 
-    console.log('Setting session with tokens...');
+    console.log('Setting Supabase session...');
 
-    // Set the session with the tokens from OAuth callback
+    // Set the session with Supabase tokens
     const { data, error } = await supabase.auth.setSession({
-      access_token,
-      refresh_token
+      access_token: accessToken,
+      refresh_token: refreshToken
     });
 
     if (error) {
@@ -1866,8 +1884,23 @@ async function handleOAuthCallback() {
 
     console.log('Session set successfully');
     console.log('User email:', data.session?.user?.email);
-    console.log('Session provider_token:', data.session?.provider_token ? 'present (length: ' + data.session.provider_token.length + ')' : 'MISSING');
-    console.log('Session provider_refresh_token:', data.session?.provider_refresh_token ? 'present' : 'missing');
+
+    // IMPORTANT: Store provider_token separately
+    // Supabase's setSession() doesn't preserve provider_token from the hash
+    // We need to store it ourselves for Calendar API access
+    if (providerToken) {
+      console.log('Storing provider_token separately for Calendar API (length:', providerToken.length, ')');
+      await chrome.storage.local.set({
+        google_provider_token: {
+          token: providerToken,
+          refresh_token: providerRefreshToken,
+          expires_in: parseInt(expiresIn) || 3600,
+          timestamp: Date.now()
+        }
+      });
+    } else {
+      console.warn('⚠️ No provider_token in OAuth callback - Calendar will not work');
+    }
 
     // Update current user
     currentUser = data.session?.user || null;
@@ -1876,21 +1909,15 @@ async function handleOAuthCallback() {
     showAuthStatus('Signed in successfully!', 'success');
     updateAuthUI();
 
-    // Check if we have provider_token before trying to fetch calendar
-    if (!data.session?.provider_token) {
-      console.warn('⚠️ WARNING: No provider_token in session. Calendar access will not work.');
-      console.warn('This means Supabase did not receive the Google OAuth token.');
-      console.warn('Check your Supabase project settings:');
-      console.warn('1. Google OAuth provider is configured correctly');
-      console.warn('2. Calendar scopes are enabled');
-      showAuthStatus('Signed in, but calendar access unavailable. Check Supabase OAuth settings.', 'error');
-    } else {
+    if (providerToken) {
       isCalendarConnected = true;
       console.log('Fetching calendar events...');
       await fetchCalendarEvents(true);
+    } else {
+      showAuthStatus('Signed in, but calendar access unavailable. No provider token received.', 'error');
     }
 
-    // Clear temporary storage
+    // Clear temporary callback storage
     await chrome.storage.local.remove('supabase_auth_callback');
     console.log('=== OAuth Callback Handler Complete ===');
 

@@ -155,18 +155,28 @@ export async function getGoogleAccessToken() {
     return null;
   }
 
-  if (!session.provider_token) {
-    console.warn('getGoogleAccessToken: Session exists but no provider_token');
-    console.warn('Session data:', {
-      user: session.user?.email,
-      expires_at: session.expires_at,
-      provider: session.user?.app_metadata?.provider
-    });
-    return null;
+  // First try to get provider_token from Supabase session
+  if (session.provider_token) {
+    console.log('getGoogleAccessToken: Returning provider_token from session (length:', session.provider_token.length, ')');
+    return session.provider_token;
   }
 
-  console.log('getGoogleAccessToken: Returning provider_token (length:', session.provider_token.length, ')');
-  return session.provider_token;
+  // If not in session, try to get from chrome.storage (where we stored it separately)
+  console.log('getGoogleAccessToken: No provider_token in session, checking chrome.storage...');
+  const result = await chrome.storage.local.get('google_provider_token');
+
+  if (result.google_provider_token && result.google_provider_token.token) {
+    console.log('getGoogleAccessToken: Found provider_token in chrome.storage (length:', result.google_provider_token.token.length, ')');
+    return result.google_provider_token.token;
+  }
+
+  console.warn('getGoogleAccessToken: No provider_token found anywhere');
+  console.warn('Session data:', {
+    user: session.user?.email,
+    expires_at: session.expires_at,
+    provider: session.user?.app_metadata?.provider
+  });
+  return null;
 }
 
 /**

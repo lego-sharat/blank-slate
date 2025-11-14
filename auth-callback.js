@@ -1,56 +1,49 @@
 // This script handles the OAuth callback from Supabase
+// We need to store the entire callback URL so the main app can let Supabase parse it
 (async () => {
   try {
-    console.log('Auth callback page loaded');
+    console.log('=== Auth Callback Page Loaded ===');
 
-    // Get the hash fragment from the URL
-    const hash = window.location.hash.substring(1);
+    // Get the full URL with hash fragment
+    const callbackUrl = window.location.href;
+    const hash = window.location.hash;
 
     if (!hash) {
       throw new Error('No authentication data received');
     }
 
-    console.log('Hash fragment received, parsing tokens...');
+    console.log('Callback URL received with hash fragment');
 
-    // Parse the hash parameters
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const expiresIn = params.get('expires_in');
-    const providerToken = params.get('provider_token');
-    const providerRefreshToken = params.get('provider_refresh_token');
+    // Parse the hash to verify we have tokens
+    const params = new URLSearchParams(hash.substring(1));
+    const hasAccessToken = !!params.get('access_token');
+    const hasProviderToken = !!params.get('provider_token');
 
-    if (!accessToken) {
-      throw new Error('No access token received');
-    }
-
-    console.log('OAuth callback received:', {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      hasProviderToken: !!providerToken,
-      hasProviderRefreshToken: !!providerRefreshToken,
-      expiresIn,
-      accessTokenLength: accessToken?.length,
-      providerTokenLength: providerToken?.length
+    console.log('Tokens present:', {
+      access_token: hasAccessToken,
+      provider_token: hasProviderToken,
+      refresh_token: !!params.get('refresh_token'),
+      provider_refresh_token: !!params.get('provider_refresh_token')
     });
 
-    // Store the tokens temporarily so the main app can pick them up
+    if (!hasAccessToken) {
+      throw new Error('No access token in callback URL');
+    }
+
+    // Store the callback URL with hash so main app can process it with Supabase
     await chrome.storage.local.set({
       supabase_auth_callback: {
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_in: parseInt(expiresIn) || 3600,
-        provider_token: providerToken,
-        provider_refresh_token: providerRefreshToken,
+        callback_url: callbackUrl,
+        hash: hash,
         timestamp: Date.now()
       }
     });
 
-    console.log('Tokens stored in chrome.storage.local');
+    console.log('Callback URL stored successfully');
 
-    // Notify the extension that auth completed
+    // Notify the extension that auth callback is ready
     chrome.runtime.sendMessage({ type: 'AUTH_CALLBACK_COMPLETE' }, (response) => {
-      console.log('Message sent to extension, response:', response);
+      console.log('Notified main extension, response:', response);
       // Close this window after a short delay
       setTimeout(() => {
         console.log('Closing callback window...');
