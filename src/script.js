@@ -1658,6 +1658,16 @@ async function initializeSupabase() {
     if (client) {
       isSupabaseInitialized = true;
       console.log('Supabase initialized successfully');
+
+      // Log the callback URL for Supabase configuration
+      const callbackUrl = chrome.runtime.getURL('auth-callback.html');
+      console.log('\n📋 IMPORTANT: Add this URL to your Supabase project settings:');
+      console.log('URL:', callbackUrl);
+      console.log('\nSteps:');
+      console.log('1. Go to: https://supabase.com/dashboard/project/YOUR_PROJECT/auth/url-configuration');
+      console.log('2. Under "Redirect URLs", add the URL above');
+      console.log('3. Click Save');
+      console.log('');
     }
   } catch (error) {
     console.error('Error initializing Supabase:', error);
@@ -1696,12 +1706,16 @@ async function checkAuthStatus() {
  */
 async function handleSignInWithGoogle() {
   try {
+    console.log('=== Starting Google Sign-In ===');
     showAuthStatus('Opening Google sign-in...', 'info');
+
     const { url } = await signInWithGoogle();
 
     if (!url) {
       throw new Error('Failed to get OAuth URL');
     }
+
+    console.log('Opening OAuth popup...');
 
     // Open OAuth in a popup window
     const width = 500;
@@ -1715,10 +1729,17 @@ async function handleSignInWithGoogle() {
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
+    if (!popup) {
+      throw new Error('Failed to open popup. Check if popups are blocked.');
+    }
+
+    console.log('Popup opened, waiting for authentication...');
+
     // Monitor the popup for completion
     const checkPopup = setInterval(async () => {
       if (!popup || popup.closed) {
         clearInterval(checkPopup);
+        console.log('Popup closed, checking authentication status...');
 
         // Check if user is now authenticated
         await checkAuthStatus();

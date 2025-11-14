@@ -78,12 +78,15 @@ export async function signInWithGoogle() {
   // Get the extension's callback URL
   const callbackUrl = chrome.runtime.getURL('auth-callback.html');
 
+  console.log('Initiating OAuth with callback URL:', callbackUrl);
+
   // Use Supabase OAuth with popup flow
+  // IMPORTANT: skipBrowserRedirect must be TRUE to prevent auto-redirect in current window
   const { data, error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: callbackUrl,
-      skipBrowserRedirect: false,
+      skipBrowserRedirect: true, // Prevent auto-redirect, we'll open popup manually
       scopes: 'https://www.googleapis.com/auth/calendar.readonly',
       queryParams: {
         access_type: 'offline',
@@ -93,6 +96,8 @@ export async function signInWithGoogle() {
   });
 
   if (error) throw error;
+
+  console.log('OAuth URL generated:', data.url);
 
   // Return the OAuth URL to open in a popup
   return data;
