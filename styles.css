@@ -60,6 +60,50 @@
   --scrollbar-thumb-hover: #81a2be; /* Scrollbar thumb hover (dark theme) - accent color */
 }
 
+/* Tomorrow Light Theme */
+body.light-theme {
+  /* Background colors */
+  --bg-primary: #ffffff;        /* Main light background */
+  --bg-secondary: #fafafa;      /* Secondary/elevated background */
+  --bg-tertiary: #f0f0f0;       /* Tertiary background */
+  --bg-elevated: #e8e8e8;       /* Elevated elements */
+
+  /* Text colors */
+  --text-primary: #4d4d4c;      /* Primary text (dark gray) */
+  --text-secondary: #8e908c;    /* Secondary/muted text (gray) */
+  --text-tertiary: #b0b0b0;     /* Placeholder text */
+  --text-inverted: #ffffff;     /* Light text on dark background */
+
+  /* Border colors */
+  --border-subtle: #e8e8e8;     /* Subtle borders */
+  --border-default: #d6d6d6;    /* Default borders */
+  --border-emphasis: #4271ae;   /* Emphasized borders (blue) */
+
+  /* Accent colors - Tomorrow Light palette */
+  --accent-primary: #4271ae;    /* Tomorrow Light blue */
+  --accent-primary-hover: #5a8ac4; /* Lighter blue on hover */
+  --accent-secondary: #8959a8;  /* Tomorrow Light purple */
+  --accent-yellow: #eab700;     /* Tomorrow Light yellow (for code) */
+  --accent-red: #c82829;        /* Tomorrow Light red (for danger) */
+  --accent-green: #718c00;      /* Tomorrow Light green (for success) */
+  --accent-danger: #c82829;     /* Danger/error red */
+
+  /* Interactive states */
+  --hover-bg: #f5f5f5;          /* Hover background */
+  --hover-bg-light: #ebebeb;    /* Alternative hover background */
+  --hover-bg-light-alt: #e0e0e0; /* Alternative light hover background */
+  --active-bg: #e8e8e8;         /* Active background */
+  --focus-outline: #4271ae;     /* Focus outline color */
+  --drag-over-bg: #d6d6d6;      /* Drag over background */
+  --editing-bg: #ffffff;        /* Editing state background */
+  --border-hover-alt: #c0c0c0;  /* Alternative border on hover */
+
+  /* Scrollbar colors */
+  --scrollbar-track: #f0f0f0;   /* Scrollbar track */
+  --scrollbar-thumb: #c0c0c0;   /* Scrollbar thumb */
+  --scrollbar-thumb-hover: #a0a0a0; /* Scrollbar thumb hover */
+}
+
 body {
   font-family: 'Courier New', Courier, monospace;
   background-color: var(--bg-light);
@@ -377,8 +421,9 @@ body.handwriting-font #todoInput {
   border-top: 1px solid var(--border-subtle);
   background-color: var(--bg-secondary); /* Match sidebar background */
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
 }
 
 .sidebar-item {
