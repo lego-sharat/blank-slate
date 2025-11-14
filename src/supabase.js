@@ -2,18 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 
 // Configuration - Users need to set these in Settings
 let supabaseClient = null;
+let supabaseUrl = null;
 
 /**
  * Initialize Supabase client with user's credentials
  */
-export function initSupabase(supabaseUrl, supabaseKey) {
-  if (!supabaseUrl || !supabaseKey) {
+export function initSupabase(url, supabaseKey) {
+  if (!url || !supabaseKey) {
     console.error('Supabase credentials are required');
     return null;
   }
 
   try {
-    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+    supabaseUrl = url; // Store URL for edge function calls
+    supabaseClient = createClient(url, supabaseKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -140,7 +142,103 @@ export async function getSession() {
 }
 
 /**
+ * Refresh the Google provider token using the refresh token
+ */
+export async function refreshGoogleToken() {
+  console.log('refreshGoogleToken: Starting token refresh...');
+
+  // Get the stored refresh token
+  const result = await chrome.storage.local.get('google_provider_token');
+
+  if (!result.google_provider_token || !result.google_provider_token.refresh_token) {
+    console.error('refreshGoogleToken: No refresh token available');
+    return null;
+  }
+
+  const { refresh_token } = result.google_provider_token;
+
+  try {
+    // First, try to refresh the Supabase session which might also refresh the provider token
+    if (supabaseClient) {
+      console.log('refreshGoogleToken: Attempting Supabase session refresh...');
+      const { data, error } = await supabaseClient.auth.refreshSession();
+
+      if (!error && data.session?.provider_token) {
+        console.log('refreshGoogleToken: Got new provider_token from Supabase session refresh');
+
+        // Update stored token
+        await chrome.storage.local.set({
+          google_provider_token: {
+            token: data.session.provider_token,
+            refresh_token: refresh_token,
+            expires_in: 3600,
+            timestamp: Date.now()
+          }
+        });
+
+        return data.session.provider_token;
+      }
+
+      console.log('refreshGoogleToken: Supabase session refresh did not return provider_token');
+    }
+
+    // Fallback: Try to use the Supabase Edge Function for token refresh
+    if (supabaseUrl && supabaseClient) {
+      console.log('refreshGoogleToken: Attempting token refresh via Edge Function...');
+
+      const session = await getSession();
+      if (!session) {
+        console.error('refreshGoogleToken: No active session for Edge Function call');
+        return null;
+      }
+
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/refresh-google-token`;
+
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refresh_token: refresh_token
+        })
+      });
+
+      if (response.ok) {
+        const tokenData = await response.json();
+        console.log('refreshGoogleToken: Successfully refreshed token via Edge Function');
+
+        // Update stored token
+        await chrome.storage.local.set({
+          google_provider_token: {
+            token: tokenData.access_token,
+            refresh_token: refresh_token,
+            expires_in: tokenData.expires_in || 3600,
+            timestamp: Date.now()
+          }
+        });
+
+        return tokenData.access_token;
+      } else {
+        const errorText = await response.text();
+        console.error('refreshGoogleToken: Edge Function failed:', errorText);
+      }
+    }
+
+    // If all methods failed, we need to re-authenticate
+    console.warn('refreshGoogleToken: All refresh methods failed. User needs to re-authenticate.');
+    return null;
+
+  } catch (error) {
+    console.error('refreshGoogleToken: Error refreshing token:', error);
+    return null;
+  }
+}
+
+/**
  * Get Google access token from the session for Calendar API
+ * Automatically checks expiration and refreshes if needed
  */
 export async function getGoogleAccessToken() {
   if (!supabaseClient) {
@@ -166,8 +264,27 @@ export async function getGoogleAccessToken() {
   const result = await chrome.storage.local.get('google_provider_token');
 
   if (result.google_provider_token && result.google_provider_token.token) {
-    console.log('getGoogleAccessToken: Found provider_token in chrome.storage (length:', result.google_provider_token.token.length, ')');
-    return result.google_provider_token.token;
+    const tokenData = result.google_provider_token;
+    const tokenAge = Date.now() - (tokenData.timestamp || 0);
+    const expiresIn = (tokenData.expires_in || 3600) * 1000; // Convert to ms
+
+    // Check if token is expired or about to expire (within 5 minutes)
+    if (tokenAge >= expiresIn - 300000) {
+      console.log('getGoogleAccessToken: Token expired or expiring soon, attempting refresh...');
+      const newToken = await refreshGoogleToken();
+      if (newToken) {
+        console.log('getGoogleAccessToken: Token refreshed successfully');
+        return newToken;
+      } else {
+        console.warn('getGoogleAccessToken: Token refresh failed, returning expired token');
+        // Return the expired token anyway - the API call will fail with 401
+        // and we'll trigger a re-authentication
+        return tokenData.token;
+      }
+    }
+
+    console.log('getGoogleAccessToken: Found valid provider_token in chrome.storage (length:', tokenData.token.length, ')');
+    return tokenData.token;
   }
 
   console.warn('getGoogleAccessToken: No provider_token found anywhere');
