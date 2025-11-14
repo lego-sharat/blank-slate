@@ -67,91 +67,31 @@ export function getSupabase() {
 }
 
 /**
- * Sign in with Google OAuth using Chrome Identity API
- * This works properly in Chrome extensions and provides Calendar access
+ * Sign in with Google OAuth using Supabase
+ * Opens OAuth in a popup window and handles the callback
  */
-export async function signInWithGoogle(googleClientId) {
+export async function signInWithGoogle() {
   if (!supabaseClient) {
     throw new Error('Supabase client not initialized');
   }
 
-  if (!googleClientId) {
-    throw new Error('Google Client ID is required');
-  }
-
-  // Build OAuth URL for Chrome identity flow
-  const redirectURL = chrome.identity.getRedirectURL();
-  const scopes = [
-    'openid',
-    'email',
-    'profile',
-    'https://www.googleapis.com/auth/calendar.readonly'
-  ];
-
-  const authURL = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  authURL.searchParams.set('client_id', googleClientId);
-  authURL.searchParams.set('response_type', 'token id_token');
-  authURL.searchParams.set('redirect_uri', redirectURL);
-  authURL.searchParams.set('scope', scopes.join(' '));
-  authURL.searchParams.set('access_type', 'offline');
-  authURL.searchParams.set('prompt', 'consent');
-
-  return new Promise((resolve, reject) => {
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: authURL.toString(),
-        interactive: true
-      },
-      async (responseURL) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
-        }
-
-        if (!responseURL) {
-          reject(new Error('No response from OAuth flow'));
-          return;
-        }
-
-        try {
-          // Parse the response URL to get tokens
-          const url = new URL(responseURL);
-          const hash = url.hash.substring(1);
-          const params = new URLSearchParams(hash);
-
-          const accessToken = params.get('access_token');
-          const idToken = params.get('id_token');
-          const expiresIn = parseInt(params.get('expires_in') || '3600');
-
-          if (!accessToken || !idToken) {
-            reject(new Error('Failed to get tokens from OAuth response'));
-            return;
-          }
-
-          // Sign in to Supabase using the Google ID token
-          const { data, error } = await supabaseClient.auth.signInWithIdToken({
-            provider: 'google',
-            token: idToken,
-            access_token: accessToken
-          });
-
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          resolve({
-            user: data.user,
-            session: data.session,
-            accessToken: accessToken,
-            expiresIn: expiresIn
-          });
-        } catch (error) {
-          reject(error);
-        }
+  // Use Supabase OAuth with popup flow
+  const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      skipBrowserRedirect: false,
+      scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent'
       }
-    );
+    }
   });
+
+  if (error) throw error;
+
+  // Return the OAuth URL to open in a popup
+  return data;
 }
 
 /**

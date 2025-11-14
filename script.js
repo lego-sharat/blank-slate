@@ -11171,74 +11171,24 @@ ${suffix}`;
       return null;
     }
   }
-  async function signInWithGoogle(googleClientId2) {
+  async function signInWithGoogle() {
     if (!supabaseClient) {
       throw new Error("Supabase client not initialized");
     }
-    if (!googleClientId2) {
-      throw new Error("Google Client ID is required");
-    }
-    const redirectURL = chrome.identity.getRedirectURL();
-    const scopes = [
-      "openid",
-      "email",
-      "profile",
-      "https://www.googleapis.com/auth/calendar.readonly"
-    ];
-    const authURL = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    authURL.searchParams.set("client_id", googleClientId2);
-    authURL.searchParams.set("response_type", "token id_token");
-    authURL.searchParams.set("redirect_uri", redirectURL);
-    authURL.searchParams.set("scope", scopes.join(" "));
-    authURL.searchParams.set("access_type", "offline");
-    authURL.searchParams.set("prompt", "consent");
-    return new Promise((resolve, reject) => {
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: authURL.toString(),
-          interactive: true
-        },
-        async (responseURL) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
-          }
-          if (!responseURL) {
-            reject(new Error("No response from OAuth flow"));
-            return;
-          }
-          try {
-            const url = new URL(responseURL);
-            const hash = url.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get("access_token");
-            const idToken = params.get("id_token");
-            const expiresIn = parseInt(params.get("expires_in") || "3600");
-            if (!accessToken || !idToken) {
-              reject(new Error("Failed to get tokens from OAuth response"));
-              return;
-            }
-            const { data, error } = await supabaseClient.auth.signInWithIdToken({
-              provider: "google",
-              token: idToken,
-              access_token: accessToken
-            });
-            if (error) {
-              reject(error);
-              return;
-            }
-            resolve({
-              user: data.user,
-              session: data.session,
-              accessToken,
-              expiresIn
-            });
-          } catch (error) {
-            reject(error);
-          }
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        skipBrowserRedirect: false,
+        scopes: "https://www.googleapis.com/auth/calendar.readonly",
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent"
         }
-      );
+      }
     });
+    if (error)
+      throw error;
+    return data;
   }
   async function signOut() {
     if (!supabaseClient) {
@@ -11347,7 +11297,6 @@ ${suffix}`;
   var closeSettings = document.getElementById("closeSettings");
   var saveSettings = document.getElementById("saveSettings");
   var fontStyle = document.getElementById("fontStyle");
-  var googleClientId = document.getElementById("googleClientId");
   var notionApiKey = document.getElementById("notionApiKey");
   var notionDatabaseId = document.getElementById("notionDatabaseId");
   var supabaseUrl = document.getElementById("supabaseUrl");
@@ -12176,7 +12125,6 @@ ${content}`;
   }
   function openSettingsModal() {
     fontStyle.value = settings.fontStyle || "mono";
-    googleClientId.value = settings.googleClientId || "";
     notionApiKey.value = settings.notionApiKey || "";
     notionDatabaseId.value = settings.notionDatabaseId || "";
     supabaseUrl.value = settings.supabaseUrl || "";
@@ -12189,7 +12137,6 @@ ${content}`;
   }
   async function saveSettingsData() {
     settings.fontStyle = fontStyle.value;
-    settings.googleClientId = googleClientId.value.trim();
     settings.notionApiKey = notionApiKey.value.trim();
     settings.notionDatabaseId = notionDatabaseId.value.trim();
     settings.supabaseUrl = supabaseUrl.value.trim();
@@ -12329,32 +12276,10 @@ ${content}`;
     }
   }
   async function fetchCalendarEvents(showLoading = false) {
-    if (!isCalendarConnected || !calendarToken) {
+    if (!currentUser) {
       calendarStatus.classList.remove("hidden");
       calendarEventsList.classList.add("hidden");
       return;
-    }
-    const now = Date.now();
-    if (calendarToken.expires_at && now >= calendarToken.expires_at) {
-      console.log("Token has expired, clearing connection");
-      localStorage.removeItem(CALENDAR_TOKEN_KEY);
-      localStorage.removeItem(CALENDAR_EVENTS_KEY);
-      calendarToken = null;
-      isCalendarConnected = false;
-      calendarEvents = [];
-      if (calendarFetchInterval) {
-        clearInterval(calendarFetchInterval);
-        calendarFetchInterval = null;
-      }
-      calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button><p class="calendar-error">Session expired. Please reconnect.</p>';
-      calendarStatus.classList.remove("hidden");
-      calendarEventsList.classList.add("hidden");
-      document.getElementById("connectCalendar").addEventListener("click", connectGoogleCalendar);
-      return;
-    }
-    const timeUntilExpiry = calendarToken.expires_at ? calendarToken.expires_at - now : Infinity;
-    if (timeUntilExpiry < 5 * 60 * 1e3) {
-      console.warn(`Token will expire in ${Math.floor(timeUntilExpiry / 1e3)} seconds. Consider re-authenticating.`);
     }
     if (showLoading) {
       calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
@@ -12362,6 +12287,16 @@ ${content}`;
       calendarEventsList.classList.add("hidden");
     }
     try {
+      const accessToken = await getGoogleAccessToken();
+      if (!accessToken) {
+        console.log("No Google access token found in session");
+        calendarStatus.innerHTML = '<p class="calendar-error">Please sign in again to access calendar</p>';
+        calendarStatus.classList.remove("hidden");
+        calendarEventsList.classList.add("hidden");
+        isCalendarConnected = false;
+        return;
+      }
+      isCalendarConnected = true;
       const currentDate = /* @__PURE__ */ new Date();
       const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0);
       const endOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59);
@@ -12369,25 +12304,16 @@ ${content}`;
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startOfDay.toISOString()}&timeMax=${endOfDay.toISOString()}&singleEvents=true&orderBy=startTime`,
         {
           headers: {
-            "Authorization": `Bearer ${calendarToken.access_token}`
+            "Authorization": `Bearer ${accessToken}`
           }
         }
       );
       if (response.status === 401) {
-        console.log("Received 401 Unauthorized, token is invalid");
-        localStorage.removeItem(CALENDAR_TOKEN_KEY);
-        localStorage.removeItem(CALENDAR_EVENTS_KEY);
-        calendarToken = null;
-        isCalendarConnected = false;
-        calendarEvents = [];
-        if (calendarFetchInterval) {
-          clearInterval(calendarFetchInterval);
-          calendarFetchInterval = null;
-        }
-        calendarStatus.innerHTML = '<button id="connectCalendar" class="btn-primary">Connect Google Calendar</button><p class="calendar-error">Session expired. Please reconnect.</p>';
+        console.log("Received 401 Unauthorized, please sign in again");
+        calendarStatus.innerHTML = '<p class="calendar-error">Session expired. Please sign in again.</p>';
         calendarStatus.classList.remove("hidden");
         calendarEventsList.classList.add("hidden");
-        document.getElementById("connectCalendar").addEventListener("click", connectGoogleCalendar);
+        isCalendarConnected = false;
         return;
       }
       if (!response.ok) {
@@ -12663,26 +12589,35 @@ ${content}`;
     }
   }
   async function handleSignInWithGoogle() {
-    if (!settings.googleClientId) {
-      showAuthStatus("Please configure Google Client ID in settings first", "error");
-      return;
-    }
     try {
       showAuthStatus("Opening Google sign-in...", "info");
-      const result = await signInWithGoogle(settings.googleClientId);
-      calendarToken = {
-        access_token: result.accessToken,
-        timestamp: Date.now(),
-        expires_at: Date.now() + result.expiresIn * 1e3,
-        expires_in: result.expiresIn
-      };
-      localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
-      isCalendarConnected = true;
-      currentUser = result.user;
-      showAuthStatus("Signed in successfully!", "success");
-      updateAuthUI();
-      await syncTokensFromSupabase();
-      await fetchCalendarEvents(true);
+      const { url } = await signInWithGoogle();
+      if (!url) {
+        throw new Error("Failed to get OAuth URL");
+      }
+      const width = 500;
+      const height = 600;
+      const left = screen.width / 2 - width / 2;
+      const top = screen.height / 2 - height / 2;
+      const popup = window.open(
+        url,
+        "Google Sign In",
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      const checkPopup = setInterval(async () => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          await checkAuthStatus();
+          const session = await getSession();
+          if (session) {
+            showAuthStatus("Signed in successfully!", "success");
+            isCalendarConnected = true;
+            await fetchCalendarEvents(true);
+          } else {
+            showAuthStatus("Sign in cancelled or failed", "error");
+          }
+        }
+      }, 500);
     } catch (error) {
       console.error("Sign in error:", error);
       showAuthStatus(error.message || "Sign in failed", "error");
@@ -12724,11 +12659,6 @@ ${content}`;
     if (!isSupabaseInitialized) {
       authContainer.classList.add("hidden");
       showAuthStatus("Configure Supabase URL and Anon Key to enable authentication", "info");
-      return;
-    }
-    if (!settings.googleClientId) {
-      authContainer.classList.add("hidden");
-      showAuthStatus("Configure Google Client ID to enable sign-in", "info");
       return;
     }
     authContainer.classList.remove("hidden");
