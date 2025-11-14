@@ -14,5 +14,11 @@
     "https://api.notion.com/*",
     "https://www.googleapis.com/*",
     "https://*.supabase.co/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["auth-callback.html"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }

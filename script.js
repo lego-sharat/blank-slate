@@ -11171,13 +11171,18 @@ ${suffix}`;
       return null;
     }
   }
+  function getSupabase() {
+    return supabaseClient;
+  }
   async function signInWithGoogle() {
     if (!supabaseClient) {
       throw new Error("Supabase client not initialized");
     }
+    const callbackUrl = chrome.runtime.getURL("auth-callback.html");
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
+        redirectTo: callbackUrl,
         skipBrowserRedirect: false,
         scopes: "https://www.googleapis.com/auth/calendar.readonly",
         queryParams: {
@@ -11377,6 +11382,13 @@ ${suffix}`;
     supabaseUrl.addEventListener("input", handleSupabaseConfigChange);
     supabaseKey.addEventListener("input", handleSupabaseConfigChange);
     window.addEventListener("supabase-auth-changed", handleAuthStateChange);
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === "AUTH_CALLBACK_COMPLETE") {
+        handleOAuthCallback();
+        sendResponse({ received: true });
+      }
+      return true;
+    });
     settingsModal.addEventListener("click", (e) => {
       if (e.target === settingsModal) {
         closeSettingsModal();
@@ -12654,6 +12666,46 @@ ${content}`;
       currentUser = null;
     }
     updateAuthUI();
+  }
+  async function handleOAuthCallback() {
+    try {
+      console.log("Handling OAuth callback...");
+      const result = await chrome.storage.local.get("supabase_auth_callback");
+      if (!result.supabase_auth_callback) {
+        console.error("No callback data found");
+        return;
+      }
+      const { access_token, refresh_token, provider_token } = result.supabase_auth_callback;
+      if (!access_token) {
+        console.error("No access token in callback data");
+        return;
+      }
+      console.log("Setting session with callback tokens...");
+      const supabase = getSupabase();
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return;
+      }
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token
+      });
+      if (error) {
+        console.error("Error setting session:", error);
+        showAuthStatus("Authentication failed: " + error.message, "error");
+        return;
+      }
+      console.log("Session set successfully:", data.session?.user?.email);
+      currentUser = data.session?.user || null;
+      showAuthStatus("Signed in successfully!", "success");
+      updateAuthUI();
+      isCalendarConnected = true;
+      await fetchCalendarEvents(true);
+      await chrome.storage.local.remove("supabase_auth_callback");
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      showAuthStatus("Authentication failed: " + error.message, "error");
+    }
   }
   function updateAuthUI() {
     if (!isSupabaseInitialized) {

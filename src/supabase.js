@@ -75,10 +75,14 @@ export async function signInWithGoogle() {
     throw new Error('Supabase client not initialized');
   }
 
+  // Get the extension's callback URL
+  const callbackUrl = chrome.runtime.getURL('auth-callback.html');
+
   // Use Supabase OAuth with popup flow
   const { data, error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
+      redirectTo: callbackUrl,
       skipBrowserRedirect: false,
       scopes: 'https://www.googleapis.com/auth/calendar.readonly',
       queryParams: {

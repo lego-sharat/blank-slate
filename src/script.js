@@ -197,6 +197,15 @@ function setupEventListeners() {
   // Listen for auth state changes
   window.addEventListener('supabase-auth-changed', handleAuthStateChange);
 
+  // Listen for OAuth callback completion
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'AUTH_CALLBACK_COMPLETE') {
+      handleOAuthCallback();
+      sendResponse({ received: true });
+    }
+    return true; // Keep the message channel open for async response
+  });
+
   // Modal backdrop click
   settingsModal.addEventListener('click', (e) => {
     if (e.target === settingsModal) {
@@ -1810,17 +1819,81 @@ function handleSupabaseConfigChange() {
  */
 async function handleAuthStateChange(event) {
   const { event: authEvent, session } = event.detail;
-  
+
   console.log('Auth state changed:', authEvent);
-  
+
   if (authEvent === 'SIGNED_IN') {
     currentUser = session.user;
     await syncTokensFromSupabase();
   } else if (authEvent === 'SIGNED_OUT') {
     currentUser = null;
   }
-  
+
   updateAuthUI();
+}
+
+/**
+ * Handle OAuth callback from auth-callback.html
+ */
+async function handleOAuthCallback() {
+  try {
+    console.log('Handling OAuth callback...');
+
+    // Retrieve tokens from temporary storage
+    const result = await chrome.storage.local.get('supabase_auth_callback');
+
+    if (!result.supabase_auth_callback) {
+      console.error('No callback data found');
+      return;
+    }
+
+    const { access_token, refresh_token, provider_token } = result.supabase_auth_callback;
+
+    if (!access_token) {
+      console.error('No access token in callback data');
+      return;
+    }
+
+    console.log('Setting session with callback tokens...');
+
+    // Get Supabase client
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+
+    // Set the session with the tokens from OAuth callback
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token
+    });
+
+    if (error) {
+      console.error('Error setting session:', error);
+      showAuthStatus('Authentication failed: ' + error.message, 'error');
+      return;
+    }
+
+    console.log('Session set successfully:', data.session?.user?.email);
+
+    // Update current user
+    currentUser = data.session?.user || null;
+
+    // Update UI and fetch calendar
+    showAuthStatus('Signed in successfully!', 'success');
+    updateAuthUI();
+
+    isCalendarConnected = true;
+    await fetchCalendarEvents(true);
+
+    // Clear temporary storage
+    await chrome.storage.local.remove('supabase_auth_callback');
+
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    showAuthStatus('Authentication failed: ' + error.message, 'error');
+  }
 }
 
 /**
