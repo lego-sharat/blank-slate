@@ -1,13 +1,19 @@
 import * as esbuild from 'esbuild';
-import { readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
 
 const watchMode = process.argv.includes('--watch');
 
-const buildOptions = {
-  entryPoints: ['src/script.js'],
+// Ensure dist directory exists
+if (!existsSync('dist')) {
+  mkdirSync('dist');
+}
+
+// Build supabase.js separately (with dependencies bundled)
+const supabaseBuildOptions = {
+  entryPoints: ['src/supabase.js'],
   bundle: true,
-  outfile: 'script.js',
-  format: 'iife',
+  outfile: 'dist/supabase.js',
+  format: 'esm',
   platform: 'browser',
   target: 'es2020',
   sourcemap: false,
@@ -17,15 +23,36 @@ const buildOptions = {
   }
 };
 
+// Build script.js (which imports from supabase.js)
+const scriptBuildOptions = {
+  entryPoints: ['src/script.js'],
+  bundle: true,
+  outfile: 'dist/script.js',
+  format: 'esm',
+  platform: 'browser',
+  target: 'es2020',
+  sourcemap: false,
+  minify: false,
+  external: ['./supabase.js'], // Don't bundle supabase.js, it's separate
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  }
+};
+
 async function build() {
   try {
     if (watchMode) {
-      const ctx = await esbuild.context(buildOptions);
+      console.log('Building supabase.js...');
+      await esbuild.build(supabaseBuildOptions);
+      console.log('Watching script.js for changes...');
+      const ctx = await esbuild.context(scriptBuildOptions);
       await ctx.watch();
-      console.log('Watching for changes...');
     } else {
-      await esbuild.build(buildOptions);
-      console.log('Build complete!');
+      console.log('Building supabase.js...');
+      await esbuild.build(supabaseBuildOptions);
+      console.log('Building script.js...');
+      await esbuild.build(scriptBuildOptions);
+      console.log('Build complete! Output in dist/ folder');
     }
   } catch (error) {
     console.error('Build failed:', error);

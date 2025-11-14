@@ -139,11 +139,29 @@ export async function getSession() {
  */
 export async function getGoogleAccessToken() {
   if (!supabaseClient) {
+    console.log('getGoogleAccessToken: No supabase client');
     return null;
   }
 
   const session = await getSession();
-  return session?.provider_token || null;
+
+  if (!session) {
+    console.log('getGoogleAccessToken: No active session');
+    return null;
+  }
+
+  if (!session.provider_token) {
+    console.warn('getGoogleAccessToken: Session exists but no provider_token');
+    console.warn('Session data:', {
+      user: session.user?.email,
+      expires_at: session.expires_at,
+      provider: session.user?.app_metadata?.provider
+    });
+    return null;
+  }
+
+  console.log('getGoogleAccessToken: Returning provider_token (length:', session.provider_token.length, ')');
+  return session.provider_token;
 }
 
 /**

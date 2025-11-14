@@ -1792,31 +1792,44 @@ async function handleAuthStateChange(event) {
  */
 async function handleOAuthCallback() {
   try {
-    console.log('Handling OAuth callback...');
+    console.log('=== OAuth Callback Handler Started ===');
 
     // Retrieve tokens from temporary storage
     const result = await chrome.storage.local.get('supabase_auth_callback');
+    console.log('Storage data retrieved:', result);
 
     if (!result.supabase_auth_callback) {
-      console.error('No callback data found');
+      console.error('No callback data found in storage');
+      showAuthStatus('Authentication failed: No callback data', 'error');
       return;
     }
 
-    const { access_token, refresh_token, provider_token } = result.supabase_auth_callback;
+    const { access_token, refresh_token, provider_token, provider_refresh_token } = result.supabase_auth_callback;
+
+    console.log('Tokens received:', {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      hasProviderToken: !!provider_token,
+      hasProviderRefreshToken: !!provider_refresh_token,
+      accessTokenLength: access_token?.length,
+      providerTokenLength: provider_token?.length
+    });
 
     if (!access_token) {
       console.error('No access token in callback data');
+      showAuthStatus('Authentication failed: No access token', 'error');
       return;
     }
-
-    console.log('Setting session with callback tokens...');
 
     // Get Supabase client
     const supabase = getSupabase();
     if (!supabase) {
       console.error('Supabase client not initialized');
+      showAuthStatus('Authentication failed: Supabase not initialized', 'error');
       return;
     }
+
+    console.log('Setting session with tokens...');
 
     // Set the session with the tokens from OAuth callback
     const { data, error } = await supabase.auth.setSession({
@@ -1830,20 +1843,35 @@ async function handleOAuthCallback() {
       return;
     }
 
-    console.log('Session set successfully:', data.session?.user?.email);
+    console.log('Session set successfully');
+    console.log('User email:', data.session?.user?.email);
+    console.log('Session provider_token:', data.session?.provider_token ? 'present (length: ' + data.session.provider_token.length + ')' : 'MISSING');
+    console.log('Session provider_refresh_token:', data.session?.provider_refresh_token ? 'present' : 'missing');
 
     // Update current user
     currentUser = data.session?.user || null;
 
-    // Update UI and fetch calendar
+    // Update UI
     showAuthStatus('Signed in successfully!', 'success');
     updateAuthUI();
 
-    isCalendarConnected = true;
-    await fetchCalendarEvents(true);
+    // Check if we have provider_token before trying to fetch calendar
+    if (!data.session?.provider_token) {
+      console.warn('⚠️ WARNING: No provider_token in session. Calendar access will not work.');
+      console.warn('This means Supabase did not receive the Google OAuth token.');
+      console.warn('Check your Supabase project settings:');
+      console.warn('1. Google OAuth provider is configured correctly');
+      console.warn('2. Calendar scopes are enabled');
+      showAuthStatus('Signed in, but calendar access unavailable. Check Supabase OAuth settings.', 'error');
+    } else {
+      isCalendarConnected = true;
+      console.log('Fetching calendar events...');
+      await fetchCalendarEvents(true);
+    }
 
     // Clear temporary storage
     await chrome.storage.local.remove('supabase_auth_callback');
+    console.log('=== OAuth Callback Handler Complete ===');
 
   } catch (error) {
     console.error('OAuth callback error:', error);

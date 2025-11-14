@@ -3,3 +3,5 @@ package-lock.json
 src/script.js.bak
 *.log
 .DS_Store
+dist/
+script.js
