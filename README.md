@@ -4,7 +4,9 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 ## Features
 
+- **Supabase Authentication**: Secure user authentication with automatic token refresh
 - **Todo List**: Add, check off, and delete tasks
+- **Google Calendar Integration**: View today's calendar events
 - **Notes System**:
   - Full-screen modal editor for rich note-taking
   - Title and content fields for organized notes
@@ -13,18 +15,29 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
   - Click any note to edit
 - **Notion Integration**:
   - Export notes directly to Notion
-  - Secure local storage of API credentials
+  - Secure storage of API credentials in Supabase
   - One-click export per note
-- **Minimal Design**: Greyscale color scheme with monospace font
-- **Persistent Storage**: All data saved locally using localStorage
+- **Minimal Design**: Greyscale color scheme with monospace or handwriting fonts
+- **Persistent Storage**: All data saved securely with Supabase + localStorage
 - **Modern UX**: Smooth transitions and modal-based editing
 
 ## Installation
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" in the top right
-3. Click "Load unpacked"
-4. Select this directory
+### For Development
+
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build the extension:
+   ```bash
+   npm run build
+   ```
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode" in the top right
+6. Click "Load unpacked"
+7. Select this directory
 
 ## Usage
 
@@ -41,16 +54,53 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 - **Delete Note**: Click "Delete Note" button when editing
 - **Export to Notion**: Click the ↗ button on any note
 
+### Supabase Setup (One-Time Configuration)
+
+**Important**: This extension uses Supabase for authentication with Google Sign-In.
+
+#### Step 1: Create Supabase Project
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project
+3. Go to Project Settings → API
+4. Copy your **Project URL** and **Anon/Public Key**
+
+#### Step 2: Enable Google OAuth in Supabase
+
+1. In your Supabase dashboard, go to **Authentication** → **Providers**
+2. Find **Google** in the providers list
+3. Enable it and configure:
+   - **Authorized Client IDs**: Add your Google OAuth client ID
+   - **Authorized redirect URLs**: Add `https://<your-project-ref>.supabase.co/auth/v1/callback`
+4. Follow [Supabase's Google OAuth guide](https://supabase.com/docs/guides/auth/social-login/auth-google) to:
+   - Create a Google Cloud project
+   - Enable Google Calendar API
+   - Create OAuth credentials
+   - Add authorized redirect URIs
+
+#### Step 3: Configure Extension
+
+1. Open the extension and click the ⚙ (Settings) button
+2. Paste your Supabase URL and Anon Key
+3. Click "Save Settings"
+4. Click "Sign in with Google"
+5. Authorize both authentication and calendar access
+
+**Benefits**:
+- **One-step authentication**: Sign in with Google and get calendar access simultaneously
+- **No token expiration**: Supabase automatically refreshes tokens
+- **Secure storage**: Credentials stored securely in Supabase
+- **Cross-device sync**: Access your settings from anywhere
+
 ### Notion Integration Setup
 
-1. Click the ⚙ (settings) icon in the top-right corner
-2. Create a Notion integration at [Notion Developers](https://developers.notion.com/docs/create-a-notion-integration)
-3. Copy your integration's API key
-4. Create a database in Notion and copy its ID from the URL
-5. Paste both values in the settings modal
-6. Click "Save Settings"
+1. Create a Notion integration at [Notion Developers](https://developers.notion.com/docs/create-a-notion-integration)
+2. Copy your integration's API key
+3. Create a database in Notion and copy its ID from the URL
+4. Open Settings and paste both values
+5. Click "Save Settings"
 
-**Note**: Your API key is stored locally in your browser and never sent anywhere except to Notion.
+**Note**: With Supabase authentication, your credentials are securely stored and synced across devices.
 
 ### Keyboard Shortcuts
 - **ESC**: Close any open modal
@@ -58,16 +108,38 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 ## Data Storage
 
-All data is stored locally using browser localStorage:
-- Todos persist across sessions
-- Notes persist across sessions
-- Settings (Notion API key) persist locally
-- No data is sent to external servers except when explicitly exporting to Notion
+Data storage uses a hybrid approach:
+- **Local Storage**: Todos, notes, and cached calendar events are stored in browser localStorage
+- **Supabase**: User authentication sessions and Notion credentials are stored securely in Supabase user metadata
+- **OAuth**: Google Calendar access tokens are managed by Supabase OAuth (auto-refresh enabled)
 
 ## Privacy
 
-- All notes and todos are stored locally in your browser
-- Notion API credentials are stored locally and only used for your explicit export actions
+- Notes and todos are stored locally in your browser
+- Notion credentials are stored securely in Supabase user metadata (encrypted)
+- Google Calendar tokens are managed by Supabase OAuth with automatic refresh
+- Supabase handles authentication with industry-standard security
 - No analytics or tracking
-- No external dependencies (uses lightweight built-in markdown parser)
-- Notion API is only contacted when you explicitly export a note
+- External API calls are only made when:
+  - Authenticating with Google via Supabase
+  - Fetching Google Calendar events
+  - Explicitly exporting to Notion
+
+## Development
+
+### Building
+
+```bash
+npm run build
+```
+
+This uses esbuild to bundle the Supabase client and your code into a single script.js file.
+
+### File Structure
+
+- `src/script.js` - Main application logic
+- `src/supabase.js` - Supabase authentication functions
+- `build.js` - Build script using esbuild
+- `newtab.html` - Extension UI
+- `styles.css` - Styling
+- `manifest.json` - Chrome extension manifest
