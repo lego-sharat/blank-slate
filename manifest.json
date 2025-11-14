@@ -12,6 +12,7 @@
   ],
   "host_permissions": [
     "https://api.notion.com/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://*.supabase.co/*"
   ]
 }

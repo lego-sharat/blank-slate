@@ -170,6 +170,28 @@
       </div>
       <div class="modal-body">
         <div class="settings-section">
+          <h3>Authentication (Supabase)</h3>
+          <label for="supabaseUrl">Supabase URL</label>
+          <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co" class="settings-input" />
+          <label for="supabaseKey">Supabase Anon Key</label>
+          <input type="password" id="supabaseKey" placeholder="eyJhbGciOi..." class="settings-input" />
+          <p class="settings-help">
+            <a href="https://supabase.com/docs/guides/auth" target="_blank">Get your Supabase credentials</a>
+          </p>
+          <div id="authStatus" class="auth-status"></div>
+          <div id="authContainer" class="auth-container hidden">
+            <label for="authEmail">Email</label>
+            <input type="email" id="authEmail" placeholder="your@email.com" class="settings-input" />
+            <label for="authPassword">Password</label>
+            <input type="password" id="authPassword" placeholder="••••••••" class="settings-input" />
+            <div class="auth-buttons">
+              <button id="signInBtn" class="btn-secondary">Sign In</button>
+              <button id="signUpBtn" class="btn-secondary">Sign Up</button>
+              <button id="signOutBtn" class="btn-secondary hidden">Sign Out</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section">
           <h3>Appearance</h3>
           <label for="fontStyle">Font Style</label>
           <select id="fontStyle" class="settings-input">

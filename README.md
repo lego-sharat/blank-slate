@@ -4,7 +4,9 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 ## Features
 
+- **Supabase Authentication**: Secure user authentication with automatic token refresh
 - **Todo List**: Add, check off, and delete tasks
+- **Google Calendar Integration**: View today's calendar events
 - **Notes System**:
   - Full-screen modal editor for rich note-taking
   - Title and content fields for organized notes
@@ -13,18 +15,29 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
   - Click any note to edit
 - **Notion Integration**:
   - Export notes directly to Notion
-  - Secure local storage of API credentials
+  - Secure storage of API credentials in Supabase
   - One-click export per note
-- **Minimal Design**: Greyscale color scheme with monospace font
-- **Persistent Storage**: All data saved locally using localStorage
+- **Minimal Design**: Greyscale color scheme with monospace or handwriting fonts
+- **Persistent Storage**: All data saved securely with Supabase + localStorage
 - **Modern UX**: Smooth transitions and modal-based editing
 
 ## Installation
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" in the top right
-3. Click "Load unpacked"
-4. Select this directory
+### For Development
+
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build the extension:
+   ```bash
+   npm run build
+   ```
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode" in the top right
+6. Click "Load unpacked"
+7. Select this directory
 
 ## Usage
 
@@ -41,16 +54,43 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 - **Delete Note**: Click "Delete Note" button when editing
 - **Export to Notion**: Click the ↗ button on any note
 
+### Supabase Authentication Setup
+
+**Important**: This extension now requires Supabase for authentication and secure token storage.
+
+1. Create a free Supabase account at [supabase.com](https://supabase.com)
+2. Create a new project in Supabase
+3. Go to Project Settings → API
+4. Copy your project URL and anon/public key
+5. Click the ⚙ (settings) icon in the extension
+6. Paste your Supabase URL and Anon Key
+7. Click "Save Settings"
+8. Create an account or sign in with email/password
+
+**Benefits of Supabase Authentication**:
+- Automatic token refresh - your login never expires
+- Secure storage of Google Calendar and Notion credentials
+- Access your settings from any device (when signed in)
+- No more token expiration issues
+
+### Google Calendar Integration
+
+1. Get your Google OAuth Client ID from [Google Cloud Console](https://developers.google.com/calendar/api/quickstart/js)
+2. Open Settings in the extension
+3. Paste your Client ID
+4. Click "Save Settings"
+5. Click "Connect Google Calendar" in the planner view
+6. Authorize the extension
+
 ### Notion Integration Setup
 
-1. Click the ⚙ (settings) icon in the top-right corner
-2. Create a Notion integration at [Notion Developers](https://developers.notion.com/docs/create-a-notion-integration)
-3. Copy your integration's API key
-4. Create a database in Notion and copy its ID from the URL
-5. Paste both values in the settings modal
-6. Click "Save Settings"
+1. Create a Notion integration at [Notion Developers](https://developers.notion.com/docs/create-a-notion-integration)
+2. Copy your integration's API key
+3. Create a database in Notion and copy its ID from the URL
+4. Open Settings and paste both values
+5. Click "Save Settings"
 
-**Note**: Your API key is stored locally in your browser and never sent anywhere except to Notion.
+**Note**: With Supabase authentication, your credentials are securely stored and synced across devices.
 
 ### Keyboard Shortcuts
 - **ESC**: Close any open modal
@@ -58,16 +98,37 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 ## Data Storage
 
-All data is stored locally using browser localStorage:
-- Todos persist across sessions
-- Notes persist across sessions
-- Settings (Notion API key) persist locally
-- No data is sent to external servers except when explicitly exporting to Notion
+Data storage uses a hybrid approach:
+- **Local Storage**: Todos, notes, and cached calendar events are stored in browser localStorage
+- **Supabase**: User authentication sessions and API tokens (Google Calendar, Notion) are stored securely in Supabase user metadata
+- **Sync**: When signed in, your API credentials are automatically synced to Supabase for backup and cross-device access
 
 ## Privacy
 
-- All notes and todos are stored locally in your browser
-- Notion API credentials are stored locally and only used for your explicit export actions
+- Notes and todos are stored locally in your browser
+- API credentials are stored securely in Supabase user metadata (encrypted)
+- Supabase handles authentication with industry-standard security
 - No analytics or tracking
-- No external dependencies (uses lightweight built-in markdown parser)
-- Notion API is only contacted when you explicitly export a note
+- External API calls are only made when:
+  - Authenticating with Supabase
+  - Connecting to Google Calendar
+  - Explicitly exporting to Notion
+
+## Development
+
+### Building
+
+```bash
+npm run build
+```
+
+This uses esbuild to bundle the Supabase client and your code into a single script.js file.
+
+### File Structure
+
+- `src/script.js` - Main application logic
+- `src/supabase.js` - Supabase authentication functions
+- `build.js` - Build script using esbuild
+- `newtab.html` - Extension UI
+- `styles.css` - Styling
+- `manifest.json` - Chrome extension manifest
