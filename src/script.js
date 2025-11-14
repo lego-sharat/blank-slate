@@ -27,7 +27,8 @@ let settings = {
   fontStyle: 'mono',
   googleClientId: '',
   supabaseUrl: '',
-  supabaseKey: ''
+  supabaseKey: '',
+  theme: 'dark'
 };
 let currentNoteId = null;
 let currentView = 'planner'; // 'planner' or 'note'
@@ -95,6 +96,12 @@ const authContainer = document.getElementById('authContainer');
 const signInWithGoogleBtn = document.getElementById('signInWithGoogleBtn');
 const signOutBtn = document.getElementById('signOutBtn');
 
+// DOM elements - Theme Toggle
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const themeDarkIcon = document.getElementById('themeDarkIcon');
+const themeLightIcon = document.getElementById('themeLightIcon');
+const themeToggleText = document.getElementById('themeToggleText');
+
 // DOM elements - Clock
 const timeDisplay = document.getElementById('timeDisplay');
 const dateDisplay = document.getElementById('dateDisplay');
@@ -122,6 +129,9 @@ function setupEventListeners() {
   collapseSidebarBtn.addEventListener('click', toggleSidebar);
   addNoteBtn.addEventListener('click', () => createNewNote());
   searchNotesBtn.addEventListener('click', openSearchModal);
+
+  // Theme Toggle
+  themeToggleBtn.addEventListener('click', toggleTheme);
 
   // Search Modal
   searchModalInput.addEventListener('input', handleSearchModalInput);
@@ -1108,6 +1118,10 @@ function loadSettings() {
       if (!settings.supabaseKey) {
         settings.supabaseKey = '';
       }
+      // Ensure theme exists for backwards compatibility
+      if (!settings.theme) {
+        settings.theme = 'dark';
+      }
     } catch (e) {
       settings = {
         notionApiKey: '',
@@ -1115,11 +1129,13 @@ function loadSettings() {
         fontStyle: 'mono',
         googleClientId: '',
         supabaseUrl: '',
-        supabaseKey: ''
+        supabaseKey: '',
+        theme: 'dark'
       };
     }
   }
   applyFontStyle();
+  applyTheme();
 }
 
 function applyFontStyle() {
@@ -1128,6 +1144,24 @@ function applyFontStyle() {
   } else {
     document.body.classList.remove('handwriting-font');
   }
+}
+
+function applyTheme() {
+  if (settings.theme === 'light') {
+    document.body.classList.add('light-theme');
+    themeDarkIcon.classList.add('hidden');
+    themeLightIcon.classList.remove('hidden');
+  } else {
+    document.body.classList.remove('light-theme');
+    themeDarkIcon.classList.remove('hidden');
+    themeLightIcon.classList.add('hidden');
+  }
+}
+
+function toggleTheme() {
+  settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  applyTheme();
 }
 
 function openSettingsModal() {
