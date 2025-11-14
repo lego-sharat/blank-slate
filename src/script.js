@@ -2,13 +2,13 @@
 import {
   initSupabase,
   getSupabase,
-  signIn,
-  signUp,
+  signInWithGoogle,
   signOut,
   getCurrentUser,
   getSession,
-  updateUserTokens,
-  getUserTokens
+  getGoogleAccessToken,
+  updateUserData,
+  getUserData
 } from './supabase.js';
 
 // Storage keys
@@ -93,10 +93,7 @@ const supabaseUrl = document.getElementById('supabaseUrl');
 const supabaseKey = document.getElementById('supabaseKey');
 const authStatus = document.getElementById('authStatus');
 const authContainer = document.getElementById('authContainer');
-const authEmail = document.getElementById('authEmail');
-const authPassword = document.getElementById('authPassword');
-const signInBtn = document.getElementById('signInBtn');
-const signUpBtn = document.getElementById('signUpBtn');
+const signInWithGoogleBtn = document.getElementById('signInWithGoogleBtn');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // DOM elements - Clock
@@ -193,8 +190,7 @@ function setupEventListeners() {
   saveSettings.addEventListener('click', saveSettingsData);
 
   // Authentication
-  signInBtn.addEventListener('click', handleSignIn);
-  signUpBtn.addEventListener('click', handleSignUp);
+  signInWithGoogleBtn.addEventListener('click', handleSignInWithGoogle);
   signOutBtn.addEventListener('click', handleSignOut);
   supabaseUrl.addEventListener('input', handleSupabaseConfigChange);
   supabaseKey.addEventListener('input', handleSupabaseConfigChange);
@@ -1756,65 +1752,21 @@ async function checkAuthStatus() {
 }
 
 /**
- * Handle sign in
+ * Handle sign in with Google
  */
-async function handleSignIn() {
-  const email = authEmail.value.trim();
-  const password = authPassword.value;
-
-  if (!email || !password) {
-    showAuthStatus('Please enter email and password', 'error');
-    return;
-  }
-
+async function handleSignInWithGoogle() {
   try {
-    showAuthStatus('Signing in...', 'info');
-    const data = await signIn(email, password);
-    currentUser = data.user;
-    showAuthStatus('Signed in successfully!', 'success');
-    authEmail.value = '';
-    authPassword.value = '';
-    updateAuthUI();
-    
-    // Load tokens from Supabase
-    await syncTokensFromSupabase();
+    showAuthStatus('Opening Google sign-in...', 'info');
+    const { url } = await signInWithGoogle();
+
+    // Open OAuth popup
+    if (url) {
+      window.open(url, '_blank', 'width=500,height=600');
+      showAuthStatus('Complete sign-in in the popup window', 'info');
+    }
   } catch (error) {
     console.error('Sign in error:', error);
     showAuthStatus(error.message || 'Sign in failed', 'error');
-  }
-}
-
-/**
- * Handle sign up
- */
-async function handleSignUp() {
-  const email = authEmail.value.trim();
-  const password = authPassword.value;
-
-  if (!email || !password) {
-    showAuthStatus('Please enter email and password', 'error');
-    return;
-  }
-
-  if (password.length < 6) {
-    showAuthStatus('Password must be at least 6 characters', 'error');
-    return;
-  }
-
-  try {
-    showAuthStatus('Signing up...', 'info');
-    const data = await signUp(email, password);
-    
-    if (data.user) {
-      currentUser = data.user;
-      showAuthStatus('Account created! Please check your email to verify.', 'success');
-      authEmail.value = '';
-      authPassword.value = '';
-      updateAuthUI();
-    }
-  } catch (error) {
-    console.error('Sign up error:', error);
-    showAuthStatus(error.message || 'Sign up failed', 'error');
   }
 }
 
@@ -1872,29 +1824,23 @@ async function handleAuthStateChange(event) {
 function updateAuthUI() {
   if (!isSupabaseInitialized) {
     authContainer.classList.add('hidden');
-    showAuthStatus('Configure Supabase credentials to enable authentication', 'info');
+    showAuthStatus('Configure Supabase credentials and enable Google OAuth in Supabase', 'info');
     return;
   }
-  
+
   authContainer.classList.remove('hidden');
-  
+
   if (currentUser) {
     // User is signed in
-    signInBtn.classList.add('hidden');
-    signUpBtn.classList.add('hidden');
+    signInWithGoogleBtn.classList.add('hidden');
     signOutBtn.classList.remove('hidden');
-    authEmail.classList.add('hidden');
-    authPassword.classList.add('hidden');
     showAuthStatus(`Signed in as ${currentUser.email}`, 'success');
   } else {
     // User is not signed in
-    signInBtn.classList.remove('hidden');
-    signUpBtn.classList.remove('hidden');
+    signInWithGoogleBtn.classList.remove('hidden');
     signOutBtn.classList.add('hidden');
-    authEmail.classList.remove('hidden');
-    authPassword.classList.remove('hidden');
     if (!authStatus.textContent || authStatus.textContent.includes('Signed out')) {
-      showAuthStatus('Sign in or create an account', 'info');
+      showAuthStatus('Sign in with Google to access your calendar', 'info');
     }
   }
 }
@@ -1908,54 +1854,62 @@ function showAuthStatus(message, type = 'info') {
 }
 
 /**
- * Sync tokens from Supabase to localStorage
+ * Sync data from Supabase to localStorage
+ * Note: Google Calendar token comes from OAuth provider_token, not stored separately
  */
 async function syncTokensFromSupabase() {
   if (!currentUser) return;
-  
+
   try {
-    const tokens = await getUserTokens();
-    
-    if (tokens) {
-      // Restore calendar token if exists
-      if (tokens.calendarToken) {
-        calendarToken = tokens.calendarToken;
-        localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
-        isCalendarConnected = true;
-      }
-      
+    const userData = await getUserData();
+
+    if (userData) {
       // Restore Notion credentials if exists
-      if (tokens.notionApiKey || tokens.notionDatabaseId) {
-        if (tokens.notionApiKey) settings.notionApiKey = tokens.notionApiKey;
-        if (tokens.notionDatabaseId) settings.notionDatabaseId = tokens.notionDatabaseId;
+      if (userData.notionApiKey || userData.notionDatabaseId) {
+        if (userData.notionApiKey) settings.notionApiKey = userData.notionApiKey;
+        if (userData.notionDatabaseId) settings.notionDatabaseId = userData.notionDatabaseId;
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
       }
-      
-      console.log('Tokens synced from Supabase');
+
+      console.log('User data synced from Supabase');
+    }
+
+    // Get Google Calendar token from OAuth session
+    const googleToken = await getGoogleAccessToken();
+    if (googleToken) {
+      calendarToken = {
+        access_token: googleToken,
+        timestamp: Date.now(),
+        expires_at: Date.now() + 3600000, // 1 hour (will be auto-refreshed by Supabase)
+        expires_in: 3600
+      };
+      localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
+      isCalendarConnected = true;
+      console.log('Google Calendar token obtained from OAuth session');
     }
   } catch (error) {
-    console.error('Error syncing tokens from Supabase:', error);
+    console.error('Error syncing from Supabase:', error);
   }
 }
 
 /**
- * Sync tokens to Supabase (called when tokens are updated)
+ * Sync Notion credentials to Supabase
+ * Note: Google Calendar token is managed by Supabase OAuth, not stored separately
  */
 async function syncTokensToSupabase() {
   if (!currentUser || !isSupabaseInitialized) {
     return;
   }
-  
+
   try {
-    const tokens = {
-      calendarToken: calendarToken,
+    const userData = {
       notionApiKey: settings.notionApiKey,
       notionDatabaseId: settings.notionDatabaseId
     };
-    
-    await updateUserTokens(tokens);
-    console.log('Tokens synced to Supabase');
+
+    await updateUserData(userData);
+    console.log('User data synced to Supabase');
   } catch (error) {
-    console.error('Error syncing tokens to Supabase:', error);
+    console.error('Error syncing to Supabase:', error);
   }
 }

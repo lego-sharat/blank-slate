@@ -67,33 +67,23 @@ export function getSupabase() {
 }
 
 /**
- * Sign up a new user with email and password
+ * Sign in with Google OAuth and request Calendar permissions
  */
-export async function signUp(email, password) {
+export async function signInWithGoogle() {
   if (!supabaseClient) {
     throw new Error('Supabase client not initialized');
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-  });
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Sign in an existing user with email and password
- */
-export async function signIn(email, password) {
-  if (!supabaseClient) {
-    throw new Error('Supabase client not initialized');
-  }
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
+  const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: chrome.identity.getRedirectURL(),
+      scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent'
+      }
+    }
   });
 
   if (error) throw error;
@@ -137,31 +127,41 @@ export async function getSession() {
 }
 
 /**
- * Store user tokens (Google Calendar, Notion) in Supabase user metadata
+ * Get Google access token from the session for Calendar API
  */
-export async function updateUserTokens(tokens) {
+export async function getGoogleAccessToken() {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  const session = await getSession();
+  return session?.provider_token || null;
+}
+
+/**
+ * Store user data (Notion credentials) in Supabase user metadata
+ */
+export async function updateUserData(data) {
   if (!supabaseClient) {
     throw new Error('Supabase client not initialized');
   }
 
-  const { data, error } = await supabaseClient.auth.updateUser({
-    data: {
-      tokens: tokens
-    }
+  const { data: userData, error } = await supabaseClient.auth.updateUser({
+    data: data
   });
 
   if (error) throw error;
-  return data;
+  return userData;
 }
 
 /**
- * Get user tokens from Supabase user metadata
+ * Get user data from Supabase user metadata
  */
-export async function getUserTokens() {
+export async function getUserData() {
   if (!supabaseClient) {
     return null;
   }
 
   const user = await getCurrentUser();
-  return user?.user_metadata?.tokens || null;
+  return user?.user_metadata || null;
 }

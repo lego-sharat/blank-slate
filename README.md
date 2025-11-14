@@ -54,33 +54,43 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 - **Delete Note**: Click "Delete Note" button when editing
 - **Export to Notion**: Click the ↗ button on any note
 
-### Supabase Authentication Setup
+### Supabase Setup (One-Time Configuration)
 
-**Important**: This extension now requires Supabase for authentication and secure token storage.
+**Important**: This extension uses Supabase for authentication with Google Sign-In.
 
-1. Create a free Supabase account at [supabase.com](https://supabase.com)
-2. Create a new project in Supabase
+#### Step 1: Create Supabase Project
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project
 3. Go to Project Settings → API
-4. Copy your project URL and anon/public key
-5. Click the ⚙ (settings) icon in the extension
-6. Paste your Supabase URL and Anon Key
-7. Click "Save Settings"
-8. Create an account or sign in with email/password
+4. Copy your **Project URL** and **Anon/Public Key**
 
-**Benefits of Supabase Authentication**:
-- Automatic token refresh - your login never expires
-- Secure storage of Google Calendar and Notion credentials
-- Access your settings from any device (when signed in)
-- No more token expiration issues
+#### Step 2: Enable Google OAuth in Supabase
 
-### Google Calendar Integration
+1. In your Supabase dashboard, go to **Authentication** → **Providers**
+2. Find **Google** in the providers list
+3. Enable it and configure:
+   - **Authorized Client IDs**: Add your Google OAuth client ID
+   - **Authorized redirect URLs**: Add `https://<your-project-ref>.supabase.co/auth/v1/callback`
+4. Follow [Supabase's Google OAuth guide](https://supabase.com/docs/guides/auth/social-login/auth-google) to:
+   - Create a Google Cloud project
+   - Enable Google Calendar API
+   - Create OAuth credentials
+   - Add authorized redirect URIs
 
-1. Get your Google OAuth Client ID from [Google Cloud Console](https://developers.google.com/calendar/api/quickstart/js)
-2. Open Settings in the extension
-3. Paste your Client ID
-4. Click "Save Settings"
-5. Click "Connect Google Calendar" in the planner view
-6. Authorize the extension
+#### Step 3: Configure Extension
+
+1. Open the extension and click the ⚙ (Settings) button
+2. Paste your Supabase URL and Anon Key
+3. Click "Save Settings"
+4. Click "Sign in with Google"
+5. Authorize both authentication and calendar access
+
+**Benefits**:
+- **One-step authentication**: Sign in with Google and get calendar access simultaneously
+- **No token expiration**: Supabase automatically refreshes tokens
+- **Secure storage**: Credentials stored securely in Supabase
+- **Cross-device sync**: Access your settings from anywhere
 
 ### Notion Integration Setup
 
@@ -100,18 +110,19 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 Data storage uses a hybrid approach:
 - **Local Storage**: Todos, notes, and cached calendar events are stored in browser localStorage
-- **Supabase**: User authentication sessions and API tokens (Google Calendar, Notion) are stored securely in Supabase user metadata
-- **Sync**: When signed in, your API credentials are automatically synced to Supabase for backup and cross-device access
+- **Supabase**: User authentication sessions and Notion credentials are stored securely in Supabase user metadata
+- **OAuth**: Google Calendar access tokens are managed by Supabase OAuth (auto-refresh enabled)
 
 ## Privacy
 
 - Notes and todos are stored locally in your browser
-- API credentials are stored securely in Supabase user metadata (encrypted)
+- Notion credentials are stored securely in Supabase user metadata (encrypted)
+- Google Calendar tokens are managed by Supabase OAuth with automatic refresh
 - Supabase handles authentication with industry-standard security
 - No analytics or tracking
 - External API calls are only made when:
-  - Authenticating with Supabase
-  - Connecting to Google Calendar
+  - Authenticating with Google via Supabase
+  - Fetching Google Calendar events
   - Explicitly exporting to Notion
 
 ## Development

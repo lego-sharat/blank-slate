@@ -11171,25 +11171,20 @@ ${suffix}`;
       return null;
     }
   }
-  async function signUp(email, password) {
+  async function signInWithGoogle() {
     if (!supabaseClient) {
       throw new Error("Supabase client not initialized");
     }
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password
-    });
-    if (error)
-      throw error;
-    return data;
-  }
-  async function signIn(email, password) {
-    if (!supabaseClient) {
-      throw new Error("Supabase client not initialized");
-    }
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: chrome.identity.getRedirectURL(),
+        scopes: "https://www.googleapis.com/auth/calendar.readonly",
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent"
+        }
+      }
     });
     if (error)
       throw error;
@@ -11210,25 +11205,37 @@ ${suffix}`;
     const { data: { user } } = await supabaseClient.auth.getUser();
     return user;
   }
-  async function updateUserTokens(tokens) {
+  async function getSession() {
+    if (!supabaseClient) {
+      return null;
+    }
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session;
+  }
+  async function getGoogleAccessToken() {
+    if (!supabaseClient) {
+      return null;
+    }
+    const session = await getSession();
+    return session?.provider_token || null;
+  }
+  async function updateUserData(data) {
     if (!supabaseClient) {
       throw new Error("Supabase client not initialized");
     }
-    const { data, error } = await supabaseClient.auth.updateUser({
-      data: {
-        tokens
-      }
+    const { data: userData, error } = await supabaseClient.auth.updateUser({
+      data
     });
     if (error)
       throw error;
-    return data;
+    return userData;
   }
-  async function getUserTokens() {
+  async function getUserData() {
     if (!supabaseClient) {
       return null;
     }
     const user = await getCurrentUser();
-    return user?.user_metadata?.tokens || null;
+    return user?.user_metadata || null;
   }
 
   // src/script.js
@@ -11297,10 +11304,7 @@ ${suffix}`;
   var supabaseKey = document.getElementById("supabaseKey");
   var authStatus = document.getElementById("authStatus");
   var authContainer = document.getElementById("authContainer");
-  var authEmail = document.getElementById("authEmail");
-  var authPassword = document.getElementById("authPassword");
-  var signInBtn = document.getElementById("signInBtn");
-  var signUpBtn = document.getElementById("signUpBtn");
+  var signInWithGoogleBtn = document.getElementById("signInWithGoogleBtn");
   var signOutBtn = document.getElementById("signOutBtn");
   var timeDisplay = document.getElementById("timeDisplay");
   var dateDisplay = document.getElementById("dateDisplay");
@@ -11369,8 +11373,7 @@ ${suffix}`;
     settingsBtn.addEventListener("click", openSettingsModal);
     closeSettings.addEventListener("click", closeSettingsModal);
     saveSettings.addEventListener("click", saveSettingsData);
-    signInBtn.addEventListener("click", handleSignIn);
-    signUpBtn.addEventListener("click", handleSignUp);
+    signInWithGoogleBtn.addEventListener("click", handleSignInWithGoogle);
     signOutBtn.addEventListener("click", handleSignOut);
     supabaseUrl.addEventListener("input", handleSupabaseConfigChange);
     supabaseKey.addEventListener("input", handleSupabaseConfigChange);
@@ -12609,51 +12612,17 @@ ${content}`;
       console.error("Error checking auth status:", error);
     }
   }
-  async function handleSignIn() {
-    const email = authEmail.value.trim();
-    const password = authPassword.value;
-    if (!email || !password) {
-      showAuthStatus("Please enter email and password", "error");
-      return;
-    }
+  async function handleSignInWithGoogle() {
     try {
-      showAuthStatus("Signing in...", "info");
-      const data = await signIn(email, password);
-      currentUser = data.user;
-      showAuthStatus("Signed in successfully!", "success");
-      authEmail.value = "";
-      authPassword.value = "";
-      updateAuthUI();
-      await syncTokensFromSupabase();
+      showAuthStatus("Opening Google sign-in...", "info");
+      const { url } = await signInWithGoogle();
+      if (url) {
+        window.open(url, "_blank", "width=500,height=600");
+        showAuthStatus("Complete sign-in in the popup window", "info");
+      }
     } catch (error) {
       console.error("Sign in error:", error);
       showAuthStatus(error.message || "Sign in failed", "error");
-    }
-  }
-  async function handleSignUp() {
-    const email = authEmail.value.trim();
-    const password = authPassword.value;
-    if (!email || !password) {
-      showAuthStatus("Please enter email and password", "error");
-      return;
-    }
-    if (password.length < 6) {
-      showAuthStatus("Password must be at least 6 characters", "error");
-      return;
-    }
-    try {
-      showAuthStatus("Signing up...", "info");
-      const data = await signUp(email, password);
-      if (data.user) {
-        currentUser = data.user;
-        showAuthStatus("Account created! Please check your email to verify.", "success");
-        authEmail.value = "";
-        authPassword.value = "";
-        updateAuthUI();
-      }
-    } catch (error) {
-      console.error("Sign up error:", error);
-      showAuthStatus(error.message || "Sign up failed", "error");
     }
   }
   async function handleSignOut() {
@@ -12691,25 +12660,19 @@ ${content}`;
   function updateAuthUI() {
     if (!isSupabaseInitialized) {
       authContainer.classList.add("hidden");
-      showAuthStatus("Configure Supabase credentials to enable authentication", "info");
+      showAuthStatus("Configure Supabase credentials and enable Google OAuth in Supabase", "info");
       return;
     }
     authContainer.classList.remove("hidden");
     if (currentUser) {
-      signInBtn.classList.add("hidden");
-      signUpBtn.classList.add("hidden");
+      signInWithGoogleBtn.classList.add("hidden");
       signOutBtn.classList.remove("hidden");
-      authEmail.classList.add("hidden");
-      authPassword.classList.add("hidden");
       showAuthStatus(`Signed in as ${currentUser.email}`, "success");
     } else {
-      signInBtn.classList.remove("hidden");
-      signUpBtn.classList.remove("hidden");
+      signInWithGoogleBtn.classList.remove("hidden");
       signOutBtn.classList.add("hidden");
-      authEmail.classList.remove("hidden");
-      authPassword.classList.remove("hidden");
       if (!authStatus.textContent || authStatus.textContent.includes("Signed out")) {
-        showAuthStatus("Sign in or create an account", "info");
+        showAuthStatus("Sign in with Google to access your calendar", "info");
       }
     }
   }
@@ -12721,24 +12684,32 @@ ${content}`;
     if (!currentUser)
       return;
     try {
-      const tokens = await getUserTokens();
-      if (tokens) {
-        if (tokens.calendarToken) {
-          calendarToken = tokens.calendarToken;
-          localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
-          isCalendarConnected = true;
-        }
-        if (tokens.notionApiKey || tokens.notionDatabaseId) {
-          if (tokens.notionApiKey)
-            settings.notionApiKey = tokens.notionApiKey;
-          if (tokens.notionDatabaseId)
-            settings.notionDatabaseId = tokens.notionDatabaseId;
+      const userData = await getUserData();
+      if (userData) {
+        if (userData.notionApiKey || userData.notionDatabaseId) {
+          if (userData.notionApiKey)
+            settings.notionApiKey = userData.notionApiKey;
+          if (userData.notionDatabaseId)
+            settings.notionDatabaseId = userData.notionDatabaseId;
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         }
-        console.log("Tokens synced from Supabase");
+        console.log("User data synced from Supabase");
+      }
+      const googleToken = await getGoogleAccessToken();
+      if (googleToken) {
+        calendarToken = {
+          access_token: googleToken,
+          timestamp: Date.now(),
+          expires_at: Date.now() + 36e5,
+          // 1 hour (will be auto-refreshed by Supabase)
+          expires_in: 3600
+        };
+        localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(calendarToken));
+        isCalendarConnected = true;
+        console.log("Google Calendar token obtained from OAuth session");
       }
     } catch (error) {
-      console.error("Error syncing tokens from Supabase:", error);
+      console.error("Error syncing from Supabase:", error);
     }
   }
   async function syncTokensToSupabase() {
@@ -12746,15 +12717,14 @@ ${content}`;
       return;
     }
     try {
-      const tokens = {
-        calendarToken,
+      const userData = {
         notionApiKey: settings.notionApiKey,
         notionDatabaseId: settings.notionDatabaseId
       };
-      await updateUserTokens(tokens);
-      console.log("Tokens synced to Supabase");
+      await updateUserData(userData);
+      console.log("User data synced to Supabase");
     } catch (error) {
-      console.error("Error syncing tokens to Supabase:", error);
+      console.error("Error syncing to Supabase:", error);
     }
   }
 })();
