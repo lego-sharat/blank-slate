@@ -12175,12 +12175,6 @@ ${content}`;
       }
     }
   }
-  async function saveCalendarToken(token) {
-    calendarToken = token;
-    isCalendarConnected = true;
-    localStorage.setItem(CALENDAR_TOKEN_KEY, JSON.stringify(token));
-    await syncTokensToSupabase();
-  }
   function loadCachedCalendarEvents() {
     const stored = localStorage.getItem(CALENDAR_EVENTS_KEY);
     if (stored) {
@@ -12223,72 +12217,23 @@ ${content}`;
     }, 60 * 1e3);
   }
   async function connectGoogleCalendar() {
-    if (!settings.googleClientId || settings.googleClientId === "YOUR_CLIENT_ID.apps.googleusercontent.com") {
-      alert("Please configure your Google OAuth Client ID in Settings first.");
+    if (!isSupabaseInitialized) {
+      calendarStatus.innerHTML = '<p class="calendar-error">Please configure Supabase in Settings first.</p>';
       openSettingsModal();
       return;
     }
-    try {
-      const redirectURL = chrome.identity.getRedirectURL();
-      const clientID = settings.googleClientId;
-      const scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
-      let authURL = "https://accounts.google.com/o/oauth2/auth";
-      authURL += `?client_id=${clientID}`;
-      authURL += `&response_type=token`;
-      authURL += `&redirect_uri=${encodeURIComponent(redirectURL)}`;
-      authURL += `&scope=${encodeURIComponent(scopes.join(" "))}`;
-      console.log("=== Google Calendar OAuth Configuration ===");
-      console.log("Extension ID:", chrome.runtime.id);
-      console.log("Redirect URI:", redirectURL);
-      console.log("Client ID:", clientID);
-      console.log("\n\u{1F4CB} COPY THIS REDIRECT URI TO GOOGLE CLOUD CONSOLE:");
-      console.log(redirectURL);
-      console.log("\n\u{1F4D6} Instructions:");
-      console.log("1. Go to: https://console.cloud.google.com/apis/credentials");
-      console.log("2. Click on your OAuth 2.0 Client ID");
-      console.log('3. Under "Authorized redirect URIs", click "ADD URI"');
-      console.log("4. Paste the redirect URI above");
-      console.log("5. Click Save");
-      console.log("==========================================\n");
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: authURL,
-          interactive: true
-        },
-        function(responseURL) {
-          if (chrome.runtime.lastError) {
-            console.error("Auth error:", chrome.runtime.lastError);
-            calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect. Please try again.</p>';
-            return;
-          }
-          console.log("OAuth response received");
-          const urlParams = new URLSearchParams(responseURL.split("#")[1]);
-          const accessToken = urlParams.get("access_token");
-          const expiresIn = parseInt(urlParams.get("expires_in") || "3600", 10);
-          if (accessToken) {
-            const expiresAt2 = Date.now() + expiresIn * 1e3;
-            console.log(`Token obtained, expires in ${expiresIn} seconds (at ${new Date(expiresAt2).toLocaleString()})`);
-            saveCalendarToken({
-              access_token: accessToken,
-              timestamp: Date.now(),
-              expires_at: expiresAt2,
-              expires_in: expiresIn
-            });
-            calendarStatus.innerHTML = '<p class="calendar-loading">Loading events...</p>';
-            startCalendarBackgroundFetch();
-          } else {
-            console.error("No access token in response");
-            calendarStatus.innerHTML = '<p class="calendar-error">Failed to get access token.</p>';
-          }
-        }
-      );
-    } catch (error) {
-      console.error("Calendar connection error:", error);
-      calendarStatus.innerHTML = '<p class="calendar-error">Failed to connect to Google Calendar.</p>';
+    if (currentUser) {
+      calendarStatus.innerHTML = '<p class="calendar-info">Already signed in. Refreshing events...</p>';
+      await fetchCalendarEvents(true);
+      return;
     }
+    calendarStatus.innerHTML = '<p class="calendar-info">Opening Google sign-in...</p>';
+    await handleSignInWithGoogle();
   }
   async function fetchCalendarEvents(showLoading = false) {
+    console.log("fetchCalendarEvents called, currentUser:", currentUser ? currentUser.email : "null");
     if (!currentUser) {
+      console.log("No current user, returning early");
       calendarStatus.classList.remove("hidden");
       calendarEventsList.classList.add("hidden");
       return;
@@ -12299,7 +12244,9 @@ ${content}`;
       calendarEventsList.classList.add("hidden");
     }
     try {
+      console.log("Getting Google access token from Supabase session...");
       const accessToken = await getGoogleAccessToken();
+      console.log("Access token received:", accessToken ? "yes (length: " + accessToken.length + ")" : "null");
       if (!accessToken) {
         console.log("No Google access token found in session");
         calendarStatus.innerHTML = '<p class="calendar-error">Please sign in again to access calendar</p>';
@@ -12312,14 +12259,17 @@ ${content}`;
       const currentDate = /* @__PURE__ */ new Date();
       const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0);
       const endOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59);
+      const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startOfDay.toISOString()}&timeMax=${endOfDay.toISOString()}&singleEvents=true&orderBy=startTime`;
+      console.log("Fetching calendar events from:", calendarUrl);
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startOfDay.toISOString()}&timeMax=${endOfDay.toISOString()}&singleEvents=true&orderBy=startTime`,
+        calendarUrl,
         {
           headers: {
             "Authorization": `Bearer ${accessToken}`
           }
         }
       );
+      console.log("Calendar API response status:", response.status);
       if (response.status === 401) {
         console.log("Received 401 Unauthorized, please sign in again");
         calendarStatus.innerHTML = '<p class="calendar-error">Session expired. Please sign in again.</p>';
