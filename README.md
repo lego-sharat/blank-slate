@@ -88,9 +88,35 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 **Benefits**:
 - **One-step authentication**: Sign in with Google and get calendar access simultaneously
-- **No token expiration**: Supabase automatically refreshes tokens
+- **Automatic token refresh**: Google Calendar tokens refresh automatically (see Token Refresh Setup below)
 - **Secure storage**: Credentials stored securely in Supabase
 - **Cross-device sync**: Access your settings from anywhere
+
+#### Optional: Token Refresh Setup (Recommended)
+
+For uninterrupted calendar access, deploy the token refresh edge function using the automated deployment script:
+
+**Quick Setup (5 minutes):**
+```bash
+# 1. Install Supabase CLI
+npm install -g supabase
+
+# 2. Login to Supabase
+supabase login
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env and fill in your values
+
+# 4. Deploy
+npm run deploy-edge-function
+```
+
+**Without this setup**: The extension will work but may prompt you to sign in again after ~1 hour when tokens expire.
+
+**With this setup**: Tokens refresh automatically in the background without user intervention.
+
+📖 **Detailed guide**: See [EDGE_FUNCTION_SETUP.md](EDGE_FUNCTION_SETUP.md) for step-by-step instructions and troubleshooting.
 
 ### Notion Integration Setup
 
@@ -111,17 +137,18 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 Data storage uses a hybrid approach:
 - **Local Storage**: Todos, notes, and cached calendar events are stored in browser localStorage
 - **Supabase**: User authentication sessions and Notion credentials are stored securely in Supabase user metadata
-- **OAuth**: Google Calendar access tokens are managed by Supabase OAuth (auto-refresh enabled)
+- **OAuth**: Google Calendar access tokens are managed with automatic refresh (requires edge function setup)
 
 ## Privacy
 
 - Notes and todos are stored locally in your browser
 - Notion credentials are stored securely in Supabase user metadata (encrypted)
-- Google Calendar tokens are managed by Supabase OAuth with automatic refresh
+- Google Calendar tokens are managed with automatic refresh (via optional edge function)
 - Supabase handles authentication with industry-standard security
 - No analytics or tracking
 - External API calls are only made when:
   - Authenticating with Google via Supabase
+  - Refreshing expired tokens (if edge function is deployed)
   - Fetching Google Calendar events
   - Explicitly exporting to Notion
 
@@ -138,8 +165,9 @@ This uses esbuild to bundle the Supabase client and your code into a single scri
 ### File Structure
 
 - `src/script.js` - Main application logic
-- `src/supabase.js` - Supabase authentication functions
+- `src/supabase.js` - Supabase authentication and token refresh functions
 - `build.js` - Build script using esbuild
 - `newtab.html` - Extension UI
 - `styles.css` - Styling
 - `manifest.json` - Chrome extension manifest
+- `supabase/functions/refresh-google-token/` - Edge function for automatic token refresh

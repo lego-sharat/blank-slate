@@ -5,3 +5,4 @@ src/script.js.bak
 .DS_Store
 dist/
 script.js
+.env

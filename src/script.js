@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   getSession,
   getGoogleAccessToken,
+  refreshGoogleToken,
   updateUserData,
   getUserData
 } from './supabase.js';
@@ -1353,13 +1354,76 @@ async function fetchCalendarEvents(showLoading = false) {
     console.log('Calendar API response status:', response.status);
 
     if (response.status === 401) {
-      // Token expired or invalid - Supabase should auto-refresh this
-      console.log('Received 401 Unauthorized, please sign in again');
-      calendarStatus.innerHTML = '<p class="calendar-error">Session expired. Please sign in again.</p>';
-      calendarStatus.classList.remove('hidden');
-      calendarEventsList.classList.add('hidden');
-      isCalendarConnected = false;
-      return;
+      // Token expired - attempt to refresh and retry once
+      console.log('Received 401 Unauthorized, attempting token refresh...');
+
+      const refreshedToken = await refreshGoogleToken();
+
+      if (refreshedToken) {
+        console.log('Token refreshed successfully, retrying calendar fetch...');
+
+        // Retry the API call with the new token
+        const retryResponse = await fetch(
+          calendarUrl,
+          {
+            headers: {
+              'Authorization': `Bearer ${refreshedToken}`
+            }
+          }
+        );
+
+        console.log('Retry response status:', retryResponse.status);
+
+        if (retryResponse.ok) {
+          // Success! Process the response
+          const data = await retryResponse.json();
+          const allEvents = data.items || [];
+
+          // Filter to show only ongoing or upcoming events
+          const currentTime = new Date();
+          calendarEvents = allEvents.filter(event => {
+            if (event.start.dateTime) {
+              const endTime = new Date(event.end.dateTime);
+              return endTime >= currentTime;
+            } else {
+              return true;
+            }
+          });
+
+          saveCachedCalendarEvents(calendarEvents);
+          renderCalendarEvents();
+          return;
+        } else if (retryResponse.status === 401) {
+          // Still unauthorized after refresh - need to re-authenticate
+          console.log('Token refresh did not resolve 401, re-authentication required');
+          calendarStatus.innerHTML = '<p class="calendar-error">Session expired. Please <button id="reauth-btn" class="btn-secondary" style="margin-left: 8px;">sign in again</button></p>';
+          calendarStatus.classList.remove('hidden');
+          calendarEventsList.classList.add('hidden');
+          isCalendarConnected = false;
+
+          // Add click handler for re-auth button
+          setTimeout(() => {
+            document.getElementById('reauth-btn')?.addEventListener('click', handleSignInWithGoogle);
+          }, 100);
+          return;
+        } else {
+          // Other error after retry
+          throw new Error(`Calendar API error: ${retryResponse.status}`);
+        }
+      } else {
+        // Token refresh failed - need to re-authenticate
+        console.log('Token refresh failed, re-authentication required');
+        calendarStatus.innerHTML = '<p class="calendar-error">Session expired. Please <button id="reauth-btn" class="btn-secondary" style="margin-left: 8px;">sign in again</button></p>';
+        calendarStatus.classList.remove('hidden');
+        calendarEventsList.classList.add('hidden');
+        isCalendarConnected = false;
+
+        // Add click handler for re-auth button
+        setTimeout(() => {
+          document.getElementById('reauth-btn')?.addEventListener('click', handleSignInWithGoogle);
+        }, 100);
+        return;
+      }
     }
 
     if (!response.ok) {
