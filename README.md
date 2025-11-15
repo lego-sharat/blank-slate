@@ -94,28 +94,29 @@ A minimal, greyscale Chrome extension that replaces your new tab page with a cle
 
 #### Optional: Token Refresh Setup (Recommended)
 
-For uninterrupted calendar access, deploy the token refresh edge function:
+For uninterrupted calendar access, deploy the token refresh edge function using the automated deployment script:
 
-1. Install Supabase CLI: [Supabase CLI Docs](https://supabase.com/docs/guides/cli)
-2. Link to your project:
-   ```bash
-   supabase link --project-ref your-project-ref
-   ```
-3. Deploy the edge function:
-   ```bash
-   supabase functions deploy refresh-google-token
-   ```
-4. Set environment variables (use the same credentials from your Google OAuth setup):
-   ```bash
-   supabase secrets set GOOGLE_OAUTH_CLIENT_ID="your-client-id"
-   supabase secrets set GOOGLE_OAUTH_CLIENT_SECRET="your-client-secret"
-   ```
+**Quick Setup (5 minutes):**
+```bash
+# 1. Install Supabase CLI
+npm install -g supabase
+
+# 2. Login to Supabase
+supabase login
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env and fill in your values
+
+# 4. Deploy
+npm run deploy-edge-function
+```
 
 **Without this setup**: The extension will work but may prompt you to sign in again after ~1 hour when tokens expire.
 
 **With this setup**: Tokens refresh automatically in the background without user intervention.
 
-See `supabase/functions/refresh-google-token/README.md` for detailed setup instructions.
+📖 **Detailed guide**: See [EDGE_FUNCTION_SETUP.md](EDGE_FUNCTION_SETUP.md) for step-by-step instructions and troubleshooting.
 
 ### Notion Integration Setup
 
