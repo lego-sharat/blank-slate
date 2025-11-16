@@ -1,5 +1,6 @@
-import { calendarToken, todos, notes, STORAGE_KEYS } from '@/store/store';
+import { calendarToken, todos, notes, linearIssues, STORAGE_KEYS } from '@/store/store';
 import { fetchTodayEvents } from '@/utils/calendarActions';
+import { fetchAllLinearIssues, isLinearConnected } from '@/utils/linearApi';
 
 /**
  * Load tasks from localStorage
@@ -58,6 +59,15 @@ export async function syncAllData() {
     );
   }
 
+  // Sync Linear issues if API key is configured
+  if (isLinearConnected()) {
+    syncPromises.push(
+      syncLinear().catch(err => {
+        console.error('Failed to sync Linear issues:', err);
+      })
+    );
+  }
+
   // Add more data sync operations here as needed
   // Example:
   // syncPromises.push(fetchReadingList());
@@ -80,6 +90,24 @@ export async function syncCalendar() {
     await fetchTodayEvents(calendarToken.value);
   } catch (err) {
     console.error('Failed to sync calendar:', err);
+    throw err;
+  }
+}
+
+/**
+ * Sync Linear issues only
+ */
+export async function syncLinear() {
+  if (!isLinearConnected()) {
+    console.warn('Cannot sync Linear: no API key configured');
+    return;
+  }
+
+  try {
+    const issues = await fetchAllLinearIssues();
+    linearIssues.value = issues;
+  } catch (err) {
+    console.error('Failed to sync Linear issues:', err);
     throw err;
   }
 }

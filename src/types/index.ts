@@ -67,10 +67,57 @@ export interface Settings {
   supabaseUrl: string;
   supabaseKey: string;
   theme: 'dark' | 'light';
+  linearApiKey: string;
+}
+
+// Linear types
+export interface LinearIssue {
+  id: string;
+  identifier: string; // e.g., "PRD-123"
+  title: string;
+  description?: string;
+  url: string;
+  state: {
+    id: string;
+    name: string;
+    color: string;
+    type: string; // "started", "completed", "canceled", "backlog", "unstarted"
+  };
+  priority: number; // 0 (No priority) to 4 (Urgent)
+  assignee?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  creator: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  team: {
+    id: string;
+    name: string;
+    key: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  dueDate?: string;
+  labels?: Array<{
+    id: string;
+    name: string;
+    color: string;
+  }>;
 }
 
 // View types
-export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'profile' | 'settings';
+export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'profile' | 'settings';
 
 // Sidebar section types
 export interface SidebarSection {

@@ -3,6 +3,7 @@ import { currentView, loadFromStorage, settings } from '@/store/store';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import GlanceView from '@/components/Glance/GlanceView';
 import TodayView from '@/components/Views/TodayView';
+import LinearView from '@/components/Linear/LinearView';
 import NoteEditor from '@/components/Notes/NoteEditor';
 import NotesView from '@/components/Notes/NotesView';
 import TasksView from '@/components/Tasks/TasksView';
@@ -92,6 +93,7 @@ export function App() {
         <div class="content-container">
           {currentView.value === 'glance' && <GlanceView />}
           {currentView.value === 'today' && <TodayView />}
+          {currentView.value === 'linear' && <LinearView />}
           {currentView.value === 'note' && <NoteEditor />}
           {currentView.value === 'notes' && <NotesView />}
           {currentView.value === 'tasks' && <TasksView />}

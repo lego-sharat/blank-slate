@@ -15,6 +15,10 @@ export default function Sidebar() {
     currentView.value = 'today';
   };
 
+  const navigateToLinear = () => {
+    currentView.value = 'linear';
+  };
+
   const navigateToTasks = () => {
     currentView.value = 'tasks';
   };
@@ -105,6 +109,19 @@ export default function Sidebar() {
                 <line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
               <span class="sidebar-item-label">Today</span>
+            </div>
+
+            {/* Linear Section - Simple clickable item */}
+            <div
+              class={`sidebar-item sidebar-nav-item ${currentView.value === 'linear' ? 'active' : ''}`}
+              onClick={navigateToLinear}
+            >
+              <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="sidebar-item-label">Linear</span>
             </div>
 
             {/* Tasks Section - Clickable header navigates to view */}

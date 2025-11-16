@@ -1,4 +1,4 @@
-import { currentView } from '@/store/store';
+import { currentView, settings } from '@/store/store';
 import { useState, useEffect } from 'preact/hooks';
 
 export default function SettingsView() {
@@ -12,6 +12,9 @@ export default function SettingsView() {
   );
   const [supabaseAnonKey, setSupabaseAnonKey] = useState(
     localStorage.getItem('supabase_anon_key') || ''
+  );
+  const [linearApiKey, setLinearApiKey] = useState(
+    localStorage.getItem('linear_api_key') || ''
   );
 
   const [isSaved, setIsSaved] = useState(false);
@@ -27,6 +30,13 @@ export default function SettingsView() {
     // Save to localStorage
     localStorage.setItem('supabase_url', supabaseUrl);
     localStorage.setItem('supabase_anon_key', supabaseAnonKey);
+    localStorage.setItem('linear_api_key', linearApiKey);
+
+    // Update settings signal
+    settings.value = {
+      ...settings.value,
+      linearApiKey: linearApiKey,
+    };
 
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
@@ -92,6 +102,51 @@ export default function SettingsView() {
               <div class="settings-hint">
                 Found in your Supabase project settings under "API" → "Project API keys" → "anon public"
               </div>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleSave}
+            >
+              {isSaved ? 'Saved!' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* Linear Configuration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Linear Integration</h3>
+          <div class="settings-section-description">
+            Configure your Linear API key to view issues assigned to you, created by you, and mentioning you.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label" for="linear-api-key">
+                Linear API Key
+              </label>
+              <input
+                id="linear-api-key"
+                type="password"
+                class="settings-input"
+                placeholder="lin_api_..."
+                value={linearApiKey}
+                onInput={(e) => setLinearApiKey((e.target as HTMLInputElement).value)}
+              />
+              <div class="settings-hint">
+                Create a personal API key in Linear Settings → Account → API → Personal API keys
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <p>
+                <strong>How to get your Linear API key:</strong>
+              </p>
+              <ol class="settings-instructions-sub">
+                <li>Go to <a href="https://linear.app/settings/api" target="_blank" rel="noopener noreferrer">Linear Settings → API</a></li>
+                <li>Click "Create key" under Personal API keys</li>
+                <li>Give it a name (e.g., "Slate Extension")</li>
+                <li>Copy the generated key and paste it above</li>
+              </ol>
             </div>
 
             <button

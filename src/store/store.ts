@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType } from '@/types';
+import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue } from '@/types';
 
 // Storage keys
 export const STORAGE_KEYS = {
@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   SETTINGS: 'minimal_newtab_settings',
   CALENDAR_TOKEN: 'minimal_newtab_calendar_token',
   CALENDAR_EVENTS: 'minimal_newtab_calendar_events',
+  LINEAR_ISSUES: 'minimal_newtab_linear_issues',
 } as const;
 
 // Core signals
@@ -16,6 +17,15 @@ export const todos = signal<Todo[]>([]);
 export const notes = signal<Note[]>([]);
 export const readingList = signal<ReadingItem[]>([]);
 export const calendarEvents = signal<CalendarEvent[]>([]);
+export const linearIssues = signal<{
+  assignedToMe: LinearIssue[];
+  createdByMe: LinearIssue[];
+  mentioningMe: LinearIssue[];
+}>({
+  assignedToMe: [],
+  createdByMe: [],
+  mentioningMe: [],
+});
 export const settings = signal<Settings>({
   notionApiKey: '',
   notionDatabaseId: '',
@@ -24,6 +34,7 @@ export const settings = signal<Settings>({
   supabaseUrl: '',
   supabaseKey: '',
   theme: 'dark',
+  linearApiKey: '',
 });
 
 // UI state signals
@@ -97,6 +108,27 @@ export const nextEvent = computed(() => {
   return upcoming[0] || null;
 });
 
+// Linear computed signals
+export const assignedLinearIssues = computed(() => {
+  return linearIssues.value.assignedToMe;
+});
+
+export const createdLinearIssues = computed(() => {
+  return linearIssues.value.createdByMe;
+});
+
+export const mentioningLinearIssues = computed(() => {
+  return linearIssues.value.mentioningMe;
+});
+
+export const allLinearIssues = computed(() => {
+  return [
+    ...linearIssues.value.assignedToMe,
+    ...linearIssues.value.createdByMe,
+    ...linearIssues.value.mentioningMe,
+  ];
+});
+
 // Load configuration and cached data from localStorage
 // Note: Tasks and notes are loaded via dataSync.syncAllData()
 export const loadFromStorage = () => {
@@ -107,11 +139,20 @@ export const loadFromStorage = () => {
     const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (storedSettings) settings.value = { ...settings.value, ...JSON.parse(storedSettings) };
 
+    // Load Linear API key separately for backwards compatibility
+    const linearApiKey = localStorage.getItem('linear_api_key');
+    if (linearApiKey) {
+      settings.value = { ...settings.value, linearApiKey };
+    }
+
     const storedCalendarEvents = localStorage.getItem(STORAGE_KEYS.CALENDAR_EVENTS);
     if (storedCalendarEvents) calendarEvents.value = JSON.parse(storedCalendarEvents);
 
     const storedCalendarToken = localStorage.getItem(STORAGE_KEYS.CALENDAR_TOKEN);
     if (storedCalendarToken) calendarToken.value = storedCalendarToken;
+
+    const storedLinearIssues = localStorage.getItem(STORAGE_KEYS.LINEAR_ISSUES);
+    if (storedLinearIssues) linearIssues.value = JSON.parse(storedLinearIssues);
   } catch (error) {
     console.error('Error loading from storage:', error);
   }
@@ -144,4 +185,8 @@ export const saveCalendarToken = () => {
   } else {
     localStorage.removeItem(STORAGE_KEYS.CALENDAR_TOKEN);
   }
+};
+
+export const saveLinearIssues = () => {
+  localStorage.setItem(STORAGE_KEYS.LINEAR_ISSUES, JSON.stringify(linearIssues.value));
 };
