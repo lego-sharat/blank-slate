@@ -131,7 +131,7 @@ const ASSIGNED_TO_ME_QUERY = `
           state: { type: { nin: ["completed", "canceled"] } }
         }
         orderBy: createdAt
-        first: 50
+        first: 10
       ) {
         nodes {
           id
@@ -207,7 +207,7 @@ const CREATED_BY_ME_QUERY = `
           state: { type: { nin: ["completed", "canceled"] } }
         }
         orderBy: createdAt
-        first: 50
+        first: 10
       ) {
         nodes {
           id
@@ -282,7 +282,7 @@ const MENTIONING_ME_QUERY = `
         state: { type: { nin: ["completed", "canceled"] } }
       }
       orderBy: updatedAt
-      first: 50
+      first: 10
     ) {
       nodes {
         id
