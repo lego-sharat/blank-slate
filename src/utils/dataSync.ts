@@ -1,6 +1,7 @@
-import { calendarToken, todos, notes, linearIssues, STORAGE_KEYS } from '@/store/store';
+import { calendarToken, todos, notes, linearIssues, githubPRs, settings, STORAGE_KEYS } from '@/store/store';
 import { fetchTodayEvents } from '@/utils/calendarActions';
 import { fetchAllLinearIssues, isLinearConnected } from '@/utils/linearApi';
+import { fetchAllGitHubPRs } from '@/utils/githubApi';
 
 /**
  * Load tasks from localStorage
@@ -68,6 +69,15 @@ export async function syncAllData() {
     );
   }
 
+  // Sync GitHub PRs if token is configured
+  if (isGitHubConnected()) {
+    syncPromises.push(
+      syncGitHub().catch(err => {
+        console.error('Failed to sync GitHub PRs:', err);
+      })
+    );
+  }
+
   // Add more data sync operations here as needed
   // Example:
   // syncPromises.push(fetchReadingList());
@@ -108,6 +118,31 @@ export async function syncLinear() {
     linearIssues.value = issues;
   } catch (err) {
     console.error('Failed to sync Linear issues:', err);
+    throw err;
+  }
+}
+
+/**
+ * Check if GitHub is connected
+ */
+export function isGitHubConnected(): boolean {
+  return !!(settings.value.githubToken && settings.value.githubToken.length > 0);
+}
+
+/**
+ * Sync GitHub pull requests only
+ */
+export async function syncGitHub() {
+  if (!isGitHubConnected()) {
+    console.warn('Cannot sync GitHub: no token configured');
+    return;
+  }
+
+  try {
+    const prs = await fetchAllGitHubPRs(settings.value.githubToken);
+    githubPRs.value = prs;
+  } catch (err) {
+    console.error('Failed to sync GitHub PRs:', err);
     throw err;
   }
 }

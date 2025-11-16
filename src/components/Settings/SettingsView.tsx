@@ -16,6 +16,9 @@ export default function SettingsView() {
   const [linearApiKey, setLinearApiKey] = useState(
     localStorage.getItem('linear_api_key') || ''
   );
+  const [githubToken, setGithubToken] = useState(
+    localStorage.getItem('github_token') || ''
+  );
 
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
@@ -31,11 +34,13 @@ export default function SettingsView() {
     localStorage.setItem('supabase_url', supabaseUrl);
     localStorage.setItem('supabase_anon_key', supabaseAnonKey);
     localStorage.setItem('linear_api_key', linearApiKey);
+    localStorage.setItem('github_token', githubToken);
 
     // Update settings signal
     settings.value = {
       ...settings.value,
       linearApiKey: linearApiKey,
+      githubToken: githubToken,
     };
 
     setIsSaved(true);
@@ -146,6 +151,53 @@ export default function SettingsView() {
                 <li>Click "Create key" under Personal API keys</li>
                 <li>Give it a name (e.g., "Slate Extension")</li>
                 <li>Copy the generated key and paste it above</li>
+              </ol>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleSave}
+            >
+              {isSaved ? 'Saved!' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* GitHub Configuration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">GitHub Integration</h3>
+          <div class="settings-section-description">
+            Configure your GitHub personal access token to view pull requests created by you and assigned to you for review.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label" for="github-token">
+                GitHub Personal Access Token
+              </label>
+              <input
+                id="github-token"
+                type="password"
+                class="settings-input"
+                placeholder="ghp_..."
+                value={githubToken}
+                onInput={(e) => setGithubToken((e.target as HTMLInputElement).value)}
+              />
+              <div class="settings-hint">
+                Create a personal access token in GitHub Settings → Developer settings → Personal access tokens
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <p>
+                <strong>How to create a GitHub Personal Access Token:</strong>
+              </p>
+              <ol class="settings-instructions-sub">
+                <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">GitHub Settings → Personal access tokens → Tokens (classic)</a></li>
+                <li>Click "Generate new token" → "Generate new token (classic)"</li>
+                <li>Give it a name (e.g., "Slate Extension")</li>
+                <li>Select scopes: <code>repo</code> (Full control of private repositories)</li>
+                <li>Click "Generate token" and copy the generated token</li>
+                <li>Paste it above (you won't be able to see it again!)</li>
               </ol>
             </div>
 

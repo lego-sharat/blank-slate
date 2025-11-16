@@ -68,6 +68,7 @@ export interface Settings {
   supabaseKey: string;
   theme: 'dark' | 'light';
   linearApiKey: string;
+  githubToken: string;
 }
 
 // Linear types
@@ -125,8 +126,39 @@ export interface LinearIssue {
   };
 }
 
+// GitHub types
+export interface GitHubPR {
+  id: string;
+  number: number;
+  title: string;
+  url: string;
+  state: 'OPEN' | 'CLOSED' | 'MERGED';
+  isDraft: boolean;
+  createdAt: string;
+  updatedAt: string;
+  mergedAt?: string;
+  closedAt?: string;
+  author: {
+    login: string;
+    avatarUrl: string;
+  };
+  repository: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+  };
+  labels: Array<{
+    name: string;
+    color: string;
+  }>;
+  reviewDecision?: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED';
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+}
+
 // View types
-export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'profile' | 'settings';
+export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'github' | 'profile' | 'settings';
 
 // Sidebar section types
 export interface SidebarSection {

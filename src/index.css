@@ -4334,3 +4334,240 @@ body.light-theme {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
 }
+
+/* ===================================
+   GitHub View Styles
+   =================================== */
+
+.github-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.github-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.github-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.github-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.github-stats {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.github-view-all-button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.github-view-all-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-tertiary);
+}
+
+.github-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.github-filter-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.github-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.github-filter-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.github-filter-count {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.github-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.github-pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.github-pr-item {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.github-pr-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.github-pr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.github-pr-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.github-pr-repo {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.github-pr-number {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.github-pr-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.github-pr-state,
+.github-pr-review {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* GitHub PR State colors */
+.github-pr-state.state-open {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.github-pr-state.state-merged {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.github-pr-state.state-closed {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+/* GitHub PR Review colors */
+.github-pr-review.review-approved {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.github-pr-review.review-changes {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.github-pr-review.review-required {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.github-pr-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.github-pr-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.github-pr-author {
+  color: var(--text-tertiary);
+}
+
+.github-pr-time {
+  color: var(--text-tertiary);
+}
+
+.github-pr-stats {
+  color: var(--text-tertiary);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+/* ===================================
+   Sidebar Icon Styles
+   =================================== */
+
+.sidebar-nav-item .github-icon {
+  color: var(--text-tertiary);
+}
+
+.sidebar-item.active .github-icon {
+  color: var(--text-primary);
+}

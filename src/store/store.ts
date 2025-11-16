@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue } from '@/types';
+import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR } from '@/types';
 
 // Storage keys
 export const STORAGE_KEYS = {
@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   CALENDAR_TOKEN: 'minimal_newtab_calendar_token',
   CALENDAR_EVENTS: 'minimal_newtab_calendar_events',
   LINEAR_ISSUES: 'minimal_newtab_linear_issues',
+  GITHUB_PRS: 'minimal_newtab_github_prs',
 } as const;
 
 // Core signals
@@ -26,6 +27,13 @@ export const linearIssues = signal<{
   createdByMe: [],
   mentioningMe: [],
 });
+export const githubPRs = signal<{
+  createdByMe: GitHubPR[];
+  reviewRequested: GitHubPR[];
+}>({
+  createdByMe: [],
+  reviewRequested: [],
+});
 export const settings = signal<Settings>({
   notionApiKey: '',
   notionDatabaseId: '',
@@ -35,6 +43,7 @@ export const settings = signal<Settings>({
   supabaseKey: '',
   theme: 'dark',
   linearApiKey: '',
+  githubToken: '',
 });
 
 // UI state signals
@@ -129,6 +138,22 @@ export const allLinearIssues = computed(() => {
   ];
 });
 
+// GitHub computed signals
+export const createdGitHubPRs = computed(() => {
+  return githubPRs.value.createdByMe;
+});
+
+export const reviewRequestedGitHubPRs = computed(() => {
+  return githubPRs.value.reviewRequested;
+});
+
+export const allGitHubPRs = computed(() => {
+  return [
+    ...githubPRs.value.createdByMe,
+    ...githubPRs.value.reviewRequested,
+  ];
+});
+
 // Load configuration and cached data from localStorage
 // Note: Tasks and notes are loaded via dataSync.syncAllData()
 export const loadFromStorage = () => {
@@ -145,6 +170,12 @@ export const loadFromStorage = () => {
       settings.value = { ...settings.value, linearApiKey };
     }
 
+    // Load GitHub token separately for backwards compatibility
+    const githubToken = localStorage.getItem('github_token');
+    if (githubToken) {
+      settings.value = { ...settings.value, githubToken };
+    }
+
     const storedCalendarEvents = localStorage.getItem(STORAGE_KEYS.CALENDAR_EVENTS);
     if (storedCalendarEvents) calendarEvents.value = JSON.parse(storedCalendarEvents);
 
@@ -153,6 +184,9 @@ export const loadFromStorage = () => {
 
     const storedLinearIssues = localStorage.getItem(STORAGE_KEYS.LINEAR_ISSUES);
     if (storedLinearIssues) linearIssues.value = JSON.parse(storedLinearIssues);
+
+    const storedGitHubPRs = localStorage.getItem(STORAGE_KEYS.GITHUB_PRS);
+    if (storedGitHubPRs) githubPRs.value = JSON.parse(storedGitHubPRs);
   } catch (error) {
     console.error('Error loading from storage:', error);
   }
@@ -189,4 +223,8 @@ export const saveCalendarToken = () => {
 
 export const saveLinearIssues = () => {
   localStorage.setItem(STORAGE_KEYS.LINEAR_ISSUES, JSON.stringify(linearIssues.value));
+};
+
+export const saveGitHubPRs = () => {
+  localStorage.setItem(STORAGE_KEYS.GITHUB_PRS, JSON.stringify(githubPRs.value));
 };
