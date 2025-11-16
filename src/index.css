@@ -3975,6 +3975,16 @@ body.light-theme {
   color: var(--text-primary);
 }
 
+.settings-info-box a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--border-default);
+}
+
+.settings-info-box a:hover {
+  text-decoration-color: var(--text-secondary);
+}
+
 /* ===================================
    Linear View Styles
    =================================== */
