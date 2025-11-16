@@ -2168,7 +2168,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease;
@@ -2189,14 +2189,14 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 /* Navigation item styling (for Glance) */
 .sidebar-nav-item {
   border-bottom: 1px solid var(--border-subtle);
-  padding: 8px 14px !important;
+  padding: 10px 14px !important;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
