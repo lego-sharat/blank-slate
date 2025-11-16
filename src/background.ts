@@ -1,4 +1,4 @@
-import { shouldTrackUrl, createHistoryItem, saveHistoryItem } from './utils/historyTracker';
+import { shouldTrackUrl, createHistoryItem, saveHistoryItem, updateHistoryItemTitle } from './utils/historyTracker';
 
 /**
  * Background script for tracking browsing history
@@ -6,6 +6,12 @@ import { shouldTrackUrl, createHistoryItem, saveHistoryItem } from './utils/hist
 
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
+  // Handle title changes (for dynamic sites like Notion)
+  if (changeInfo.title && tab.url && shouldTrackUrl(tab.url)) {
+    await updateHistoryItemTitle(tab.url, changeInfo.title);
+    console.log('Updated title:', changeInfo.title, 'for', tab.url);
+  }
+
   // Only process when the page is completely loaded
   if (changeInfo.status === 'complete' && tab.url) {
     const url = tab.url;

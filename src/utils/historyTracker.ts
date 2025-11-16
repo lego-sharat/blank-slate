@@ -28,8 +28,14 @@ function extractTitle(url: string, pageTitle?: string): string {
     const pathname = urlObj.pathname;
 
     // Extract meaningful title from URL
-    if (url.includes('docs.google.com')) {
-      return 'Google Doc';
+    if (url.includes('docs.google.com/document')) {
+      return pageTitle || 'Google Doc';
+    } else if (url.includes('docs.google.com/spreadsheets')) {
+      return pageTitle || 'Google Sheet';
+    } else if (url.includes('docs.google.com/presentation')) {
+      return pageTitle || 'Google Slides';
+    } else if (url.includes('docs.google.com/forms')) {
+      return pageTitle || 'Google Form';
     } else if (url.includes('notion.so')) {
       const parts = pathname.split('/').filter(p => p);
       return parts[parts.length - 1]?.replace(/-/g, ' ') || 'Notion Page';
@@ -95,7 +101,12 @@ export function shouldTrackUrl(url: string): boolean {
     }
 
     // Additional filtering
+    // Track all Google Docs apps: Docs, Sheets, Slides, Forms
     if (url.includes('docs.google.com/document')) return true;
+    if (url.includes('docs.google.com/spreadsheets')) return true;
+    if (url.includes('docs.google.com/presentation')) return true;
+    if (url.includes('docs.google.com/forms')) return true;
+
     if (url.includes('notion.so') && !url.includes('/login')) return true;
     if (url.includes('figma.com/file')) return true;
     if (url.includes('github.com')) {
@@ -159,8 +170,9 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
     );
 
     if (recentItem) {
-      // Update visit time instead of adding duplicate
+      // Update visit time and title instead of adding duplicate
       recentItem.visitedAt = Date.now();
+      recentItem.title = item.title;
       await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
       return;
     }
@@ -174,6 +186,25 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
     await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: trimmed });
   } catch (e) {
     console.error('Error saving history item:', e);
+  }
+}
+
+/**
+ * Update title for an existing history item
+ */
+export async function updateHistoryItemTitle(url: string, newTitle: string): Promise<void> {
+  try {
+    const items = await getHistoryItems();
+
+    // Find the most recent item with this URL
+    const item = items.find(i => i.url === url);
+
+    if (item && newTitle && newTitle !== 'undefined') {
+      item.title = newTitle;
+      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
+    }
+  } catch (e) {
+    console.error('Error updating history item title:', e);
   }
 }
 
