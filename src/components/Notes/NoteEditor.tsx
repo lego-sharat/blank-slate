@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { currentNote, currentNoteId, isPreviewMode, notes, saveNotes } from '@/store/store';
+import { currentNote, currentNoteId, currentView, isPreviewMode, notes, saveNotes } from '@/store/store';
 
 export default function NoteEditor() {
   const note = currentNote.value;
@@ -100,6 +100,10 @@ export default function NoteEditor() {
     }
   };
 
+  const goBack = () => {
+    currentView.value = 'notes';
+  };
+
   if (!note) {
     return (
       <div class="note-editor-empty">
@@ -111,6 +115,12 @@ export default function NoteEditor() {
   return (
     <div class="note-editor">
       <div class="note-editor-toolbar">
+        <button class="note-back-btn" onClick={goBack} title="Back to notes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
         <div class="note-actions-group">
           <div class="note-status-toggle">
             <span class="status-label">Draft</span>
