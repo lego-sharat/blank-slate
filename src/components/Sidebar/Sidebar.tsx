@@ -1,6 +1,7 @@
 import { currentView, sidebarCollapsed, isAuthenticated } from '@/store/store';
 import { createNote } from '@/utils/noteActions';
 import { signIn, getUserInitials } from '@/utils/auth';
+import Calendar from './Calendar';
 
 export default function Sidebar() {
   const toggleSidebar = () => {
@@ -130,6 +131,20 @@ export default function Sidebar() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Calendar Section */}
+            <div class="sidebar-section-simple">
+              <div class="sidebar-section-header">
+                <svg class="sidebar-section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span class="sidebar-section-title">TODAY</span>
+              </div>
+              <Calendar />
             </div>
           </div>
 
