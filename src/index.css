@@ -2595,6 +2595,7 @@ body.light-theme {
 .task-add-form {
   display: flex;
   gap: 8px;
+  margin-top: 24px;
   margin-bottom: 24px;
   padding: 12px;
   background: var(--bg-secondary);
