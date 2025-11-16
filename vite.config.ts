@@ -1,10 +1,25 @@
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { resolve } from 'path';
+import { copyFileSync } from 'fs';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [preact()],
+  base: './',
+  plugins: [
+    preact(),
+    {
+      name: 'copy-files',
+      closeBundle() {
+        // Copy manifest.json to dist
+        copyFileSync('manifest.json', 'dist/manifest.json');
+        // Copy auth-callback.js to dist
+        copyFileSync('auth-callback.js', 'dist/auth-callback.js');
+        // Copy markdown-parser.js to dist
+        copyFileSync('markdown-parser.js', 'dist/markdown-parser.js');
+      },
+    },
+  ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
