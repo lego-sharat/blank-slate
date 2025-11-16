@@ -40,13 +40,35 @@ export default function LinearView() {
     currentView.value = 'settings';
   };
 
+  const sortByStatus = (issues: LinearIssue[]): LinearIssue[] => {
+    // Define priority order for status types
+    const statusOrder: Record<string, number> = {
+      'started': 1,      // In Progress - highest priority
+      'unstarted': 2,    // Todo - needs to be started
+      'backlog': 3,      // Backlog - lower priority
+    };
+
+    return [...issues].sort((a, b) => {
+      const orderA = statusOrder[a.state.type] || 99;
+      const orderB = statusOrder[b.state.type] || 99;
+
+      // If same status, sort by creation date (newest first)
+      if (orderA === orderB) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+
+      return orderA - orderB;
+    });
+  };
+
   const getFilteredIssues = (): LinearIssue[] => {
     switch (filter) {
       case 'assigned':
-        return issues.assignedToMe;
+        return sortByStatus(issues.assignedToMe);
       case 'created':
-        return issues.createdByMe;
+        return sortByStatus(issues.createdByMe);
       case 'mentioning':
+        // Already sorted by updatedAt from API
         return issues.mentioningMe;
       default:
         return [];

@@ -281,7 +281,7 @@ const MENTIONING_ME_QUERY = `
         subscribers: { id: { eq: $userId } }
         state: { type: { nin: ["completed", "canceled"] } }
       }
-      orderBy: createdAt
+      orderBy: updatedAt
       first: 50
     ) {
       nodes {
