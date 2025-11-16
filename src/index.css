@@ -2335,13 +2335,13 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 /* Notes List */
-.glance-notes-list {
+.glance-thoughts-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.glance-note-item {
+.glance-thought-item {
   padding: 12px;
   background: var(--bg-secondary);
   border-radius: 6px;
@@ -2349,18 +2349,18 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   transition: background 0.2s;
 }
 
-.glance-note-item:hover {
+.glance-thought-item:hover {
   background: var(--bg-tertiary);
 }
 
-.glance-note-title {
+.glance-thought-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
-.glance-note-preview {
+.glance-thought-preview {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.4;
