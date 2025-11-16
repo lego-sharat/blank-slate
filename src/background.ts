@@ -10,6 +10,9 @@ import {
   setCalendarEvents,
   setLastSync,
   getLastSync,
+  getLinearIssues,
+  getGitHubPRs,
+  getCalendarEvents,
 } from './utils/storageManager';
 import { initSupabase } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
@@ -19,13 +22,16 @@ import { fetchAllGitHubPRs } from './utils/githubApi';
 /**
  * Background script for:
  * - Tracking browsing history
- * - Fetching data from external APIs (Linear, GitHub, Calendar)
+ * - Fetching ALL data from external APIs (Linear, GitHub, Calendar)
  * - Syncing data to Supabase
  * - Caching everything in chrome.storage
+ *
+ * Foreground scripts should NEVER fetch data directly.
+ * They should only request cached data from this background script.
  */
 
-const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const SUPABASE_SYNC_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const FETCH_INTERVAL_MINUTES = 2; // Fetch external data every 2 minutes
+const SUPABASE_SYNC_INTERVAL = 10 * 60 * 1000; // Sync to Supabase every 10 minutes
 
 console.log('Background script starting...');
 
@@ -86,7 +92,6 @@ async function fetchAndCacheGitHubPRs() {
 
 /**
  * Fetch Calendar events and cache them
- * Thought: Calendar API needs to be imported from calendarActions
  */
 async function fetchAndCacheCalendarEvents() {
   try {
@@ -97,12 +102,11 @@ async function fetchAndCacheCalendarEvents() {
     }
 
     console.log('Fetching calendar events...');
-    // Import dynamically to avoid issues
     const { fetchTodayEvents } = await import('./utils/calendarActions');
     const events = await fetchTodayEvents(token);
-    if (events && events.length > 0) {
+    if (events && events.length >= 0) {
       await setCalendarEvents(events);
-      console.log('Calendar events cached successfully');
+      console.log(`Calendar events cached successfully (${events.length} events)`);
     }
   } catch (error) {
     console.error('Failed to fetch calendar events:', error);
@@ -136,18 +140,10 @@ async function syncToSupabase() {
 
 /**
  * Fetch all external data (Linear, GitHub, Calendar)
+ * This is the main data fetching function - runs every 2 minutes
  */
 async function fetchAllExternalData() {
   console.log('Fetching all external data...');
-
-  const lastSync = await getLastSync();
-  const now = Date.now();
-
-  // Only sync if enough time has passed
-  if (now - lastSync < SYNC_INTERVAL) {
-    console.log('Skipping sync, too soon since last sync');
-    return;
-  }
 
   await Promise.all([
     fetchAndCacheLinearIssues(),
@@ -155,7 +151,7 @@ async function fetchAllExternalData() {
     fetchAndCacheCalendarEvents(),
   ]);
 
-  await setLastSync(now);
+  await setLastSync(Date.now());
   console.log('All external data fetched and cached');
 }
 
@@ -165,17 +161,45 @@ async function fetchAllExternalData() {
 async function performPeriodicSync() {
   console.log('Starting periodic sync...');
 
-  // Fetch external data
+  // Fetch all external data
   await fetchAllExternalData();
 
   // Sync to Supabase (less frequently)
-  const lastSync = await getLastSync();
+  const lastSupabaseSync = await getLastSync();
   const now = Date.now();
-  if (now - lastSync >= SUPABASE_SYNC_INTERVAL) {
+  if (now - lastSupabaseSync >= SUPABASE_SYNC_INTERVAL) {
     await syncToSupabase();
   }
 
   console.log('Periodic sync complete');
+}
+
+/**
+ * Get all cached data - this is what foreground requests
+ */
+async function getAllCachedData() {
+  console.log('Getting all cached data for foreground...');
+
+  const [todos, thoughts, history, linearIssues, githubPRs, calendarEvents, settings] = await Promise.all([
+    getTodos(),
+    getThoughts(),
+    getHistory(),
+    getLinearIssues(),
+    getGitHubPRs(),
+    getCalendarEvents(),
+    getSettings(),
+  ]);
+
+  return {
+    todos,
+    thoughts,
+    history,
+    linearIssues,
+    githubPRs,
+    calendarEvents,
+    settings,
+    lastSync: await getLastSync(),
+  };
 }
 
 // =============================================================================
@@ -229,6 +253,50 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 // =============================================================================
+// Message Handlers - Foreground Communication
+// =============================================================================
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  // Handle all messages asynchronously
+  (async () => {
+    try {
+      switch (message.action) {
+        case 'getAllData':
+          // Foreground is requesting all cached data
+          console.log('Foreground requested all data');
+          const data = await getAllCachedData();
+          sendResponse({ success: true, data });
+          break;
+
+        case 'refreshData':
+          // Foreground is requesting immediate refresh
+          console.log('Foreground requested immediate refresh');
+          await fetchAllExternalData();
+          const refreshedData = await getAllCachedData();
+          sendResponse({ success: true, data: refreshedData });
+          break;
+
+        case 'syncNow':
+          // Legacy support - same as refreshData
+          console.log('Manual sync requested from UI');
+          await performPeriodicSync();
+          sendResponse({ success: true });
+          break;
+
+        default:
+          sendResponse({ success: false, error: 'Unknown action' });
+      }
+    } catch (error: any) {
+      console.error('Message handler error:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  })();
+
+  // Return true to indicate we'll send response asynchronously
+  return true;
+});
+
+// =============================================================================
 // Initialization and Periodic Tasks
 // =============================================================================
 
@@ -246,8 +314,8 @@ chrome.runtime.onStartup.addListener(async () => {
   await fetchAllExternalData();
 });
 
-// Set up periodic sync (every 5 minutes)
-chrome.alarms.create('periodicSync', { periodInMinutes: 5 });
+// Set up periodic sync (every 2 minutes)
+chrome.alarms.create('periodicSync', { periodInMinutes: FETCH_INTERVAL_MINUTES });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'periodicSync') {
@@ -260,29 +328,16 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (areaName === 'local' && changes.settings) {
     console.log('Settings changed, reinitializing Supabase');
     await initializeSupabase();
-  }
-});
-
-// Listen for messages from UI to trigger manual sync
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.action === 'syncNow') {
-    console.log('Manual sync requested from UI');
-    performPeriodicSync()
-      .then(() => {
-        sendResponse({ success: true });
-      })
-      .catch((error) => {
-        console.error('Manual sync failed:', error);
-        sendResponse({ success: false, error: error.message });
-      });
-    // Return true to indicate we'll send response asynchronously
-    return true;
+    // Also refresh data immediately when settings change
+    await fetchAllExternalData();
   }
 });
 
 // Initialize immediately on script load
 (async () => {
   await initializeSupabase();
+  // Fetch data on startup
+  await fetchAllExternalData();
   console.log('Background script loaded and ready');
 })();
 

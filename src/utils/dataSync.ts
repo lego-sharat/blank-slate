@@ -1,142 +1,193 @@
 import { calendarToken, todos, thoughts, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
-import {
-  getTodos,
-  getThoughts,
-  getLinearIssues,
-  getGitHubPRs,
-  getCalendarToken,
-  getCalendarEvents,
-} from '@/utils/storageManager';
 
 /**
- * Load tasks from chrome.storage
+ * Data sync utility - ALL data comes from background script
+ *
+ * Architecture:
+ * - Background script fetches all data every 2 minutes
+ * - UI requests cached data from background
+ * - UI NEVER fetches data directly
+ * - Signals are updated with cached data
  */
-export async function loadTasks() {
+
+/**
+ * Request all data from background script
+ * This returns cached data that the background script maintains
+ */
+export async function getAllDataFromBackground() {
   try {
-    const storedTodos = await getTodos();
-    todos.value = storedTodos;
-    console.log('Loaded', todos.value.length, 'tasks from storage');
+    const response = await chrome.runtime.sendMessage({ action: 'getAllData' });
+
+    if (response.success && response.data) {
+      return response.data;
+    } else {
+      console.error('Failed to get data from background:', response.error);
+      return null;
+    }
   } catch (error) {
-    console.error('Error loading tasks:', error);
+    console.error('Error requesting data from background:', error);
+    return null;
   }
 }
 
 /**
- * Load thoughts from chrome.storage
+ * Request immediate refresh from background script
+ * This triggers background to fetch fresh data and returns it
  */
-export async function loadThoughts() {
+export async function requestBackgroundRefresh() {
   try {
-    const storedNotes = await getThoughts();
-    // Migrate old thoughts to include status field
-    thoughts.value = storedNotes.map((thought: any) => ({
-      ...thought,
-      status: thought.status || 'draft',
-    }));
-    console.log('Loaded', thoughts.value.length, 'thoughts from storage');
+    console.log('Requesting immediate data refresh from background...');
+    const response = await chrome.runtime.sendMessage({ action: 'refreshData' });
+
+    if (response.success && response.data) {
+      return response.data;
+    } else {
+      console.error('Failed to refresh data:', response.error);
+      return null;
+    }
   } catch (error) {
-    console.error('Error loading thoughts:', error);
+    console.error('Error requesting refresh:', error);
+    return null;
   }
 }
 
 /**
- * Load Linear issues from chrome.storage
- */
-export async function loadLinearIssues() {
-  try {
-    const stored = await getLinearIssues();
-    linearIssues.value = stored;
-    console.log('Loaded Linear issues from storage');
-  } catch (error) {
-    console.error('Error loading Linear issues:', error);
-  }
-}
-
-/**
- * Load GitHub PRs from chrome.storage
- */
-export async function loadGitHubPRs() {
-  try {
-    const stored = await getGitHubPRs();
-    githubPRs.value = stored;
-    console.log('Loaded GitHub PRs from storage');
-  } catch (error) {
-    console.error('Error loading GitHub PRs:', error);
-  }
-}
-
-/**
- * Load calendar token from chrome.storage
- */
-export async function loadCalendarToken() {
-  try {
-    const token = await getCalendarToken();
-    calendarToken.value = token;
-    console.log('Loaded calendar token from storage');
-  } catch (error) {
-    console.error('Error loading calendar token:', error);
-  }
-}
-
-/**
- * Load calendar events from chrome.storage
- */
-export async function loadCalendarEvents() {
-  try {
-    const events = await getCalendarEvents();
-    calendarEvents.value = events;
-    console.log('Loaded', events.length, 'calendar events from storage');
-  } catch (error) {
-    console.error('Error loading calendar events:', error);
-  }
-}
-
-/**
- * Sync all data from chrome.storage
- * This loads all cached data that the background script maintains
+ * Load all data from background and update signals
+ * This is the ONLY way the UI should load data
  */
 export async function syncAllData() {
-  console.log('Loading all data from storage...');
+  console.log('Loading all data from background...');
 
-  await Promise.all([
-    loadTasks(),
-    loadThoughts(),
-    loadLinearIssues(),
-    loadGitHubPRs(),
-    loadCalendarToken(),
-    loadCalendarEvents(),
-  ]);
+  const data = await getAllDataFromBackground();
 
-  console.log('All data loaded from storage');
+  if (!data) {
+    console.error('No data received from background');
+    return;
+  }
+
+  // Update all signals with cached data
+  todos.value = data.todos || [];
+  thoughts.value = (data.thoughts || []).map((thought: any) => ({
+    ...thought,
+    status: thought.status || 'draft',
+  }));
+
+  linearIssues.value = data.linearIssues || {
+    assignedToMe: [],
+    createdByMe: [],
+    mentioningMe: [],
+  };
+
+  githubPRs.value = data.githubPRs || {
+    createdByMe: [],
+    reviewRequested: [],
+  };
+
+  calendarEvents.value = data.calendarEvents || [];
+
+  console.log('All data loaded from background:');
+  console.log('- Todos:', todos.value.length);
+  console.log('- Thoughts:', thoughts.value.length);
+  console.log('- Linear issues:', linearIssues.value.assignedToMe.length + linearIssues.value.createdByMe.length);
+  console.log('- GitHub PRs:', githubPRs.value.createdByMe.length + githubPRs.value.reviewRequested.length);
+  console.log('- Calendar events:', calendarEvents.value.length);
+  console.log('- Last sync:', new Date(data.lastSync || 0).toLocaleTimeString());
 }
 
 /**
- * Request background script to sync data immediately
- * This triggers the background script to fetch fresh data from APIs
+ * Refresh all data immediately
+ * Triggers background to fetch fresh data, then updates signals
+ */
+export async function refreshAllData() {
+  console.log('Refreshing all data...');
+
+  const data = await requestBackgroundRefresh();
+
+  if (!data) {
+    console.error('No data received from background refresh');
+    return;
+  }
+
+  // Update all signals with fresh data
+  todos.value = data.todos || [];
+  thoughts.value = (data.thoughts || []).map((thought: any) => ({
+    ...thought,
+    status: thought.status || 'draft',
+  }));
+
+  linearIssues.value = data.linearIssues || {
+    assignedToMe: [],
+    createdByMe: [],
+    mentioningMe: [],
+  };
+
+  githubPRs.value = data.githubPRs || {
+    createdByMe: [],
+    reviewRequested: [],
+  };
+
+  calendarEvents.value = data.calendarEvents || [];
+
+  console.log('All data refreshed successfully');
+}
+
+/**
+ * Legacy functions - kept for backwards compatibility
+ * These now use the background data system
+ */
+
+export async function loadTasks() {
+  // Data is loaded via syncAllData()
+  console.log('loadTasks() called - use syncAllData() instead');
+}
+
+export async function loadThoughts() {
+  // Data is loaded via syncAllData()
+  console.log('loadThoughts() called - use syncAllData() instead');
+}
+
+export async function loadLinearIssues() {
+  // Data is loaded via syncAllData()
+  console.log('loadLinearIssues() called - use syncAllData() instead');
+}
+
+export async function loadGitHubPRs() {
+  // Data is loaded via syncAllData()
+  console.log('loadGitHubPRs() called - use syncAllData() instead');
+}
+
+export async function loadCalendarToken() {
+  // Calendar token is still in chrome.storage
+  // This is OK since it's just a token, not fetched data
+  const { getCalendarToken } = await import('@/utils/storageManager');
+  const token = await getCalendarToken();
+  calendarToken.value = token;
+}
+
+export async function loadCalendarEvents() {
+  // Data is loaded via syncAllData()
+  console.log('loadCalendarEvents() called - use syncAllData() instead');
+}
+
+/**
+ * @deprecated Use refreshAllData() instead
  */
 export async function requestBackgroundSync() {
-  try {
-    // Send message to background script to trigger sync
-    await chrome.runtime.sendMessage({ action: 'syncNow' });
-    console.log('Background sync requested');
-  } catch (error) {
-    console.error('Failed to request background sync:', error);
-  }
+  await refreshAllData();
 }
 
 /**
- * Sync calendar data only
- * @deprecated Use requestBackgroundSync() instead
+ * @deprecated Use refreshAllData() instead
  */
 export async function syncCalendar() {
-  await requestBackgroundSync();
+  await refreshAllData();
 }
 
 /**
- * Sync Linear issues only
- * @deprecated Use requestBackgroundSync() instead
+ * @deprecated Use refreshAllData() instead
  */
 export async function syncLinear() {
-  await requestBackgroundSync();
+  await refreshAllData();
 }
 
 /**
@@ -147,9 +198,8 @@ export function isGitHubConnected(): boolean {
 }
 
 /**
- * Sync GitHub pull requests only
- * @deprecated Use requestBackgroundSync() instead
+ * @deprecated Use refreshAllData() instead
  */
 export async function syncGitHub() {
-  await requestBackgroundSync();
+  await refreshAllData();
 }
