@@ -118,9 +118,9 @@ body.handwriting-font {
   font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
 }
 
-body.handwriting-font .note-title-input,
-body.handwriting-font .note-content-input,
-body.handwriting-font .note-preview {
+body.handwriting-font .thought-title-input,
+body.handwriting-font .thought-content-input,
+body.handwriting-font .thought-preview {
   font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
 }
 
@@ -1360,17 +1360,17 @@ body.handwriting-font #todoInput {
   background-color: var(--bg-primary); /* Tomorrow Night theme background */
 }
 
-.note-editor {
+.thought-editor {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 100%; /* Ensure it takes full height */
 }
 
-.note-title-input {
+.thought-title-input {
   width: 100%;
   max-width: 720px;
-  padding: 80px 16px 0 16px; /* Top padding moved from .note-editor */
+  padding: 80px 16px 0 16px; /* Top padding moved from .thought-editor */
   margin: 0 auto 24px auto; /* Center and add bottom margin */
   border: none;
   background-color: transparent;
@@ -1386,7 +1386,7 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-title-input::placeholder {
+.thought-title-input::placeholder {
   color: var(--text-tertiary); /* Darker placeholder for dark theme */
 }
 
@@ -1402,7 +1402,7 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-content-input {
+.thought-content-input {
   width: 100%;
   padding: 0;
   border: none;
@@ -1418,17 +1418,17 @@ body.handwriting-font #todoInput {
   min-height: 400px; /* Minimum height */
 }
 
-.note-content-input::placeholder {
+.thought-content-input::placeholder {
   color: var(--text-tertiary); /* Darker placeholder for dark theme */
 }
 
 /* Text selection color for dark theme */
-.note-content-input::selection,
-.note-title-input::selection {
+.thought-content-input::selection,
+.thought-title-input::selection {
   background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
-.note-preview {
+.thought-preview {
   width: 100%;
   flex: 1; /* Fill available space in editor-container */
   padding: 0;
@@ -1442,54 +1442,54 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-preview::selection {
+.thought-preview::selection {
   background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
-.note-preview h1 {
+.thought-preview h1 {
   font-size: 32px;
   margin-top: 24px;
   margin-bottom: 12px;
   font-weight: bold;
 }
 
-.note-preview h2 {
+.thought-preview h2 {
   font-size: 24px;
   margin-top: 20px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.note-preview h3 {
+.thought-preview h3 {
   font-size: 20px;
   margin-top: 16px;
   margin-bottom: 8px;
   font-weight: bold;
 }
 
-.note-preview p {
+.thought-preview p {
   margin-bottom: 12px;
 }
 
-.note-preview ul, .note-preview ol {
+.thought-preview ul, .thought-preview ol {
   margin-left: 24px;
   margin-bottom: 12px;
 }
 
-.note-preview li {
+.thought-preview li {
   margin-bottom: 6px;
 }
 
-.note-preview a {
+.thought-preview a {
   color: var(--accent-primary); /* Tomorrow Night theme blue for links */
   text-decoration: underline;
 }
 
-.note-preview a:hover {
+.thought-preview a:hover {
   color: var(--accent-secondary); /* Tomorrow Night theme purple on hover */
 }
 
-.note-preview code {
+.thought-preview code {
   background-color: var(--bg-secondary); /* Darker background for inline code */
   color: var(--accent-yellow); /* Tomorrow Night theme yellow for code */
   padding: 2px 6px;
@@ -1497,7 +1497,7 @@ body.handwriting-font #todoInput {
   font-size: 14px;
 }
 
-.note-preview pre {
+.thought-preview pre {
   background-color: var(--bg-secondary); /* Darker background for code blocks */
   padding: 12px;
   overflow-x: auto;
@@ -1505,17 +1505,17 @@ body.handwriting-font #todoInput {
   border-radius: 4px;
 }
 
-.note-preview pre code {
+.thought-preview pre code {
   background-color: transparent; /* Remove double background */
   padding: 0; /* Remove double padding */
   color: var(--text-primary); /* Regular text color for code blocks */
 }
 
-.note-preview strong {
+.thought-preview strong {
   font-weight: bold;
 }
 
-.note-preview em {
+.thought-preview em {
   font-style: italic;
 }
 
@@ -2054,7 +2054,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
     gap: 40px;
   }
 
-  .note-title-input {
+  .thought-title-input {
     padding: 40px 20px 0 20px; /* Reduced top padding on mobile */
     font-size: 32px; /* Smaller title on mobile */
   }
@@ -2063,7 +2063,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
     padding: 0 20px 40px 20px; /* Reduced padding on mobile */
   }
 
-  .note-content-input {
+  .thought-content-input {
     font-size: 14px; /* Smaller content on mobile */
   }
 }
@@ -2971,20 +2971,20 @@ body.light-theme {
    Note Editor Styles
    =================================== */
 
-.note-editor {
+.thought-editor {
   padding: 16px 32px;
   max-width: 900px;
   margin: 0 auto;
 }
 
-.note-editor-empty {
+.thought-editor-empty {
   padding: 60px 20px;
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;
 }
 
-.note-editor-toolbar {
+.thought-editor-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2993,7 +2993,7 @@ body.light-theme {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.note-back-btn {
+.thought-back-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -3006,25 +3006,25 @@ body.light-theme {
   transition: all 0.2s;
 }
 
-.note-back-btn:hover {
+.thought-back-btn:hover {
   background: var(--hover-bg);
   color: var(--accent-primary);
 }
 
-.note-actions-group {
+.thought-actions-group {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.note-actions-divider {
+.thought-actions-divider {
   width: 1px;
   height: 24px;
   background-color: var(--border-subtle);
 }
 
 /* Toggle Switch for Draft/Ready */
-.note-status-toggle {
+.thought-status-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3091,7 +3091,7 @@ body.light-theme {
   background-color: var(--accent-primary-hover);
 }
 
-.note-actions {
+.thought-actions {
   display: flex;
   gap: 8px;
 }
@@ -3114,7 +3114,7 @@ body.light-theme {
   color: var(--text-primary);
 }
 
-.note-title-input {
+.thought-title-input {
   width: 100%;
   font-size: 24px;
   font-weight: 600;
@@ -3129,7 +3129,7 @@ body.light-theme {
   line-height: 1.3;
 }
 
-.note-title-input::placeholder {
+.thought-title-input::placeholder {
   color: var(--text-tertiary);
 }
 
@@ -3137,7 +3137,7 @@ body.light-theme {
   position: relative;
 }
 
-.note-content-input {
+.thought-content-input {
   width: 100%;
   min-height: 300px;
   font-size: 14px;
@@ -3150,32 +3150,32 @@ body.light-theme {
   font-family: inherit;
 }
 
-.note-content-input::placeholder {
+.thought-content-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.note-preview {
+.thought-preview {
   min-height: 300px;
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-primary);
 }
 
-.note-preview h1,
-.note-preview h2,
-.note-preview h3,
-.note-preview h4 {
+.thought-preview h1,
+.thought-preview h2,
+.thought-preview h3,
+.thought-preview h4 {
   margin-top: 24px;
   margin-bottom: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.note-preview p {
+.thought-preview p {
   margin: 12px 0;
 }
 
-.note-preview code {
+.thought-preview code {
   background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 3px;
@@ -3183,7 +3183,7 @@ body.light-theme {
   font-size: 14px;
 }
 
-.note-preview pre {
+.thought-preview pre {
   background: var(--bg-secondary);
   padding: 16px;
   border-radius: 6px;
@@ -3191,23 +3191,23 @@ body.light-theme {
   margin: 16px 0;
 }
 
-.note-preview pre code {
+.thought-preview pre code {
   background: transparent;
   padding: 0;
 }
 
-.note-preview ul,
-.note-preview ol {
+.thought-preview ul,
+.thought-preview ol {
   margin: 12px 0;
   padding-left: 24px;
 }
 
-.note-preview a {
+.thought-preview a {
   color: var(--accent-primary);
   text-decoration: none;
 }
 
-.note-preview a:hover {
+.thought-preview a:hover {
   text-decoration: underline;
 }
 
@@ -3533,39 +3533,39 @@ body.light-theme {
    NOTES VIEW - Grid Layout
    ============================================ */
 
-.notes-view {
+.thoughts-view {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
 }
 
-.notes-header {
+.thoughts-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 24px;
 }
 
-.notes-title {
+.thoughts-title {
   font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
-.notes-stats {
+.thoughts-stats {
   font-size: 15px;
   color: var(--text-secondary);
 }
 
-.notes-grid {
+.thoughts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
 
-.note-card {
+.thought-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
@@ -3577,14 +3577,14 @@ body.light-theme {
   min-height: 200px;
 }
 
-.note-card:hover {
+.thought-card:hover {
   background: var(--bg-tertiary);
   border-color: var(--border-emphasis);
   transform: translateY(-2px);
 }
 
 /* Add Note Card */
-.add-note-card {
+.add-thought-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3595,34 +3595,34 @@ body.light-theme {
   background: transparent;
 }
 
-.add-note-card:hover {
+.add-thought-card:hover {
   background: var(--hover-bg);
   border-color: var(--accent-primary);
   transform: translateY(-2px);
 }
 
-.add-note-icon {
+.add-thought-icon {
   color: var(--text-secondary);
   margin-bottom: 8px;
   transition: color 0.2s;
 }
 
-.add-note-card:hover .add-note-icon {
+.add-thought-card:hover .add-thought-icon {
   color: var(--accent-primary);
 }
 
-.add-note-text {
+.add-thought-text {
   font-size: 15px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-.add-note-card:hover .add-note-text {
+.add-thought-card:hover .add-thought-text {
   color: var(--accent-primary);
 }
 
 /* Note Card Content */
-.note-card-header {
+.thought-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -3630,7 +3630,7 @@ body.light-theme {
   gap: 8px;
 }
 
-.note-card-title {
+.thought-card-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -3643,7 +3643,7 @@ body.light-theme {
   -webkit-box-orient: vertical;
 }
 
-.note-card-delete {
+.thought-card-delete {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -3658,16 +3658,16 @@ body.light-theme {
   flex-shrink: 0;
 }
 
-.note-card:hover .note-card-delete {
+.thought-card:hover .thought-card-delete {
   opacity: 1;
 }
 
-.note-card-delete:hover {
+.thought-card-delete:hover {
   background: var(--bg-primary);
   color: var(--accent-red);
 }
 
-.note-card-preview {
+.thought-card-preview {
   flex: 1;
   font-size: 14px;
   line-height: 1.6;
@@ -3680,14 +3680,14 @@ body.light-theme {
   margin-bottom: 12px;
 }
 
-.note-card-footer {
+.thought-card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
 }
 
-.note-card-badge {
+.thought-card-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 7px;
@@ -3696,18 +3696,18 @@ body.light-theme {
   letter-spacing: 0.3px;
 }
 
-.note-card-badge.draft {
+.thought-card-badge.draft {
   background: var(--status-warning-bg);
   color: var(--status-warning-text);
 }
 
-.note-card-date {
+.thought-card-date {
   font-size: 12px;
   color: var(--text-tertiary);
   margin-left: auto;
 }
 
-.notes-empty {
+.thoughts-empty {
   text-align: center;
   padding: 48px 24px;
   color: var(--text-secondary);
