@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals';
-import { todos, notes, currentView, sidebarCollapsed } from '@/store/store';
+import { todos, notes, currentView, currentNoteId, sidebarCollapsed } from '@/store/store';
 import SidebarSection from './SidebarSection';
 import { createNote, openNote } from '@/utils/noteActions';
 
@@ -48,7 +48,10 @@ export default function Sidebar() {
         <>
           <div class="sidebar-sections">
             {/* Glance Section - Simple clickable item */}
-            <div class="sidebar-item sidebar-nav-item" onClick={navigateToGlance}>
+            <div
+              class={`sidebar-item sidebar-nav-item ${currentView.value === 'glance' ? 'active' : ''}`}
+              onClick={navigateToGlance}
+            >
               <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7"/>
                 <rect x="14" y="3" width="7" height="7"/>
@@ -60,7 +63,10 @@ export default function Sidebar() {
 
             {/* Tasks Section - Clickable header navigates to view */}
             <div class="sidebar-section-simple">
-              <div class="sidebar-section-header" onClick={navigateToTasks}>
+              <div
+                class={`sidebar-section-header ${currentView.value === 'tasks' ? 'active' : ''}`}
+                onClick={navigateToTasks}
+              >
                 <svg class="sidebar-section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 11l3 3L22 4"/>
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -81,7 +87,11 @@ export default function Sidebar() {
               showDot={notes.value.filter(n => n.status === 'draft').length > 0}
             >
               {notes.value.slice(0, 10).map(note => (
-                <div key={note.id} class="sidebar-item" onClick={() => openNote(note.id)}>
+                <div
+                  key={note.id}
+                  class={`sidebar-item ${currentNoteId.value === note.id ? 'active' : ''}`}
+                  onClick={() => openNote(note.id)}
+                >
                   <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>

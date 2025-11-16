@@ -2109,6 +2109,21 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   background: var(--hover-bg);
 }
 
+.sidebar-section-header.active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 11px; /* Compensate for border */
+}
+
+.sidebar-section-header.active .sidebar-section-icon {
+  color: var(--accent-primary);
+}
+
+.sidebar-section-header.active .sidebar-section-title {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
 .sidebar-section-chevron {
   color: var(--text-secondary);
   transition: transform 0.2s ease;
@@ -2201,6 +2216,21 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 .sidebar-item:hover {
   background: var(--hover-bg);
+}
+
+.sidebar-item.active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 11px; /* Compensate for border */
+}
+
+.sidebar-item.active .sidebar-item-icon {
+  color: var(--accent-primary);
+}
+
+.sidebar-item.active .sidebar-item-label {
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 .sidebar-item-icon {
