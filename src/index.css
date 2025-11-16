@@ -2160,7 +2160,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 /* Simple sidebar sections (non-collapsible) */
 .sidebar-section-simple {
-  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .sidebar-section-simple .sidebar-section-header {
@@ -2171,7 +2171,6 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   padding: 8px 14px;
   cursor: pointer;
   user-select: none;
-  border-radius: 4px;
   transition: background 0.15s ease;
 }
 
@@ -2189,7 +2188,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 /* Navigation item styling (for Glance) */
 .sidebar-nav-item {
-  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
   padding: 8px 14px !important;
 }
 
@@ -2199,9 +2198,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   gap: 10px;
   padding: 8px 14px;
   cursor: pointer;
-  border-radius: 4px;
   transition: background 0.15s ease;
-  margin-bottom: 3px;
 }
 
 .sidebar-item:hover {
