@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { linearIssues, currentView } from '@/store/store';
-import { isLinearConnected, getPriorityLabel } from '@/utils/linearApi';
-import { refreshAllData } from '@/utils/dataSync';
+import { getPriorityLabel } from '@/utils/linearApi';
+import { refreshAllData, isLinearConnected } from '@/utils/dataSync';
 import type { LinearIssue } from '@/types';
 
 type FilterType = 'assigned' | 'created' | 'mentioning';

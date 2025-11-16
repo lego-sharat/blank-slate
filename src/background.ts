@@ -41,6 +41,10 @@ console.log('Background script starting...');
 async function initializeSupabase() {
   try {
     const settings = await getSettings();
+    console.log('Checking Supabase configuration...');
+    console.log('  - Has URL:', !!settings.supabaseUrl);
+    console.log('  - Has Key:', !!settings.supabaseKey);
+
     if (settings.supabaseUrl && settings.supabaseKey) {
       const client = initSupabase(settings.supabaseUrl, settings.supabaseKey);
       if (client) {
@@ -50,6 +54,7 @@ async function initializeSupabase() {
       }
     } else {
       console.log('ℹ Supabase not configured (no URL or key in settings)');
+      console.log('  Configure Supabase in Settings to enable cloud sync');
     }
   } catch (error) {
     console.error('✗ Failed to initialize Supabase:', error);

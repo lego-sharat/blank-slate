@@ -2,6 +2,13 @@ import { calendarToken, todos, thoughts, linearIssues, githubPRs, settings, cale
 import { getCalendarToken } from '@/utils/storageManager';
 
 /**
+ * Check if Linear is connected (frontend only)
+ */
+export function isLinearConnected(): boolean {
+  return !!(settings.value.linearApiKey && settings.value.linearApiKey.length > 0);
+}
+
+/**
  * Data sync utility - ALL data comes from background script
  *
  * Architecture:

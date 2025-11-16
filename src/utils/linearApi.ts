@@ -1,5 +1,4 @@
 import type { LinearIssue } from '../types';
-import { settings } from '../store/store';
 
 const LINEAR_API_URL = 'https://api.linear.app/graphql';
 const STORAGE_KEY = 'minimal_newtab_linear_issues';
@@ -12,13 +11,28 @@ export interface LinearIssuesResponse {
 
 /**
  * Get Linear API key from settings
+ * @deprecated Import from dataSync.ts instead (frontend only)
+ * Background workers should pass API key explicitly to fetch functions
  */
 export function getLinearApiKey(): string | null {
-  return settings.value.linearApiKey || null;
+  // This function is for backwards compatibility only
+  // It will only work in frontend, not in background workers
+  if (typeof window === 'undefined') {
+    console.warn('getLinearApiKey() called in background worker - use explicit API key parameter instead');
+    return null;
+  }
+  try {
+    // Access settings from global scope if available (set by frontend)
+    const store = (window as any).__LINEAR_SETTINGS__;
+    return store?.linearApiKey || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
  * Check if Linear is connected
+ * @deprecated Import from dataSync.ts instead (frontend only)
  */
 export function isLinearConnected(): boolean {
   const apiKey = getLinearApiKey();
