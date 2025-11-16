@@ -28,10 +28,15 @@ export function isLinearConnected(): boolean {
 /**
  * Make a GraphQL request to Linear API
  */
-async function linearGraphQLRequest(query: string, variables: Record<string, any> = {}): Promise<any> {
-  const apiKey = getLinearApiKey();
+async function linearGraphQLRequest(query: string, variables: Record<string, any> = {}, apiKey?: string): Promise<any> {
+  let key: string | null;
+  if (apiKey !== undefined) {
+    key = apiKey;
+  } else {
+    key = getLinearApiKey();
+  }
 
-  if (!apiKey) {
+  if (!key) {
     throw new Error('Linear API key not configured');
   }
 
@@ -39,7 +44,7 @@ async function linearGraphQLRequest(query: string, variables: Record<string, any
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': apiKey,
+      'Authorization': key,
     },
     body: JSON.stringify({
       query,
@@ -348,7 +353,7 @@ const MENTIONING_ME_QUERY = `
 /**
  * Get current user ID from Linear
  */
-async function getLinearUserId(): Promise<string> {
+async function getLinearUserId(apiKey?: string): Promise<string> {
   const query = `
     query Me {
       viewer {
@@ -357,16 +362,16 @@ async function getLinearUserId(): Promise<string> {
     }
   `;
 
-  const data = await linearGraphQLRequest(query);
+  const data = await linearGraphQLRequest(query, {}, apiKey);
   return data.viewer.id;
 }
 
 /**
  * Fetch issues assigned to the current user
  */
-export async function fetchAssignedToMeIssues(): Promise<LinearIssue[]> {
+export async function fetchAssignedToMeIssues(apiKey?: string): Promise<LinearIssue[]> {
   try {
-    const data = await linearGraphQLRequest(ASSIGNED_TO_ME_QUERY);
+    const data = await linearGraphQLRequest(ASSIGNED_TO_ME_QUERY, {}, apiKey);
     const issues = data.viewer.assignedIssues.nodes;
     return issues.map(transformLinearIssue);
   } catch (error) {
@@ -378,9 +383,9 @@ export async function fetchAssignedToMeIssues(): Promise<LinearIssue[]> {
 /**
  * Fetch issues created by the current user
  */
-export async function fetchCreatedByMeIssues(): Promise<LinearIssue[]> {
+export async function fetchCreatedByMeIssues(apiKey?: string): Promise<LinearIssue[]> {
   try {
-    const data = await linearGraphQLRequest(CREATED_BY_ME_QUERY);
+    const data = await linearGraphQLRequest(CREATED_BY_ME_QUERY, {}, apiKey);
     const issues = data.viewer.createdIssues.nodes;
     return issues.map(transformLinearIssue);
   } catch (error) {
@@ -392,10 +397,10 @@ export async function fetchCreatedByMeIssues(): Promise<LinearIssue[]> {
 /**
  * Fetch issues mentioning the current user (subscribed issues)
  */
-export async function fetchMentioningMeIssues(): Promise<LinearIssue[]> {
+export async function fetchMentioningMeIssues(apiKey?: string): Promise<LinearIssue[]> {
   try {
-    const userId = await getLinearUserId();
-    const data = await linearGraphQLRequest(MENTIONING_ME_QUERY, { userId });
+    const userId = await getLinearUserId(apiKey);
+    const data = await linearGraphQLRequest(MENTIONING_ME_QUERY, { userId }, apiKey);
     const issues = data.issues.nodes;
     return issues.map(transformLinearIssue);
   } catch (error) {
@@ -407,8 +412,16 @@ export async function fetchMentioningMeIssues(): Promise<LinearIssue[]> {
 /**
  * Fetch all Linear issues (assigned, created, mentioning)
  */
-export async function fetchAllLinearIssues(): Promise<LinearIssuesResponse> {
-  if (!isLinearConnected()) {
+export async function fetchAllLinearIssues(apiKey?: string): Promise<LinearIssuesResponse> {
+  // Check connection - use apiKey if provided, otherwise check signal
+  let key: string | null;
+  if (apiKey !== undefined) {
+    key = apiKey;
+  } else {
+    key = getLinearApiKey();
+  }
+
+  if (!key || key.trim().length === 0) {
     console.log('Linear not connected, skipping fetch');
     return {
       assignedToMe: [],
@@ -419,9 +432,9 @@ export async function fetchAllLinearIssues(): Promise<LinearIssuesResponse> {
 
   try {
     const [assignedToMe, createdByMe, mentioningMe] = await Promise.all([
-      fetchAssignedToMeIssues(),
-      fetchCreatedByMeIssues(),
-      fetchMentioningMeIssues(),
+      fetchAssignedToMeIssues(apiKey),
+      fetchCreatedByMeIssues(apiKey),
+      fetchMentioningMeIssues(apiKey),
     ]);
 
     const result = {

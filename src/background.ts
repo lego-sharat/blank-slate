@@ -62,7 +62,7 @@ async function fetchAndCacheLinearIssues() {
     }
 
     console.log('Fetching Linear issues...');
-    const issues = await fetchAllLinearIssues();
+    const issues = await fetchAllLinearIssues(settings.linearApiKey);
     await setLinearIssues(issues);
     console.log('Linear issues cached successfully');
   } catch (error) {
