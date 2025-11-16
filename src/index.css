@@ -452,7 +452,7 @@ body.handwriting-font #todoInput {
   flex-direction: row;
   gap: 12px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 28px;
 }
 
