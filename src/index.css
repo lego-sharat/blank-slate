@@ -2153,14 +2153,6 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   font-weight: 500;
 }
 
-.sidebar-section-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: var(--accent-primary);
-  flex-shrink: 0;
-}
-
 .sidebar-section-content {
   margin-left: 14px;
   margin-top: 6px;

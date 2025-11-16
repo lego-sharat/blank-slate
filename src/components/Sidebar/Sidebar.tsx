@@ -1,4 +1,4 @@
-import { todos, notes, currentView, sidebarCollapsed } from '@/store/store';
+import { currentView, sidebarCollapsed } from '@/store/store';
 import { createNote } from '@/utils/noteActions';
 
 export default function Sidebar() {
@@ -62,9 +62,6 @@ export default function Sidebar() {
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                 </svg>
                 <span class="sidebar-section-title">TASKS</span>
-                {todos.value.filter(t => !t.completed).length > 0 && (
-                  <span class="sidebar-section-dot"></span>
-                )}
               </div>
             </div>
 
@@ -80,9 +77,6 @@ export default function Sidebar() {
                 </svg>
                 <span class="sidebar-section-title">NOTES</span>
                 <div class="sidebar-section-actions">
-                  {notes.value.filter(n => n.status === 'draft').length > 0 && (
-                    <span class="sidebar-section-dot"></span>
-                  )}
                   <button
                     class="sidebar-section-add-btn"
                     onClick={(e) => {
