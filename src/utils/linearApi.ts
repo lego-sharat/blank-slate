@@ -443,21 +443,31 @@ export async function fetchAllLinearIssues(apiKey?: string): Promise<LinearIssue
       mentioningMe,
     };
 
-    // Cache the results
-    saveLinearIssuesToStorage(result);
+    // NOTE: Caching is handled by background script via chrome.storage
+    // Don't use localStorage here as it's not available in background workers
 
     return result;
   } catch (error) {
     console.error('Error fetching Linear issues:', error);
-    // Return cached data on error
-    return loadLinearIssuesFromStorage();
+    // Return empty data on error (background script will cache last successful fetch)
+    return {
+      assignedToMe: [],
+      createdByMe: [],
+      mentioningMe: [],
+    };
   }
 }
 
 /**
  * Save Linear issues to local storage
+ * @deprecated Use chrome.storage via storageManager instead
+ * Only works in frontend (not background workers)
  */
 export function saveLinearIssuesToStorage(issues: LinearIssuesResponse): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    // Not available in background workers
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
   } catch (error) {
@@ -467,8 +477,19 @@ export function saveLinearIssuesToStorage(issues: LinearIssuesResponse): void {
 
 /**
  * Load Linear issues from local storage
+ * @deprecated Use chrome.storage via storageManager instead
+ * Only works in frontend (not background workers)
  */
 export function loadLinearIssuesFromStorage(): LinearIssuesResponse {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    // Not available in background workers
+    return {
+      assignedToMe: [],
+      createdByMe: [],
+      mentioningMe: [],
+    };
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
