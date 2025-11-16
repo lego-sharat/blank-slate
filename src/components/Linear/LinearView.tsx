@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { linearIssues, currentView } from '@/store/store';
-import { fetchAllLinearIssues, isLinearConnected, getPriorityLabel, getPriorityColor } from '@/utils/linearApi';
+import { fetchAllLinearIssues, isLinearConnected, getPriorityLabel } from '@/utils/linearApi';
 import type { LinearIssue } from '@/types';
 
 type FilterType = 'assigned' | 'created' | 'mentioning';
@@ -53,58 +53,25 @@ export default function LinearView() {
     }
   };
 
-  const formatDate = (dateString: string): string => {
+  const formatRelativeTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays === -1) return 'Yesterday';
-    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} days`;
-    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} days ago`;
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getStateIcon = (stateType: string) => {
-    switch (stateType) {
-      case 'started':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-          </svg>
-        );
-      case 'completed':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9 12l2 2 4-4"/>
-          </svg>
-        );
-      case 'canceled':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-        );
-      case 'backlog':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-          </svg>
-        );
-      default:
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-          </svg>
-        );
-    }
+  const truncateComment = (text: string, maxLength: number = 100): string => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
   };
 
   if (!hasApiKey) {
@@ -153,45 +120,35 @@ export default function LinearView() {
   }
 
   const filteredIssues = getFilteredIssues();
+  const issueCount = filteredIssues.length;
 
   return (
     <div class="linear-view">
       <div class="linear-header">
         <h1 class="linear-title">Linear</h1>
-        <button class="linear-refresh-btn" onClick={handleFetchIssues} title="Refresh issues">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-          </svg>
-        </button>
+        <div class="linear-stats">
+          {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+        </div>
       </div>
 
       <div class="linear-filters">
         <button
-          class={`linear-filter-btn ${filter === 'assigned' ? 'active' : ''}`}
+          class={`filter-btn ${filter === 'assigned' ? 'active' : ''}`}
           onClick={() => setFilter('assigned')}
         >
           Assigned to me
-          {issues.assignedToMe.length > 0 && (
-            <span class="linear-filter-count">{issues.assignedToMe.length}</span>
-          )}
         </button>
         <button
-          class={`linear-filter-btn ${filter === 'created' ? 'active' : ''}`}
+          class={`filter-btn ${filter === 'created' ? 'active' : ''}`}
           onClick={() => setFilter('created')}
         >
           Created by me
-          {issues.createdByMe.length > 0 && (
-            <span class="linear-filter-count">{issues.createdByMe.length}</span>
-          )}
         </button>
         <button
-          class={`linear-filter-btn ${filter === 'mentioning' ? 'active' : ''}`}
+          class={`filter-btn ${filter === 'mentioning' ? 'active' : ''}`}
           onClick={() => setFilter('mentioning')}
         >
           Mentioning me
-          {issues.mentioningMe.length > 0 && (
-            <span class="linear-filter-count">{issues.mentioningMe.length}</span>
-          )}
         </button>
       </div>
 
@@ -210,86 +167,48 @@ export default function LinearView() {
               class="linear-issue-item"
             >
               <div class="linear-issue-header">
-                <div class="linear-issue-identifier">
-                  <span
-                    class="linear-issue-state-icon"
-                    style={{ color: `#${issue.state.color}` }}
-                    title={issue.state.name}
-                  >
-                    {getStateIcon(issue.state.type)}
-                  </span>
+                <div class="linear-issue-meta-row">
                   <span class="linear-issue-id">{issue.identifier}</span>
+                  <span class="linear-issue-status">{issue.state.name}</span>
+                  {issue.priority > 0 && (
+                    <span class="linear-issue-priority">
+                      {getPriorityLabel(issue.priority)}
+                    </span>
+                  )}
                 </div>
-                {issue.priority > 0 && (
-                  <div
-                    class="linear-issue-priority"
-                    style={{
-                      backgroundColor: getPriorityColor(issue.priority),
-                      color: 'white'
-                    }}
-                  >
-                    {getPriorityLabel(issue.priority)}
-                  </div>
-                )}
+                <span class="linear-issue-updated">
+                  {formatRelativeTime(issue.updatedAt)}
+                </span>
               </div>
 
               <div class="linear-issue-title">{issue.title}</div>
 
-              <div class="linear-issue-meta">
-                {issue.project && (
-                  <div class="linear-issue-project">
-                    <span
-                      class="linear-issue-project-dot"
-                      style={{ backgroundColor: `#${issue.project.color}` }}
-                    />
-                    {issue.project.name}
-                  </div>
-                )}
-
-                <div class="linear-issue-team">
-                  {issue.team.name}
+              {issue.lastComment && (
+                <div class="linear-issue-comment">
+                  <span class="linear-issue-comment-author">
+                    {issue.lastComment.user.name}:
+                  </span>
+                  <span class="linear-issue-comment-text">
+                    {truncateComment(issue.lastComment.body)}
+                  </span>
                 </div>
+              )}
 
-                {issue.dueDate && (
-                  <div class="linear-issue-due">
-                    Due {formatDate(issue.dueDate)}
-                  </div>
+              <div class="linear-issue-footer">
+                {issue.project && (
+                  <span class="linear-issue-project">
+                    {issue.project.name}
+                  </span>
+                )}
+                <span class="linear-issue-team">
+                  {issue.team.name}
+                </span>
+                {issue.assignee && filter !== 'assigned' && (
+                  <span class="linear-issue-assignee">
+                    {issue.assignee.name}
+                  </span>
                 )}
               </div>
-
-              {issue.labels && issue.labels.length > 0 && (
-                <div class="linear-issue-labels">
-                  {issue.labels.map((label) => (
-                    <span
-                      key={label.id}
-                      class="linear-issue-label"
-                      style={{
-                        backgroundColor: `#${label.color}20`,
-                        color: `#${label.color}`
-                      }}
-                    >
-                      {label.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {issue.assignee && filter !== 'assigned' && (
-                <div class="linear-issue-assignee">
-                  {issue.assignee.avatarUrl ? (
-                    <img
-                      src={issue.assignee.avatarUrl}
-                      alt={issue.assignee.name}
-                      class="linear-issue-avatar"
-                    />
-                  ) : (
-                    <div class="linear-issue-avatar-placeholder">
-                      {issue.assignee.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span class="linear-issue-assignee-name">{issue.assignee.name}</span>
-                </div>
-              )}
             </a>
           ))}
         </div>

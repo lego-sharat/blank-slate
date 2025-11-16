@@ -107,6 +107,15 @@ function transformLinearIssue(issue: any): LinearIssue {
       name: label.name,
       color: label.color,
     })) || [],
+    lastComment: issue.comments?.nodes?.[0] ? {
+      id: issue.comments.nodes[0].id,
+      body: issue.comments.nodes[0].body,
+      createdAt: issue.comments.nodes[0].createdAt,
+      user: {
+        name: issue.comments.nodes[0].user.name,
+        avatarUrl: issue.comments.nodes[0].user.avatarUrl,
+      },
+    } : undefined,
   };
 }
 
@@ -167,6 +176,17 @@ const ASSIGNED_TO_ME_QUERY = `
               id
               name
               color
+            }
+          }
+          comments(last: 1) {
+            nodes {
+              id
+              body
+              createdAt
+              user {
+                name
+                avatarUrl
+              }
             }
           }
         }
@@ -234,6 +254,17 @@ const CREATED_BY_ME_QUERY = `
               color
             }
           }
+          comments(last: 1) {
+            nodes {
+              id
+              body
+              createdAt
+              user {
+                name
+                avatarUrl
+              }
+            }
+          }
         }
       }
     }
@@ -296,6 +327,17 @@ const MENTIONING_ME_QUERY = `
             id
             name
             color
+          }
+        }
+        comments(last: 1) {
+          nodes {
+            id
+            body
+            createdAt
+            user {
+              name
+              avatarUrl
+            }
           }
         }
       }

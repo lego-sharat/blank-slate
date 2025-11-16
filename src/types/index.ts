@@ -114,6 +114,15 @@ export interface LinearIssue {
     name: string;
     color: string;
   }>;
+  lastComment?: {
+    id: string;
+    body: string;
+    createdAt: string;
+    user: {
+      name: string;
+      avatarUrl?: string;
+    };
+  };
 }
 
 // View types
