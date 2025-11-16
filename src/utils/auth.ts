@@ -119,7 +119,7 @@ export async function signIn() {
           if (result.supabase_auth_callback) {
             clearInterval(checkAuth);
 
-            const callbackData = result.supabase_auth_callback;
+            const callbackData = result.supabase_auth_callback as { callback_url: string; hash: string; timestamp: number };
 
             // Clear the callback data
             await chrome.storage.local.remove('supabase_auth_callback');
