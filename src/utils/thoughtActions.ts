@@ -1,7 +1,7 @@
 import { thoughts, saveThoughts, currentThoughtId, currentView } from '@/store/store';
 import type { Thought, ThoughtStatus } from '@/types';
 
-export const createNote = () => {
+export const createThought = () => {
   const thought: Thought = {
     id: Date.now(),
     title: 'Untitled',
@@ -16,8 +16,8 @@ export const createNote = () => {
   currentView.value = 'thought';
 };
 
-export const deleteNote = (id: number) => {
-  thoughts.value = thoughts.value.filter(n => n.id !== id);
+export const deleteThought = (id: number) => {
+  thoughts.value = thoughts.value.filter(t => t.id !== id);
   saveThoughts();
   if (currentThoughtId.value === id) {
     currentThoughtId.value = null;
@@ -25,8 +25,8 @@ export const deleteNote = (id: number) => {
   }
 };
 
-export const updateNoteTitle = (id: number, title: string) => {
-  const thought = thoughts.value.find(n => n.id === id);
+export const updateThoughtTitle = (id: number, title: string) => {
+  const thought = thoughts.value.find(t => t.id === id);
   if (thought) {
     thought.title = title.trim() || 'Untitled';
     thought.updatedAt = Date.now();
@@ -35,8 +35,8 @@ export const updateNoteTitle = (id: number, title: string) => {
   }
 };
 
-export const updateNoteContent = (id: number, content: string) => {
-  const thought = thoughts.value.find(n => n.id === id);
+export const updateThoughtContent = (id: number, content: string) => {
+  const thought = thoughts.value.find(t => t.id === id);
   if (thought) {
     thought.content = content;
     thought.updatedAt = Date.now();
@@ -46,7 +46,7 @@ export const updateNoteContent = (id: number, content: string) => {
 };
 
 export const updateThoughtStatus = (id: number, status: ThoughtStatus) => {
-  const thought = thoughts.value.find(n => n.id === id);
+  const thought = thoughts.value.find(t => t.id === id);
   if (thought) {
     thought.status = status;
     thought.updatedAt = Date.now();
@@ -55,7 +55,14 @@ export const updateThoughtStatus = (id: number, status: ThoughtStatus) => {
   }
 };
 
-export const openNote = (id: number) => {
+export const openThought = (id: number) => {
   currentThoughtId.value = id;
   currentView.value = 'thought';
 };
+
+// Legacy aliases for backwards compatibility
+export const createNote = createThought;
+export const deleteNote = deleteThought;
+export const updateNoteTitle = updateThoughtTitle;
+export const updateNoteContent = updateThoughtContent;
+export const openNote = openThought;

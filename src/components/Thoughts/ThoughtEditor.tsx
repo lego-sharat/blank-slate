@@ -72,10 +72,10 @@ export default function ThoughtEditor() {
     }
   };
 
-  const deleteNote = () => {
+  const deleteThought = () => {
     if (!thought) return;
     if (confirm('Are you sure you want to delete this thought?')) {
-      thoughts.value = thoughts.value.filter(n => n.id !== thought.id);
+      thoughts.value = thoughts.value.filter(t => t.id !== thought.id);
       saveThoughts();
       currentThoughtId.value = null;
     }
@@ -151,7 +151,7 @@ export default function ThoughtEditor() {
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
-          <button class="icon-btn-small" onClick={deleteNote} title="Delete Thought">
+          <button class="icon-btn-small" onClick={deleteThought} title="Delete Thought">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
               <line x1="10" y1="11" x2="10" y2="17"/>

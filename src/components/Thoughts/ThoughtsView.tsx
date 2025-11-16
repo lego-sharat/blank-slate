@@ -1,19 +1,19 @@
 import { thoughts } from '@/store/store';
-import { createNote, openNote, deleteNote } from '@/utils/thoughtActions';
+import { createThought, openThought, deleteThought } from '@/utils/thoughtActions';
 
 export default function ThoughtsView() {
-  const handleAddNote = () => {
-    createNote();
+  const handleAddThought = () => {
+    createThought();
   };
 
-  const handleOpenNote = (id: number) => {
-    openNote(id);
+  const handleOpenThought = (id: number) => {
+    openThought(id);
   };
 
-  const handleDeleteNote = (e: Event, id: number) => {
+  const handleDeleteThought = (e: Event, id: number) => {
     e.stopPropagation();
     if (confirm('Delete this thought?')) {
-      deleteNote(id);
+      deleteThought(id);
     }
   };
 
@@ -28,7 +28,7 @@ export default function ThoughtsView() {
 
       <div class="thoughts-grid">
         {/* Add Thought Card */}
-        <div class="thought-card add-thought-card" onClick={handleAddNote}>
+        <div class="thought-card add-thought-card" onClick={handleAddThought}>
           <div class="add-thought-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -43,13 +43,13 @@ export default function ThoughtsView() {
           <div
             key={thought.id}
             class="thought-card"
-            onClick={() => handleOpenNote(thought.id)}
+            onClick={() => handleOpenThought(thought.id)}
           >
             <div class="thought-card-header">
               <h3 class="thought-card-title">{thought.title || 'Untitled'}</h3>
               <button
                 class="thought-card-delete"
-                onClick={(e) => handleDeleteNote(e, thought.id)}
+                onClick={(e) => handleDeleteThought(e, thought.id)}
                 title="Delete thought"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
