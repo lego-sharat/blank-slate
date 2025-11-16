@@ -7,10 +7,16 @@ export default function HistoryView() {
   const [activeFilter, setActiveFilter] = useState<'all' | HistoryItemType>('all');
   const [filteredItems, setFilteredItems] = useState<HistoryItem[]>([]);
   const [searchResults, setSearchResults] = useState<HistoryItem[]>([]);
+  const [openTabs, setOpenTabs] = useState<Map<string, number>>(new Map());
 
-  // Load history data
+  // Load history data and check open tabs
   useEffect(() => {
     loadHistory();
+    checkOpenTabs();
+
+    // Refresh open tabs periodically
+    const interval = setInterval(checkOpenTabs, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Update filtered items when filter changes
@@ -38,6 +44,23 @@ export default function HistoryView() {
   const loadFilteredHistory = async (type: HistoryItemType) => {
     const items = await getHistoryByType(type, 10);
     setFilteredItems(items);
+  };
+
+  const checkOpenTabs = async () => {
+    try {
+      const tabs = await chrome.tabs.query({});
+      const tabMap = new Map<string, number>();
+
+      tabs.forEach(tab => {
+        if (tab.url && tab.id) {
+          tabMap.set(tab.url, tab.id);
+        }
+      });
+
+      setOpenTabs(tabMap);
+    } catch (e) {
+      console.error('Error checking open tabs:', e);
+    }
   };
 
   // Handle search
@@ -94,8 +117,25 @@ export default function HistoryView() {
     return colors[type];
   };
 
-  const handleItemClick = (url: string) => {
-    window.location.href = url;
+  const handleItemClick = async (url: string) => {
+    const tabId = openTabs.get(url);
+
+    if (tabId) {
+      // Tab is already open, switch to it
+      try {
+        await chrome.tabs.update(tabId, { active: true });
+        const tab = await chrome.tabs.get(tabId);
+        if (tab.windowId) {
+          await chrome.windows.update(tab.windowId, { focused: true });
+        }
+      } catch (e) {
+        // Tab might have been closed, navigate normally
+        window.location.href = url;
+      }
+    } else {
+      // Tab not open, navigate to URL
+      window.location.href = url;
+    }
   };
 
   const renderHistoryItems = (items: HistoryItem[], showBadges: boolean) => {
@@ -105,29 +145,43 @@ export default function HistoryView() {
 
     return (
       <div class="history-items-list">
-        {items.map(item => (
-          <div
-            key={item.id}
-            class="history-item"
-            onClick={() => handleItemClick(item.url)}
-          >
-            <div class="history-item-header">
-              {showBadges && (
-                <span
-                  class="history-item-type-badge"
-                  style={{ backgroundColor: `${getTypeColor(item.type)}20`, color: getTypeColor(item.type) }}
-                >
-                  {getTypeLabel(item.type)}
-                </span>
-              )}
-              <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+        {items.map(item => {
+          const isOpen = openTabs.has(item.url);
+
+          return (
+            <div
+              key={item.id}
+              class={`history-item ${isOpen ? 'is-open' : ''}`}
+              onClick={() => handleItemClick(item.url)}
+            >
+              <div class="history-item-header">
+                <div class="history-item-badges">
+                  {showBadges && (
+                    <span
+                      class="history-item-type-badge"
+                      style={{ backgroundColor: `${getTypeColor(item.type)}20`, color: getTypeColor(item.type) }}
+                    >
+                      {getTypeLabel(item.type)}
+                    </span>
+                  )}
+                  {isOpen && (
+                    <span class="history-item-open-badge">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <circle cx="6" cy="6" r="3" fill="currentColor"/>
+                      </svg>
+                      Open
+                    </span>
+                  )}
+                </div>
+                <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+              </div>
+
+              <div class="history-item-title">{item.title}</div>
+
+              <div class="history-item-url">{item.url}</div>
             </div>
-
-            <div class="history-item-title">{item.title}</div>
-
-            <div class="history-item-url">{item.url}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };

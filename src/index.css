@@ -4829,6 +4829,12 @@ body.light-theme {
   gap: 12px;
 }
 
+.history-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .history-item-type-badge {
   font-size: 11px;
   padding: 3px 8px;
@@ -4836,6 +4842,24 @@ body.light-theme {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.history-item-open-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  background: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-item.is-open {
+  border-color: rgba(129, 162, 190, 0.3);
 }
 
 .history-item-time {
