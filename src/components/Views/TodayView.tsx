@@ -206,10 +206,13 @@ export default function TodayView() {
     }
   };
 
-  const formatTime = (dateTime?: string, _dateOnly?: string): string => {
-    if (dateTime) {
-      const d = new Date(dateTime);
-      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const formatTimeRange = (start: { dateTime?: string; date?: string }, end: { dateTime?: string; date?: string }): string => {
+    if (start.dateTime && end.dateTime) {
+      const startDate = new Date(start.dateTime);
+      const endDate = new Date(end.dateTime);
+      const startTime = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      const endTime = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      return `${startTime} - ${endTime}`;
     }
     return 'All day';
   };
@@ -293,7 +296,7 @@ export default function TodayView() {
       <div class="today-events-list">
         {events.map((event) => {
           const links = extractLinks(event);
-          const time = formatTime(event.start.dateTime, event.start.date);
+          const time = formatTimeRange(event.start, event.end);
 
           return (
             <div key={event.id} class="today-event-item">
