@@ -107,7 +107,7 @@ export default function SettingsView() {
         <div class="settings-section">
           <h3 class="settings-section-title">Extension Redirect URL</h3>
           <div class="settings-section-description">
-            Copy this URL and add it to your Supabase and Google OAuth configuration.
+            Copy this URL and add it to Google Cloud Console as an authorized redirect URI.
           </div>
           <div class="settings-section-content">
             <div class="settings-field">
@@ -133,7 +133,7 @@ export default function SettingsView() {
                 </button>
               </div>
               <div class="settings-hint">
-                This URL must be added to both Supabase and Google Cloud Console
+                Add this URL to Google Cloud Console → OAuth 2.0 Client → Authorized redirect URIs
               </div>
             </div>
           </div>
@@ -151,20 +151,28 @@ export default function SettingsView() {
                 </a>
               </li>
               <li>
-                Go to Authentication → Providers → Google
+                Go to Authentication → Providers → Google and enable it
               </li>
               <li>
-                Enable Google provider and configure:
+                In Google Cloud Console, create OAuth credentials:
                 <ul class="settings-instructions-sub">
-                  <li>Add the redirect URL above to "Redirect URLs"</li>
-                  <li>Add scope: <code>https://www.googleapis.com/auth/calendar.readonly</code></li>
+                  <li>Go to APIs & Services → Credentials</li>
+                  <li>Create OAuth 2.0 Client ID (Application type: Web application)</li>
+                  <li>Add TWO redirect URIs to "Authorized redirect URIs":
+                    <ul class="settings-instructions-sub">
+                      <li>Your Supabase callback: <code>https://[your-project].supabase.co/auth/v1/callback</code></li>
+                      <li>The Chrome extension URL shown above</li>
+                    </ul>
+                  </li>
+                  <li>Add calendar scope in OAuth consent screen: <code>https://www.googleapis.com/auth/calendar.readonly</code></li>
                 </ul>
               </li>
               <li>
-                In Google Cloud Console OAuth consent screen:
+                Copy the OAuth Client ID and Secret to Supabase:
                 <ul class="settings-instructions-sub">
-                  <li>Add the redirect URL above to "Authorized redirect URIs"</li>
-                  <li>Add calendar scope to your OAuth app</li>
+                  <li>In Supabase, go to Authentication → Providers → Google</li>
+                  <li>Paste your Client ID and Client Secret</li>
+                  <li>Save the provider settings</li>
                 </ul>
               </li>
               <li>Copy your Supabase project URL and anon key from Settings → API</li>
