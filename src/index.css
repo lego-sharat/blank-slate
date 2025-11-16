@@ -2091,14 +2091,14 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
    =================================== */
 
 .sidebar-section {
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .sidebar-section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 14px;
   cursor: pointer;
   user-select: none;
   border-radius: 4px;
@@ -2141,29 +2141,29 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-section-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--accent-primary);
   flex-shrink: 0;
 }
 
 .sidebar-section-content {
-  margin-left: 12px;
-  margin-top: 4px;
+  margin-left: 14px;
+  margin-top: 6px;
 }
 
 /* Simple sidebar sections (non-collapsible) */
 .sidebar-section-simple {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .sidebar-section-simple .sidebar-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 14px;
   cursor: pointer;
   user-select: none;
   border-radius: 4px;
@@ -2184,19 +2184,19 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 /* Navigation item styling (for Glance) */
 .sidebar-nav-item {
-  margin-bottom: 8px;
-  padding: 8px 12px !important;
+  margin-bottom: 12px;
+  padding: 10px 14px !important;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 10px;
+  padding: 8px 14px;
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.15s ease;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .sidebar-item:hover {
@@ -2228,7 +2228,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-item-badge {
   font-size: 12px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 3px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -2240,15 +2240,15 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-item-empty {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 14px;
   color: var(--text-tertiary);
   font-style: italic;
 }
 
 .sidebar-add-item {
-  margin-top: 6px;
-  padding: 6px 12px;
+  margin-top: 8px;
+  padding: 8px 14px;
   font-size: 14px;
   color: var(--text-secondary);
   background: transparent;
