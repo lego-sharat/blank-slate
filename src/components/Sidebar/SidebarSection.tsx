@@ -6,6 +6,7 @@ interface SidebarSectionProps {
   collapsed: boolean;
   onToggle: () => void;
   itemCount?: number;
+  showDot?: boolean;
   children: ComponentChildren;
 }
 
@@ -14,6 +15,7 @@ export default function SidebarSection({
   collapsed,
   onToggle,
   itemCount,
+  showDot,
   children,
 }: SidebarSectionProps) {
   return (
@@ -31,8 +33,12 @@ export default function SidebarSection({
           <polyline points="6 9 12 15 18 9"/>
         </svg>
         <span class="sidebar-section-title">{title}</span>
-        {itemCount !== undefined && itemCount > 0 && (
-          <span class="sidebar-section-count">{itemCount}</span>
+        {showDot ? (
+          <span class="sidebar-section-dot"></span>
+        ) : (
+          itemCount !== undefined && itemCount > 0 && (
+            <span class="sidebar-section-count">{itemCount}</span>
+          )
         )}
       </div>
       {!collapsed && (

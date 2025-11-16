@@ -108,7 +108,7 @@ export default function Sidebar() {
               icon="check-square"
               collapsed={collapsedSections.value.tasks}
               onToggle={() => toggleSection('tasks')}
-              itemCount={todos.value.filter(t => !t.completed).length}
+              showDot={todos.value.filter(t => !t.completed).length > 0}
             >
               {todos.value.filter(t => !t.completed).slice(0, 5).map(todo => (
                 <div key={todo.id} class="sidebar-item">
@@ -133,7 +133,7 @@ export default function Sidebar() {
               icon="file-text"
               collapsed={collapsedSections.value.notes}
               onToggle={() => toggleSection('notes')}
-              itemCount={notes.value.length}
+              showDot={notes.value.filter(n => n.status === 'draft').length > 0}
             >
               {notes.value.slice(0, 5).map(note => (
                 <div key={note.id} class="sidebar-item" onClick={() => openNote(note.id)}>
