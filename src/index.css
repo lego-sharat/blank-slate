@@ -2159,149 +2159,211 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
    =================================== */
 
 .glance-view {
-  padding: 40px 60px;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
+  padding: 24px;
 }
 
-.glance-items {
+.glance-header {
+  margin-bottom: 32px;
+}
+
+.glance-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.glance-feed {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
-.glance-item {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+.glance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.glance-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.glance-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.glance-view-all {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.glance-view-all:hover {
+  background: var(--bg-tertiary);
+}
+
+.glance-section-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.glance-signin-btn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
   border-radius: 6px;
-  padding: 20px 24px;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.glance-signin-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Event Card */
+.glance-event-card {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 16px;
+  transition: background 0.2s;
+}
+
+.glance-event-card:hover {
+  background: var(--bg-tertiary);
+}
+
+.glance-event-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.glance-event-time {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Tasks List */
+.glance-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.glance-task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.glance-task-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.glance-task-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
   position: relative;
 }
 
-.glance-item:hover {
-  background: var(--hover-bg);
-  border-color: var(--border-emphasis);
+.glance-task-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+  position: absolute;
 }
 
-.glance-item-header {
+.glance-task-checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-emphasis);
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.glance-item-title {
-  font-size: 18px;
-  font-weight: 600;
+.glance-task-checkbox:checked + .glance-task-checkbox-custom {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.glance-task-checkbox:checked + .glance-task-checkbox-custom::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.glance-task-text {
+  font-size: 14px;
   color: var(--text-primary);
-  margin: 0;
   flex: 1;
 }
 
-.glance-item-timing {
-  font-size: 15px;
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-.glance-item-meta {
+/* Notes List */
+.glance-notes-list {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  flex-direction: column;
+  gap: 8px;
 }
 
-.glance-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.glance-item-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.glance-checkbox {
-  width: 18px;
-  height: 18px;
+.glance-note-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
   cursor: pointer;
-  accent-color: var(--accent-primary);
+  transition: background 0.2s;
 }
 
-.glance-todo-text {
-  font-size: 17px;
-  color: var(--text-primary);
+.glance-note-item:hover {
+  background: var(--bg-tertiary);
 }
 
-.glance-status-badge {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.glance-status-badge.draft {
-  background: var(--status-warning-bg);
-  color: var(--status-warning-text);
-}
-
-.glance-item-preview {
-  font-size: 16px;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  line-height: 1.5;
-}
-
-.glance-icon {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.glance-action-btn {
-  position: absolute;
-  top: 20px;
-  right: 24px;
-  padding: 6px 16px;
-  background: var(--accent-primary);
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.glance-action-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-}
-
-.glance-action-btn:active {
-  transform: translateY(0);
-}
-
-.glance-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-secondary);
-}
-
-.glance-empty p {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-}
-
-.glance-empty-subtitle {
+.glance-note-title {
   font-size: 14px;
-  color: var(--text-tertiary);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.glance-note-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 /* ===================================
