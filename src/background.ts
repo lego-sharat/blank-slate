@@ -5,7 +5,7 @@ import { shouldTrackUrl, createHistoryItem, saveHistoryItem } from './utils/hist
  */
 
 // Listen for tab updates
-chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   // Only process when the page is completely loaded
   if (changeInfo.status === 'complete' && tab.url) {
     const url = tab.url;
@@ -15,8 +15,8 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
       const historyItem = createHistoryItem(url, tab.title);
 
       if (historyItem) {
-        // Save to localStorage via chrome.storage for background script access
-        saveHistoryItem(historyItem);
+        // Save to chrome.storage
+        await saveHistoryItem(historyItem);
         console.log('Tracked visit:', historyItem.title, historyItem.type);
       }
     }
@@ -35,7 +35,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const historyItem = createHistoryItem(url, tab.title);
 
         if (historyItem) {
-          saveHistoryItem(historyItem);
+          await saveHistoryItem(historyItem);
         }
       }
     }

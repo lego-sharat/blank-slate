@@ -29,26 +29,40 @@ export default function HistoryView() {
     loadHistory();
   }, []);
 
-  const loadHistory = () => {
+  const loadHistory = async () => {
+    const [googleDocs, notion, figma, figjam, githubRepos, githubIssues, linear] = await Promise.all([
+      getHistoryByType('google-docs', 10),
+      getHistoryByType('notion', 10),
+      getHistoryByType('figma', 10),
+      getHistoryByType('figjam', 10),
+      getHistoryByType('github-repo', 10),
+      getHistoryByType('github-issue', 10),
+      getHistoryByType('linear', 10),
+    ]);
+
     setHistoryData({
-      googleDocs: getHistoryByType('google-docs', 10),
-      notion: getHistoryByType('notion', 10),
-      figma: getHistoryByType('figma', 10),
-      figjam: getHistoryByType('figjam', 10),
-      githubRepos: getHistoryByType('github-repo', 10),
-      githubIssues: getHistoryByType('github-issue', 10),
-      linear: getHistoryByType('linear', 10),
+      googleDocs,
+      notion,
+      figma,
+      figjam,
+      githubRepos,
+      githubIssues,
+      linear,
     });
   };
 
   // Handle search
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const results = searchHistory(searchQuery);
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
+    const performSearch = async () => {
+      if (searchQuery.trim()) {
+        const results = await searchHistory(searchQuery);
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    };
+
+    performSearch();
   }, [searchQuery]);
 
   const formatTimeAgo = (timestamp: number): string => {

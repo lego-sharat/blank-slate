@@ -13,6 +13,8 @@ const TRACKED_DOMAINS = {
   'linear.app': 'linear',
 } as const;
 
+const HISTORY_STORAGE_KEY = 'history_items';
+
 /**
  * Extract title from page
  */
@@ -131,26 +133,25 @@ export function createHistoryItem(url: string, title?: string): HistoryItem | nu
 }
 
 /**
- * Get history items from localStorage
+ * Get history items from chrome.storage
  */
-export function getHistoryItems(): HistoryItem[] {
+export async function getHistoryItems(): Promise<HistoryItem[]> {
   try {
-    const stored = localStorage.getItem('history_items');
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    const result = await chrome.storage.local.get(HISTORY_STORAGE_KEY);
+    const items = result[HISTORY_STORAGE_KEY];
+    return Array.isArray(items) ? items : [];
   } catch (e) {
     console.error('Error loading history items:', e);
+    return [];
   }
-  return [];
 }
 
 /**
- * Save history item
+ * Save history item to chrome.storage
  */
-export function saveHistoryItem(item: HistoryItem): void {
+export async function saveHistoryItem(item: HistoryItem): Promise<void> {
   try {
-    const items = getHistoryItems();
+    const items = await getHistoryItems();
 
     // Check if URL was recently visited (within last 5 minutes)
     const recentItem = items.find(
@@ -160,7 +161,7 @@ export function saveHistoryItem(item: HistoryItem): void {
     if (recentItem) {
       // Update visit time instead of adding duplicate
       recentItem.visitedAt = Date.now();
-      localStorage.setItem('history_items', JSON.stringify(items));
+      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
       return;
     }
 
@@ -170,7 +171,7 @@ export function saveHistoryItem(item: HistoryItem): void {
     // Keep only last 100 items total
     const trimmed = items.slice(0, 100);
 
-    localStorage.setItem('history_items', JSON.stringify(trimmed));
+    await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: trimmed });
   } catch (e) {
     console.error('Error saving history item:', e);
   }
@@ -179,8 +180,8 @@ export function saveHistoryItem(item: HistoryItem): void {
 /**
  * Get history items by type, limited to count
  */
-export function getHistoryByType(type: HistoryItemType, limit: number = 10): HistoryItem[] {
-  const items = getHistoryItems();
+export async function getHistoryByType(type: HistoryItemType, limit: number = 10): Promise<HistoryItem[]> {
+  const items = await getHistoryItems();
   return items
     .filter(item => item.type === type)
     .sort((a, b) => b.visitedAt - a.visitedAt)
@@ -190,12 +191,13 @@ export function getHistoryByType(type: HistoryItemType, limit: number = 10): His
 /**
  * Search history items
  */
-export function searchHistory(query: string): HistoryItem[] {
+export async function searchHistory(query: string): Promise<HistoryItem[]> {
   if (!query.trim()) {
-    return getHistoryItems().slice(0, 50);
+    const items = await getHistoryItems();
+    return items.slice(0, 50);
   }
 
-  const items = getHistoryItems();
+  const items = await getHistoryItems();
   const lowerQuery = query.toLowerCase();
 
   return items.filter(item =>
@@ -207,15 +209,15 @@ export function searchHistory(query: string): HistoryItem[] {
 /**
  * Clear all history
  */
-export function clearHistory(): void {
-  localStorage.removeItem('history_items');
+export async function clearHistory(): Promise<void> {
+  await chrome.storage.local.remove(HISTORY_STORAGE_KEY);
 }
 
 /**
  * Clear history by type
  */
-export function clearHistoryByType(type: HistoryItemType): void {
-  const items = getHistoryItems();
+export async function clearHistoryByType(type: HistoryItemType): Promise<void> {
+  const items = await getHistoryItems();
   const filtered = items.filter(item => item.type !== type);
-  localStorage.setItem('history_items', JSON.stringify(filtered));
+  await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: filtered });
 }
