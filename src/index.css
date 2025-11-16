@@ -2111,6 +2111,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 .sidebar-section-header.active {
   background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .sidebar-section-header.active .sidebar-section-icon {
@@ -2207,6 +2208,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 .sidebar-item.active {
   background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .sidebar-item.active .sidebar-item-icon {
