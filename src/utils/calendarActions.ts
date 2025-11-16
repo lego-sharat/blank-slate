@@ -1,10 +1,9 @@
-import { calendarEvents, saveCalendarEvents } from '@/store/store';
-
 /**
  * Fetch today's calendar events from Google Calendar API
+ * Background-safe version - does not import store
  */
 export async function fetchTodayEvents(token: string) {
-  if (!token) return;
+  if (!token) return [];
 
   try {
     const now = new Date();
@@ -32,12 +31,24 @@ export async function fetchTodayEvents(token: string) {
     const data = await response.json();
     const eventsList = data.items || [];
 
-    calendarEvents.value = eventsList;
-    saveCalendarEvents();
-
     return eventsList;
   } catch (err) {
     console.error('Error fetching calendar events:', err);
     return [];
   }
+}
+
+/**
+ * UI-safe version that updates the store
+ * Only use this from the UI context, not background
+ */
+export async function fetchAndSaveCalendarEvents(token: string) {
+  const events = await fetchTodayEvents(token);
+
+  // Dynamically import store to avoid loading it in background context
+  const { calendarEvents, saveCalendarEvents } = await import('@/store/store');
+  calendarEvents.value = events;
+  saveCalendarEvents();
+
+  return events;
 }
