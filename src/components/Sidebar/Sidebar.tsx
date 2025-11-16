@@ -1,5 +1,6 @@
-import { currentView, sidebarCollapsed } from '@/store/store';
+import { currentView, sidebarCollapsed, calendarToken } from '@/store/store';
 import { createNote } from '@/utils/noteActions';
+import { authenticateWithGoogle, disconnectGoogleCalendar, isCalendarConnected } from '@/utils/googleCalendar';
 
 export default function Sidebar() {
   const toggleSidebar = () => {
@@ -20,6 +21,20 @@ export default function Sidebar() {
 
   const handleAddNote = () => {
     createNote();
+  };
+
+  const handleCalendarConnect = async () => {
+    try {
+      if (isCalendarConnected()) {
+        disconnectGoogleCalendar();
+      } else {
+        await authenticateWithGoogle();
+        // Fetch events will be triggered by App.tsx on load
+      }
+    } catch (error) {
+      console.error('Calendar connection error:', error);
+      alert('Failed to connect to Google Calendar. Please try again.');
+    }
   };
 
   return (
@@ -96,6 +111,19 @@ export default function Sidebar() {
           </div>
 
           <div class="sidebar-footer">
+            <button
+              class={`settings-btn ${calendarToken.value ? 'calendar-connected' : ''}`}
+              onClick={handleCalendarConnect}
+              title={calendarToken.value ? 'Disconnect Google Calendar' : 'Connect Google Calendar'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>{calendarToken.value ? 'Calendar' : 'Connect Calendar'}</span>
+            </button>
             <button class="settings-btn" title="Theme">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>

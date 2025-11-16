@@ -6,6 +6,7 @@ import NoteEditor from '@/components/Notes/NoteEditor';
 import NotesView from '@/components/Notes/NotesView';
 import TasksView from '@/components/Tasks/TasksView';
 import StatusBar from '@/components/shared/StatusBar';
+import { startCalendarSync, isCalendarConnected } from '@/utils/googleCalendar';
 
 export function App() {
   useEffect(() => {
@@ -59,7 +60,18 @@ export function App() {
     updateClock();
     const clockInterval = setInterval(updateClock, 1000);
 
-    return () => clearInterval(clockInterval);
+    // Start calendar sync if connected
+    let calendarSyncInterval: number | undefined;
+    if (isCalendarConnected()) {
+      calendarSyncInterval = startCalendarSync(15); // Sync every 15 minutes
+    }
+
+    return () => {
+      clearInterval(clockInterval);
+      if (calendarSyncInterval) {
+        clearInterval(calendarSyncInterval);
+      }
+    };
   }, []);
 
   return (

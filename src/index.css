@@ -598,6 +598,16 @@ body.handwriting-font #todoInput {
   flex-shrink: 0;
 }
 
+.settings-btn.calendar-connected {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.settings-btn.calendar-connected:hover {
+  background-color: var(--bg-primary);
+}
+
 /* Content Views */
 .content-view {
   flex: 1;
