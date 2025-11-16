@@ -62,6 +62,26 @@ export default function TasksView() {
     }
   };
 
+  const hasNoTasks = todos.value.length === 0;
+
+  const addTaskForm = (
+    <form class="task-add-form" onSubmit={handleAddTask}>
+      <input
+        type="text"
+        class="task-add-input"
+        placeholder="Add a task..."
+        value={newTaskText.value}
+        onInput={(e) => newTaskText.value = (e.target as HTMLInputElement).value}
+      />
+      <button type="submit" class="task-add-button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </form>
+  );
+
   return (
     <div class="tasks-view">
       <div class="tasks-header">
@@ -71,49 +91,37 @@ export default function TasksView() {
         </div>
       </div>
 
-      <form class="task-add-form" onSubmit={handleAddTask}>
-        <input
-          type="text"
-          class="task-add-input"
-          placeholder="Add a task..."
-          value={newTaskText.value}
-          onInput={(e) => newTaskText.value = (e.target as HTMLInputElement).value}
-        />
-        <button type="submit" class="task-add-button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
-      </form>
+      {hasNoTasks && addTaskForm}
 
-      <div class="tasks-filters">
-        <button
-          class={`filter-btn ${filter.value === 'all' ? 'active' : ''}`}
-          onClick={() => filter.value = 'all'}
-        >
-          All
-        </button>
-        <button
-          class={`filter-btn ${filter.value === 'active' ? 'active' : ''}`}
-          onClick={() => filter.value = 'active'}
-        >
-          Active
-        </button>
-        <button
-          class={`filter-btn ${filter.value === 'completed' ? 'active' : ''}`}
-          onClick={() => filter.value = 'completed'}
-        >
-          Completed
-        </button>
-      </div>
+      {!hasNoTasks && (
+        <div class="tasks-filters">
+          <button
+            class={`filter-btn ${filter.value === 'all' ? 'active' : ''}`}
+            onClick={() => filter.value = 'all'}
+          >
+            All
+          </button>
+          <button
+            class={`filter-btn ${filter.value === 'active' ? 'active' : ''}`}
+            onClick={() => filter.value = 'active'}
+          >
+            Active
+          </button>
+          <button
+            class={`filter-btn ${filter.value === 'completed' ? 'active' : ''}`}
+            onClick={() => filter.value = 'completed'}
+          >
+            Completed
+          </button>
+        </div>
+      )}
 
       <div class="tasks-list">
         {filteredTodos.value.length === 0 ? (
           <div class="tasks-empty">
             {filter.value === 'active' && 'No active tasks'}
             {filter.value === 'completed' && 'No completed tasks'}
-            {filter.value === 'all' && 'No tasks yet. Add one above!'}
+            {filter.value === 'all' && hasNoTasks && 'No tasks yet'}
           </div>
         ) : (
           filteredTodos.value.map(todo => (
@@ -161,6 +169,8 @@ export default function TasksView() {
           ))
         )}
       </div>
+
+      {!hasNoTasks && addTaskForm}
     </div>
   );
 }
