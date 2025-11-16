@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { isAuthenticated, calendarToken, currentView } from '@/store/store';
+import { isAuthenticated, calendarToken } from '@/store/store';
 import { signIn } from '@/utils/auth';
 
 interface CalendarEvent {
