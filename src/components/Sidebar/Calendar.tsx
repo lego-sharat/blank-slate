@@ -220,7 +220,7 @@ export default function Calendar() {
     }
   };
 
-  const formatTime = (dateTime?: string, date?: string): string => {
+  const formatTime = (dateTime?: string, dateOnly?: string): string => {
     if (dateTime) {
       const d = new Date(dateTime);
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
