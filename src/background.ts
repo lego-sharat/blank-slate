@@ -46,9 +46,24 @@ async function initializeSupabase() {
     console.log('  - Has Key:', !!settings.supabaseKey);
 
     if (settings.supabaseUrl && settings.supabaseKey) {
+      console.log('  - URL value:', settings.supabaseUrl);
+      console.log('  - Key length:', settings.supabaseKey?.length || 0);
+
       const client = initSupabase(settings.supabaseUrl, settings.supabaseKey);
       if (client) {
         console.log('✓ Supabase initialized in background');
+
+        // Test the connection
+        try {
+          const { error } = await client.from('todos').select('count').limit(1);
+          if (error) {
+            console.error('✗ Supabase connection test failed:', error.message);
+          } else {
+            console.log('✓ Supabase connection test successful');
+          }
+        } catch (testError) {
+          console.error('✗ Supabase connection test error:', testError);
+        }
       } else {
         console.error('✗ Supabase initialization failed - client is null');
       }
@@ -154,30 +169,50 @@ async function fetchAndCacheCalendarEvents() {
 async function syncToSupabase() {
   try {
     const settings = await getSettings();
+    console.log('=== Supabase Sync Attempt ===');
+    console.log('Settings check:', {
+      hasUrl: !!settings.supabaseUrl,
+      hasKey: !!settings.supabaseKey,
+      url: settings.supabaseUrl,
+      keyLength: settings.supabaseKey?.length || 0,
+    });
+
     if (!settings.supabaseUrl || !settings.supabaseKey) {
-      console.log('Supabase not configured, skipping sync (no URL or key in settings)');
+      console.log('⚠ Supabase not configured, skipping sync (no URL or key in settings)');
       return;
     }
 
     // Verify client is initialized
     const client = getSupabaseClient();
+    console.log('Supabase client status:', client ? 'initialized' : 'NOT initialized');
+
     if (!client) {
-      console.warn('Supabase client not initialized despite having settings - this is unexpected');
-      return;
+      console.warn('⚠ Supabase client not initialized despite having settings');
+      console.log('Attempting to reinitialize...');
+      await initializeSupabase();
+      const retryClient = getSupabaseClient();
+      if (!retryClient) {
+        console.error('✗ Reinitialization failed - aborting sync');
+        return;
+      }
     }
 
-    console.log('Syncing to Supabase...');
+    console.log('→ Starting data sync...');
     const [todos, thoughts, history] = await Promise.all([
       getTodos(),
       getThoughts(),
       getHistory(),
     ]);
 
-    console.log(`Syncing ${todos.length} todos, ${thoughts.length} thoughts, ${history.length} history items`);
+    console.log(`→ Data loaded: ${todos.length} todos, ${thoughts.length} thoughts, ${history.length} history items`);
     await syncAllToSupabase(todos, thoughts, history);
-    console.log('Supabase sync complete');
+    console.log('✓ Supabase sync complete');
   } catch (error) {
-    console.error('Failed to sync to Supabase:', error);
+    console.error('✗ Failed to sync to Supabase:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 

@@ -21,7 +21,7 @@ export default function SettingsView() {
     const url = chrome.runtime.getURL('auth-callback.html');
     setRedirectUrl(url);
 
-    // Load settings from chrome.storage (background script uses this)
+    // Load settings from chrome.storage only
     chrome.storage.local.get('settings', (result) => {
       const storedSettings = result.settings as Partial<Settings> | undefined;
       if (storedSettings) {
@@ -29,23 +29,11 @@ export default function SettingsView() {
         setSupabaseAnonKey(storedSettings.supabaseKey || '');
         setLinearApiKey(storedSettings.linearApiKey || '');
         setGithubToken(storedSettings.githubToken || '');
-      } else {
-        // Fallback to localStorage for backwards compatibility
-        setSupabaseUrl(localStorage.getItem('supabase_url') || '');
-        setSupabaseAnonKey(localStorage.getItem('supabase_anon_key') || '');
-        setLinearApiKey(localStorage.getItem('linear_api_key') || '');
-        setGithubToken(localStorage.getItem('github_token') || '');
       }
     });
   }, []);
 
   const handleSave = async () => {
-    // Save to localStorage for backwards compatibility
-    localStorage.setItem('supabase_url', supabaseUrl);
-    localStorage.setItem('supabase_anon_key', supabaseAnonKey);
-    localStorage.setItem('linear_api_key', linearApiKey);
-    localStorage.setItem('github_token', githubToken);
-
     // Update settings signal AND save to chrome.storage
     settings.value = {
       ...settings.value,
@@ -55,14 +43,21 @@ export default function SettingsView() {
       githubToken: githubToken,
     };
 
-    // Save settings to chrome.storage (used by background script)
+    // Save settings to chrome.storage (single source of truth)
     await chrome.storage.local.set({ settings: settings.value });
 
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
 
+    console.log('Settings saved to chrome.storage:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseAnonKey,
+      hasLinearKey: !!linearApiKey,
+      hasGithubToken: !!githubToken,
+    });
+
     // Show message
-    alert('Settings saved! Please refresh the page for changes to take effect.');
+    alert('Settings saved! Reload the extension for changes to take effect.');
   };
 
   const handleCopyRedirectUrl = () => {
