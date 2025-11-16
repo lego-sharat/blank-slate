@@ -1,7 +1,7 @@
 import { shouldTrackUrl, createHistoryItem, updateHistoryItemTitle } from './utils/historyTracker';
 import {
   getTodos,
-  getNotes,
+  getThoughts,
   getHistory,
   getSettings,
   setLinearIssues,
@@ -86,7 +86,7 @@ async function fetchAndCacheGitHubPRs() {
 
 /**
  * Fetch Calendar events and cache them
- * Note: Calendar API needs to be imported from calendarActions
+ * Thought: Calendar API needs to be imported from calendarActions
  */
 async function fetchAndCacheCalendarEvents() {
   try {
@@ -121,13 +121,13 @@ async function syncToSupabase() {
     }
 
     console.log('Syncing to Supabase...');
-    const [todos, notes, history] = await Promise.all([
+    const [todos, thoughts, history] = await Promise.all([
       getTodos(),
-      getNotes(),
+      getThoughts(),
       getHistory(),
     ]);
 
-    await syncAllToSupabase(todos, notes, history);
+    await syncAllToSupabase(todos, thoughts, history);
     console.log('Supabase sync complete');
   } catch (error) {
     console.error('Failed to sync to Supabase:', error);

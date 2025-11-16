@@ -1,8 +1,8 @@
-import { todos, notes, nextEvent } from '@/store/store';
+import { todos, thoughts, nextEvent } from '@/store/store';
 
 export default function StatusBar() {
   const incompleteTodosCount = todos.value.filter(t => !t.completed).length;
-  const notesCount = notes.value.length;
+  const notesCount = thoughts.value.length;
 
   const getTimeUntilEvent = () => {
     if (!nextEvent.value) return null;
@@ -29,7 +29,7 @@ export default function StatusBar() {
         )}
         {notesCount > 0 && (
           <span class="status-item">
-            {notesCount} note{notesCount !== 1 ? 's' : ''}
+            {notesCount} thought{notesCount !== 1 ? 's' : ''}
           </span>
         )}
       </div>

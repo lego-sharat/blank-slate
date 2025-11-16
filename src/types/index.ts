@@ -6,14 +6,14 @@ export interface Todo {
   createdAt: number;
 }
 
-// Note types
-export type NoteStatus = 'draft' | 'ready';
+// Thought types
+export type ThoughtStatus = 'draft' | 'ready';
 
-export interface Note {
+export interface Thought {
   id: number;
   title: string;
   content: string;
-  status: NoteStatus;
+  status: ThoughtStatus;
   createdAt: number;
   updatedAt?: number;
 }
@@ -170,7 +170,7 @@ export interface HistoryItem {
 }
 
 // View types
-export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'github' | 'history' | 'profile' | 'settings';
+export type ViewType = 'glance' | 'today' | 'planner' | 'thought' | 'thoughts' | 'tasks' | 'linear' | 'github' | 'history' | 'profile' | 'settings';
 
 // Sidebar section types
 export interface SidebarSection {

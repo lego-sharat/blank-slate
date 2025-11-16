@@ -6,8 +6,8 @@ import TodayView from '@/components/Views/TodayView';
 import LinearView from '@/components/Linear/LinearView';
 import GitHubView from '@/components/GitHub/GitHubView';
 import HistoryView from '@/components/History/HistoryView';
-import NoteEditor from '@/components/Notes/NoteEditor';
-import NotesView from '@/components/Notes/NotesView';
+import ThoughtEditor from '@/components/Thoughts/ThoughtEditor';
+import ThoughtsView from '@/components/Thoughts/ThoughtsView';
 import TasksView from '@/components/Tasks/TasksView';
 import ProfileView from '@/components/Profile/ProfileView';
 import SettingsView from '@/components/Settings/SettingsView';
@@ -19,7 +19,7 @@ export function App() {
     // Load configuration and cached data from localStorage
     loadFromStorage();
 
-    // Load all application data (tasks, notes, calendar, etc.)
+    // Load all application data (tasks, thoughts, calendar, etc.)
     syncAllData();
 
     // Initialize authentication
@@ -98,8 +98,8 @@ export function App() {
           {currentView.value === 'linear' && <LinearView />}
           {currentView.value === 'github' && <GitHubView />}
           {currentView.value === 'history' && <HistoryView />}
-          {currentView.value === 'note' && <NoteEditor />}
-          {currentView.value === 'notes' && <NotesView />}
+          {currentView.value === 'thought' && <ThoughtEditor />}
+          {currentView.value === 'thoughts' && <ThoughtsView />}
           {currentView.value === 'tasks' && <TasksView />}
           {currentView.value === 'profile' && <ProfileView />}
           {currentView.value === 'settings' && <SettingsView />}

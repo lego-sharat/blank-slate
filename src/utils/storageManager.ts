@@ -3,11 +3,11 @@
  * Provides type-safe access to stored data
  */
 
-import type { Todo, Note, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, Settings } from '@/types';
+import type { Todo, Thought, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, Settings } from '@/types';
 
 export const STORAGE_KEYS = {
   TODOS: 'todos',
-  NOTES: 'notes',
+  THOUGHTS: 'thoughts',
   HISTORY: 'history_items',
   CALENDAR_EVENTS: 'calendar_events',
   CALENDAR_TOKEN: 'calendar_token',
@@ -66,12 +66,12 @@ export async function setTodos(todos: Todo[]): Promise<void> {
   return setInStorage(STORAGE_KEYS.TODOS, todos);
 }
 
-export async function getNotes(): Promise<Note[]> {
-  return getFromStorage<Note[]>(STORAGE_KEYS.NOTES, []);
+export async function getThoughts(): Promise<Thought[]> {
+  return getFromStorage<Thought[]>(STORAGE_KEYS.THOUGHTS, []);
 }
 
-export async function setNotes(notes: Note[]): Promise<void> {
-  return setInStorage(STORAGE_KEYS.NOTES, notes);
+export async function setThoughts(thoughts: Thought[]): Promise<void> {
+  return setInStorage(STORAGE_KEYS.THOUGHTS, thoughts);
 }
 
 export async function getHistory(): Promise<HistoryItem[]> {

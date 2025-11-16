@@ -70,7 +70,7 @@ export default function ProfileView() {
           <h3 class="profile-section-title">About</h3>
           <div class="profile-section-content">
             <p class="profile-about-text">
-              Slate - A minimal new tab extension with tasks, notes, and calendar integration.
+              Slate - A minimal new tab extension with tasks, thoughts, and calendar integration.
             </p>
             <p class="profile-about-version">Version 1.0.0</p>
           </div>

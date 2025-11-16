@@ -1,7 +1,7 @@
-import { calendarToken, todos, notes, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
+import { calendarToken, todos, thoughts, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
 import {
   getTodos,
-  getNotes,
+  getThoughts,
   getLinearIssues,
   getGitHubPRs,
   getCalendarToken,
@@ -22,19 +22,19 @@ export async function loadTasks() {
 }
 
 /**
- * Load notes from chrome.storage
+ * Load thoughts from chrome.storage
  */
-export async function loadNotes() {
+export async function loadThoughts() {
   try {
-    const storedNotes = await getNotes();
-    // Migrate old notes to include status field
-    notes.value = storedNotes.map((note: any) => ({
-      ...note,
-      status: note.status || 'draft',
+    const storedNotes = await getThoughts();
+    // Migrate old thoughts to include status field
+    thoughts.value = storedNotes.map((thought: any) => ({
+      ...thought,
+      status: thought.status || 'draft',
     }));
-    console.log('Loaded', notes.value.length, 'notes from storage');
+    console.log('Loaded', thoughts.value.length, 'thoughts from storage');
   } catch (error) {
-    console.error('Error loading notes:', error);
+    console.error('Error loading thoughts:', error);
   }
 }
 
@@ -99,7 +99,7 @@ export async function syncAllData() {
 
   await Promise.all([
     loadTasks(),
-    loadNotes(),
+    loadThoughts(),
     loadLinearIssues(),
     loadGitHubPRs(),
     loadCalendarToken(),

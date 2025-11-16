@@ -1,5 +1,5 @@
 import { currentView, sidebarCollapsed, isAuthenticated } from '@/store/store';
-import { createNote } from '@/utils/noteActions';
+import { createNote } from '@/utils/thoughtActions';
 import { signIn, getUserInitials } from '@/utils/auth';
 
 export default function Sidebar() {
@@ -32,7 +32,7 @@ export default function Sidebar() {
   };
 
   const navigateToNotes = () => {
-    currentView.value = 'notes';
+    currentView.value = 'thoughts';
   };
 
   const handleAddNote = () => {
@@ -168,17 +168,17 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {/* Notes Section - Clickable header navigates to view */}
+            {/* Thoughts Section - Clickable header navigates to view */}
             <div class="sidebar-section-simple">
               <div
-                class={`sidebar-section-header ${currentView.value === 'notes' ? 'active' : ''}`}
+                class={`sidebar-section-header ${currentView.value === 'thoughts' ? 'active' : ''}`}
                 onClick={navigateToNotes}
               >
                 <svg class="sidebar-section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <span class="sidebar-section-title">NOTES</span>
+                <span class="sidebar-section-title">THOUGHTS</span>
                 <div class="sidebar-section-actions">
                   <button
                     class="sidebar-section-add-btn"
@@ -186,7 +186,7 @@ export default function Sidebar() {
                       e.stopPropagation();
                       handleAddNote();
                     }}
-                    title="Add note"
+                    title="Add thought"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <line x1="12" y1="5" x2="12" y2="19"/>

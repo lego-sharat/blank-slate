@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './supabaseClient';
-import type { Todo, Note, HistoryItem } from '@/types';
+import type { Todo, Thought, HistoryItem } from '@/types';
 
 /**
  * Sync todos to Supabase
@@ -51,49 +51,49 @@ export async function fetchTodosFromSupabase(): Promise<Todo[]> {
 }
 
 /**
- * Sync notes to Supabase
+ * Sync thoughts to Supabase
  */
-export async function syncNotesToSupabase(notes: Note[]): Promise<void> {
+export async function syncThoughtsToSupabase(thoughts: Thought[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    console.warn('Supabase not configured, skipping notes sync');
+    console.warn('Supabase not configured, skipping thoughts sync');
     return;
   }
 
   try {
     const { error } = await supabase
-      .from('notes')
-      .upsert(notes, { onConflict: 'id' });
+      .from('thoughts')
+      .upsert(thoughts, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('Synced', notes.length, 'notes to Supabase');
+    console.log('Synced', thoughts.length, 'thoughts to Supabase');
   } catch (error) {
-    console.error('Failed to sync notes to Supabase:', error);
+    console.error('Failed to sync thoughts to Supabase:', error);
     throw error;
   }
 }
 
 /**
- * Fetch notes from Supabase
+ * Fetch thoughts from Supabase
  */
-export async function fetchNotesFromSupabase(): Promise<Note[]> {
+export async function fetchThoughtsFromSupabase(): Promise<Thought[]> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    console.warn('Supabase not configured, skipping notes fetch');
+    console.warn('Supabase not configured, skipping thoughts fetch');
     return [];
   }
 
   try {
     const { data, error } = await supabase
-      .from('notes')
+      .from('thoughts')
       .select('*')
       .order('updatedAt', { ascending: false });
 
     if (error) throw error;
-    console.log('Fetched', data?.length || 0, 'notes from Supabase');
+    console.log('Fetched', data?.length || 0, 'thoughts from Supabase');
     return data || [];
   } catch (error) {
-    console.error('Failed to fetch notes from Supabase:', error);
+    console.error('Failed to fetch thoughts from Supabase:', error);
     return [];
   }
 }
@@ -152,14 +152,14 @@ export async function fetchHistoryFromSupabase(): Promise<HistoryItem[]> {
  */
 export async function syncAllToSupabase(
   todos: Todo[],
-  notes: Note[],
+  thoughts: Thought[],
   history: HistoryItem[]
 ): Promise<void> {
   console.log('Starting full Supabase sync...');
 
   await Promise.all([
     syncTodosToSupabase(todos),
-    syncNotesToSupabase(notes),
+    syncThoughtsToSupabase(thoughts),
     syncHistoryToSupabase(history),
   ]);
 
@@ -171,18 +171,18 @@ export async function syncAllToSupabase(
  */
 export async function fetchAllFromSupabase(): Promise<{
   todos: Todo[];
-  notes: Note[];
+  thoughts: Thought[];
   history: HistoryItem[];
 }> {
   console.log('Fetching all data from Supabase...');
 
-  const [todos, notes, history] = await Promise.all([
+  const [todos, thoughts, history] = await Promise.all([
     fetchTodosFromSupabase(),
-    fetchNotesFromSupabase(),
+    fetchThoughtsFromSupabase(),
     fetchHistoryFromSupabase(),
   ]);
 
   console.log('Fetched all data from Supabase');
 
-  return { todos, notes, history };
+  return { todos, thoughts, history };
 }

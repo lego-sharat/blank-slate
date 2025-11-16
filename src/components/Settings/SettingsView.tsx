@@ -294,7 +294,7 @@ export default function SettingsView() {
           <h3 class="settings-section-title">About</h3>
           <div class="settings-section-content">
             <p class="settings-about-text">
-              Slate - A minimal new tab extension with tasks, notes, and calendar integration.
+              Slate - A minimal new tab extension with tasks, thoughts, and calendar integration.
             </p>
             <p class="settings-about-version">Version 1.0.0</p>
           </div>

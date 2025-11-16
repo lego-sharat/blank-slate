@@ -68,7 +68,7 @@ The migration creates three tables:
 - `createdAt` (BIGINT, NOT NULL)
 - `user_id` (UUID, default: auth.uid())
 
-### `notes` table
+### `thoughts` table
 - `id` (BIGINT, Primary Key)
 - `title` (TEXT, NOT NULL)
 - `content` (TEXT)

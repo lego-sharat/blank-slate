@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS todos (
   user_id UUID DEFAULT auth.uid()
 );
 
--- Create notes table
-CREATE TABLE IF NOT EXISTS notes (
+-- Create thoughts table
+CREATE TABLE IF NOT EXISTS thoughts (
   id BIGINT PRIMARY KEY,
   title TEXT NOT NULL,
   content TEXT,
@@ -34,9 +34,9 @@ CREATE INDEX IF NOT EXISTS todos_user_id_idx ON todos(user_id);
 CREATE INDEX IF NOT EXISTS todos_completed_idx ON todos(completed);
 CREATE INDEX IF NOT EXISTS todos_created_at_idx ON todos("createdAt");
 
-CREATE INDEX IF NOT EXISTS notes_user_id_idx ON notes(user_id);
-CREATE INDEX IF NOT EXISTS notes_status_idx ON notes(status);
-CREATE INDEX IF NOT EXISTS notes_updated_at_idx ON notes("updatedAt");
+CREATE INDEX IF NOT EXISTS thoughts_user_id_idx ON thoughts(user_id);
+CREATE INDEX IF NOT EXISTS thoughts_status_idx ON thoughts(status);
+CREATE INDEX IF NOT EXISTS thoughts_updated_at_idx ON thoughts("updatedAt");
 
 CREATE INDEX IF NOT EXISTS history_user_id_idx ON history(user_id);
 CREATE INDEX IF NOT EXISTS history_type_idx ON history(type);
@@ -45,7 +45,7 @@ CREATE INDEX IF NOT EXISTS history_url_idx ON history(url);
 
 -- Enable Row Level Security
 ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE thoughts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE history ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for todos
@@ -65,21 +65,21 @@ CREATE POLICY "Users can delete their own todos"
   ON todos FOR DELETE
   USING (auth.uid() = user_id);
 
--- Create RLS policies for notes
-CREATE POLICY "Users can view their own notes"
-  ON notes FOR SELECT
+-- Create RLS policies for thoughts
+CREATE POLICY "Users can view their own thoughts"
+  ON thoughts FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own notes"
-  ON notes FOR INSERT
+CREATE POLICY "Users can insert their own thoughts"
+  ON thoughts FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own notes"
-  ON notes FOR UPDATE
+CREATE POLICY "Users can update their own thoughts"
+  ON thoughts FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own notes"
-  ON notes FOR DELETE
+CREATE POLICY "Users can delete their own thoughts"
+  ON thoughts FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Create RLS policies for history

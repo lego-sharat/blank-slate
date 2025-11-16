@@ -67,7 +67,7 @@ Three tables with Row Level Security:
 | Table | Purpose | Fields |
 |-------|---------|--------|
 | `todos` | Task management | id, text, completed, createdAt |
-| `notes` | Note taking | id, title, content, status, createdAt, updatedAt |
+| `thoughts` | Note taking | id, title, content, status, createdAt, updatedAt |
 | `history` | Browsing history | id, type, title, url, visitedAt, favicon |
 
 All tables include:

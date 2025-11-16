@@ -1,8 +1,8 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR } from '@/types';
+import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR } from '@/types';
 import {
   setTodos as saveToStorage_Todos,
-  setNotes as saveToStorage_Notes,
+  setThoughts as saveToStorage_Notes,
   setSettings as saveToStorage_Settings,
   setCalendarToken as saveToStorage_CalendarToken,
 } from '@/utils/storageManager';
@@ -10,7 +10,7 @@ import {
 // Storage keys (kept for backwards compatibility)
 export const STORAGE_KEYS = {
   TODOS: 'todos',
-  NOTES: 'notes',
+  THOUGHTS: 'thoughts',
   READING_LIST: 'reading_list',
   SETTINGS: 'settings',
   CALENDAR_TOKEN: 'calendar_token',
@@ -21,7 +21,7 @@ export const STORAGE_KEYS = {
 
 // Core signals
 export const todos = signal<Todo[]>([]);
-export const notes = signal<Note[]>([]);
+export const thoughts = signal<Thought[]>([]);
 export const readingList = signal<ReadingItem[]>([]);
 export const calendarEvents = signal<CalendarEvent[]>([]);
 export const linearIssues = signal<{
@@ -54,7 +54,7 @@ export const settings = signal<Settings>({
 
 // UI state signals
 export const currentView = signal<ViewType>('glance');
-export const currentNoteId = signal<number | null>(null);
+export const currentThoughtId = signal<number | null>(null);
 export const isPreviewMode = signal<boolean>(false);
 export const sidebarCollapsed = signal<boolean>(false);
 
@@ -64,10 +64,10 @@ export const isAuthenticated = signal<boolean>(false);
 export const calendarToken = signal<string | null>(null);
 
 // Computed signals
-export const currentNote = computed(() => {
-  const noteId = currentNoteId.value;
+export const currentThought = computed(() => {
+  const noteId = currentThoughtId.value;
   if (!noteId) return null;
-  return notes.value.find(note => note.id === noteId) || null;
+  return thoughts.value.find(thought => thought.id === noteId) || null;
 });
 
 export const incompleteTodos = computed(() => {
@@ -78,12 +78,12 @@ export const completedTodos = computed(() => {
   return todos.value.filter(todo => todo.completed);
 });
 
-export const draftNotes = computed(() => {
-  return notes.value.filter(note => note.status === 'draft');
+export const draftThoughts = computed(() => {
+  return thoughts.value.filter(thought => thought.status === 'draft');
 });
 
-export const readyNotes = computed(() => {
-  return notes.value.filter(note => note.status === 'ready');
+export const readyThoughts = computed(() => {
+  return thoughts.value.filter(thought => thought.status === 'ready');
 });
 
 export const unreadItems = computed(() => {
@@ -161,7 +161,7 @@ export const allGitHubPRs = computed(() => {
 });
 
 // Load configuration and cached data from chrome.storage
-// Note: All data is now loaded via dataSync.syncAllData()
+// Thought: All data is now loaded via dataSync.syncAllData()
 export const loadFromStorage = async () => {
   try {
     // Load reading list from localStorage (not migrated to chrome.storage yet)
@@ -198,8 +198,8 @@ export const saveTodos = async () => {
   await saveToStorage_Todos(todos.value);
 };
 
-export const saveNotes = async () => {
-  await saveToStorage_Notes(notes.value);
+export const saveThoughts = async () => {
+  await saveToStorage_Notes(thoughts.value);
 };
 
 export const saveReadingList = () => {

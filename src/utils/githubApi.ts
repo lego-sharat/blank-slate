@@ -51,7 +51,7 @@ const CREATED_BY_ME_QUERY = `
 
 /**
  * GraphQL query for fetching PRs assigned to the current user for review
- * Note: The search query is built dynamically with the username
+ * Thought: The search query is built dynamically with the username
  */
 const buildReviewRequestedQuery = (username: string) => `
   query ReviewRequested {

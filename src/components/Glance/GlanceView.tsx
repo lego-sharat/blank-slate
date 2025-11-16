@@ -1,12 +1,12 @@
 import { useComputed } from '@preact/signals';
-import { todos, notes, nextEvent, currentView, isAuthenticated, linearIssues, githubPRs, settings } from '@/store/store';
+import { todos, thoughts, nextEvent, currentView, isAuthenticated, linearIssues, githubPRs, settings } from '@/store/store';
 import { toggleTodo } from '@/utils/todoActions';
-import { openNote } from '@/utils/noteActions';
+import { openNote } from '@/utils/thoughtActions';
 
 export default function GlanceView() {
   const upcomingEvent = useComputed(() => nextEvent.value);
   const incompleteTasks = useComputed(() => todos.value.filter(t => !t.completed).slice(0, 3));
-  const inProgressNotes = useComputed(() => notes.value.filter(n => n.status === 'draft').slice(0, 3));
+  const inProgressNotes = useComputed(() => thoughts.value.filter(n => n.status === 'draft').slice(0, 3));
   const assignedLinearIssues = useComputed(() => {
     // Sort by status priority (started → unstarted → backlog) then by creation date
     const statusOrder: Record<string, number> = {
@@ -157,28 +157,28 @@ export default function GlanceView() {
           </div>
         )}
 
-        {/* Notes Section */}
+        {/* Thoughts Section */}
         {inProgressNotes.value.length > 0 && (
           <div class="glance-section">
             <div class="glance-section-header">
-              <h2 class="glance-section-title">In Progress Notes</h2>
-              <button class="glance-view-all" onClick={() => currentView.value = 'notes'}>
+              <h2 class="glance-section-title">In Progress Thoughts</h2>
+              <button class="glance-view-all" onClick={() => currentView.value = 'thoughts'}>
                 View all
               </button>
             </div>
 
-            <div class="glance-notes-list">
-              {inProgressNotes.value.map(note => (
+            <div class="glance-thoughts-list">
+              {inProgressNotes.value.map(thought => (
                 <div
-                  key={note.id}
-                  class="glance-note-item"
-                  onClick={() => openNote(note.id)}
+                  key={thought.id}
+                  class="glance-thought-item"
+                  onClick={() => openNote(thought.id)}
                 >
-                  <div class="glance-note-title">{note.title || 'Untitled'}</div>
-                  {note.content && (
-                    <div class="glance-note-preview">
-                      {note.content.substring(0, 80)}
-                      {note.content.length > 80 && '...'}
+                  <div class="glance-thought-title">{thought.title || 'Untitled'}</div>
+                  {thought.content && (
+                    <div class="glance-thought-preview">
+                      {thought.content.substring(0, 80)}
+                      {thought.content.length > 80 && '...'}
                     </div>
                   )}
                 </div>
