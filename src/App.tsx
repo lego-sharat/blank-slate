@@ -5,13 +5,17 @@ import GlanceView from '@/components/Glance/GlanceView';
 import NoteEditor from '@/components/Notes/NoteEditor';
 import NotesView from '@/components/Notes/NotesView';
 import TasksView from '@/components/Tasks/TasksView';
+import ProfileView from '@/components/Profile/ProfileView';
 import StatusBar from '@/components/shared/StatusBar';
-import { startCalendarSync, isCalendarConnected } from '@/utils/googleCalendar';
+import { initAuth } from '@/utils/auth';
 
 export function App() {
   useEffect(() => {
     // Load data from localStorage on mount
     loadFromStorage();
+
+    // Initialize authentication
+    initAuth();
 
     // Apply theme
     if (settings.value.theme === 'light') {
@@ -60,17 +64,8 @@ export function App() {
     updateClock();
     const clockInterval = setInterval(updateClock, 1000);
 
-    // Start calendar sync if connected
-    let calendarSyncInterval: number | undefined;
-    if (isCalendarConnected()) {
-      calendarSyncInterval = startCalendarSync(15); // Sync every 15 minutes
-    }
-
     return () => {
       clearInterval(clockInterval);
-      if (calendarSyncInterval) {
-        clearInterval(calendarSyncInterval);
-      }
     };
   }, []);
 
@@ -94,6 +89,7 @@ export function App() {
           {currentView.value === 'note' && <NoteEditor />}
           {currentView.value === 'notes' && <NotesView />}
           {currentView.value === 'tasks' && <TasksView />}
+          {currentView.value === 'profile' && <ProfileView />}
         </div>
 
         <StatusBar />

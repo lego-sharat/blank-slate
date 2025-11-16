@@ -70,7 +70,7 @@ export interface Settings {
 }
 
 // View types
-export type ViewType = 'glance' | 'planner' | 'note' | 'notes' | 'tasks';
+export type ViewType = 'glance' | 'planner' | 'note' | 'notes' | 'tasks' | 'profile';
 
 // Sidebar section types
 export interface SidebarSection {

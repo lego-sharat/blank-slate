@@ -1,80 +1,19 @@
-import { calendarEvents, calendarToken, saveCalendarEvents, saveCalendarToken } from '@/store/store';
+import { calendarEvents, calendarToken, saveCalendarEvents } from '@/store/store';
+// @ts-ignore
+import { getGoogleAccessToken } from '@/supabase';
 import type { CalendarEvent } from '@/types';
-
-// Google Calendar API configuration
-const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com'; // Replace with actual client ID
-const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
-
-// OAuth2 authentication using Chrome Identity API
-export async function authenticateWithGoogle(): Promise<boolean> {
-  try {
-    console.log('Starting Google Calendar authentication...');
-
-    const redirectUrl = chrome.identity.getRedirectURL('oauth2');
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${CLIENT_ID}` +
-      `&response_type=token` +
-      `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
-      `&scope=${encodeURIComponent(SCOPES.join(' '))}`;
-
-    return new Promise((resolve, reject) => {
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: authUrl,
-          interactive: true,
-        },
-        (redirectUrl) => {
-          if (chrome.runtime.lastError) {
-            console.error('Auth error:', chrome.runtime.lastError);
-            reject(chrome.runtime.lastError);
-            return;
-          }
-
-          if (!redirectUrl) {
-            reject(new Error('No redirect URL received'));
-            return;
-          }
-
-          // Extract access token from redirect URL
-          const url = new URL(redirectUrl);
-          const hash = url.hash.substring(1);
-          const params = new URLSearchParams(hash);
-          const accessToken = params.get('access_token');
-
-          if (accessToken) {
-            calendarToken.value = accessToken;
-            saveCalendarToken();
-            console.log('Google Calendar authenticated successfully');
-            resolve(true);
-          } else {
-            reject(new Error('No access token in response'));
-          }
-        }
-      );
-    });
-  } catch (error) {
-    console.error('Authentication error:', error);
-    return false;
-  }
-}
-
-// Disconnect Google Calendar
-export function disconnectGoogleCalendar() {
-  calendarToken.value = null;
-  calendarEvents.value = [];
-  saveCalendarToken();
-  saveCalendarEvents();
-  console.log('Google Calendar disconnected');
-}
 
 // Fetch calendar events from Google Calendar API
 export async function fetchCalendarEvents(): Promise<void> {
-  if (!calendarToken.value) {
-    console.warn('No calendar token available');
-    return;
-  }
-
   try {
+    // Get Google token from Supabase session
+    const token = await getGoogleAccessToken();
+
+    if (!token) {
+      console.warn('No calendar token available');
+      return;
+    }
+
     console.log('Fetching calendar events...');
 
     // Get events for the next 7 days
@@ -91,7 +30,7 @@ export async function fetchCalendarEvents(): Promise<void> {
       `&maxResults=50`,
       {
         headers: {
-          Authorization: `Bearer ${calendarToken.value}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
@@ -99,11 +38,9 @@ export async function fetchCalendarEvents(): Promise<void> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired, clear it
-        console.warn('Calendar token expired');
-        calendarToken.value = null;
-        saveCalendarToken();
-        throw new Error('Authentication expired. Please reconnect your calendar.');
+        // Token expired - Supabase will handle refresh
+        console.warn('Calendar token expired, needs refresh');
+        throw new Error('Authentication expired. Refreshing token...');
       }
       throw new Error(`Failed to fetch events: ${response.statusText}`);
     }
