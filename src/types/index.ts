@@ -157,8 +157,20 @@ export interface GitHubPR {
   changedFiles: number;
 }
 
+// History types
+export type HistoryItemType = 'google-docs' | 'notion' | 'figma' | 'figjam' | 'github-repo' | 'github-issue' | 'linear';
+
+export interface HistoryItem {
+  id: string;
+  type: HistoryItemType;
+  title: string;
+  url: string;
+  visitedAt: number;
+  favicon?: string;
+}
+
 // View types
-export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'github' | 'profile' | 'settings';
+export type ViewType = 'glance' | 'today' | 'planner' | 'note' | 'notes' | 'tasks' | 'linear' | 'github' | 'history' | 'profile' | 'settings';
 
 // Sidebar section types
 export interface SidebarSection {

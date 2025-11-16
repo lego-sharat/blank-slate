@@ -5,6 +5,7 @@ import GlanceView from '@/components/Glance/GlanceView';
 import TodayView from '@/components/Views/TodayView';
 import LinearView from '@/components/Linear/LinearView';
 import GitHubView from '@/components/GitHub/GitHubView';
+import HistoryView from '@/components/History/HistoryView';
 import NoteEditor from '@/components/Notes/NoteEditor';
 import NotesView from '@/components/Notes/NotesView';
 import TasksView from '@/components/Tasks/TasksView';
@@ -96,6 +97,7 @@ export function App() {
           {currentView.value === 'today' && <TodayView />}
           {currentView.value === 'linear' && <LinearView />}
           {currentView.value === 'github' && <GitHubView />}
+          {currentView.value === 'history' && <HistoryView />}
           {currentView.value === 'note' && <NoteEditor />}
           {currentView.value === 'notes' && <NotesView />}
           {currentView.value === 'tasks' && <TasksView />}
