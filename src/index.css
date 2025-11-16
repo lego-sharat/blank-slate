@@ -3770,7 +3770,7 @@ body.light-theme {
 
 .settings-back-btn:hover {
   background: var(--hover-bg);
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .settings-title {
@@ -3844,7 +3844,7 @@ body.light-theme {
 
 .settings-input:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--text-secondary);
   background: var(--bg-tertiary);
 }
 
@@ -3864,8 +3864,8 @@ body.light-theme {
   padding: 12px;
   margin-top: 20px;
   border: 1px solid var(--border-default);
-  background: var(--accent-primary);
-  color: var(--bg-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -3874,8 +3874,8 @@ body.light-theme {
 }
 
 .settings-save-btn:hover {
-  background: var(--accent-primary-hover);
-  border-color: var(--accent-primary-hover);
+  background: var(--bg-elevated);
+  border-color: var(--text-secondary);
 }
 
 .settings-instructions {
@@ -3896,16 +3896,17 @@ body.light-theme {
   border-radius: 3px;
   font-size: 12px;
   font-family: 'Courier New', Courier, monospace;
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .settings-instructions a {
-  color: var(--accent-primary);
-  text-decoration: none;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--border-default);
 }
 
 .settings-instructions a:hover {
-  text-decoration: underline;
+  text-decoration-color: var(--text-secondary);
 }
 
 .settings-about-text {
@@ -3947,8 +3948,8 @@ body.light-theme {
 
 .settings-copy-btn:hover {
   background: var(--bg-tertiary);
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .settings-instructions-sub {
