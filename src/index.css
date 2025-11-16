@@ -2119,7 +2119,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 .sidebar-section-header.active .sidebar-section-title {
   color: var(--accent-primary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sidebar-section-chevron {
