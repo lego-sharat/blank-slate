@@ -1,40 +1,25 @@
 import { useEffect, useState } from 'preact/hooks';
 import { linearIssues, currentView } from '@/store/store';
-import { fetchAllLinearIssues, isLinearConnected, getPriorityLabel } from '@/utils/linearApi';
+import { isLinearConnected, getPriorityLabel } from '@/utils/linearApi';
+import { refreshAllData } from '@/utils/dataSync';
 import type { LinearIssue } from '@/types';
 
 type FilterType = 'assigned' | 'created' | 'mentioning';
 
 export default function LinearView() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('assigned');
 
+  // Use cached issues from signal (fetched by background script)
   const issues = linearIssues.value;
   const hasApiKey = isLinearConnected();
 
+  // Refresh data when component mounts if API key is configured
   useEffect(() => {
-    if (hasApiKey && Object.values(issues).flat().length === 0) {
-      handleFetchIssues();
+    if (hasApiKey) {
+      // Request fresh data from background
+      refreshAllData();
     }
   }, [hasApiKey]);
-
-  const handleFetchIssues = async () => {
-    if (!hasApiKey) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const fetchedIssues = await fetchAllLinearIssues();
-      linearIssues.value = fetchedIssues;
-    } catch (err) {
-      console.error('Error fetching Linear issues:', err);
-      setError('Failed to load Linear issues. Please check your API key in settings.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleConfigureLinear = () => {
     currentView.value = 'settings';
@@ -154,35 +139,6 @@ export default function LinearView() {
           <p>Configure Linear API key to view your issues</p>
           <button class="linear-configure-btn" onClick={handleConfigureLinear}>
             Go to Settings
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div class="linear-view">
-        <div class="linear-header">
-          <h1 class="linear-title">Linear</h1>
-        </div>
-        <div class="linear-empty">
-          <p>Loading issues...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div class="linear-view">
-        <div class="linear-header">
-          <h1 class="linear-title">Linear</h1>
-        </div>
-        <div class="linear-empty">
-          <p>{error}</p>
-          <button class="linear-refresh-btn" onClick={handleFetchIssues}>
-            Try again
           </button>
         </div>
       </div>
