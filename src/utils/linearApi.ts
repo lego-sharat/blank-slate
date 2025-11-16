@@ -244,7 +244,7 @@ const CREATED_BY_ME_QUERY = `
  * GraphQL query for fetching the current user info and issues mentioning them
  */
 const MENTIONING_ME_QUERY = `
-  query MentioningMe($userId: String!) {
+  query MentioningMe($userId: ID!) {
     issues(
       filter: {
         subscribers: { id: { eq: $userId } }
