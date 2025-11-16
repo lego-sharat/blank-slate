@@ -1,125 +1,142 @@
-import { calendarToken, todos, notes, linearIssues, githubPRs, settings, STORAGE_KEYS } from '@/store/store';
-import { fetchTodayEvents } from '@/utils/calendarActions';
-import { fetchAllLinearIssues, isLinearConnected } from '@/utils/linearApi';
-import { fetchAllGitHubPRs } from '@/utils/githubApi';
+import { calendarToken, todos, notes, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
+import {
+  getTodos,
+  getNotes,
+  getLinearIssues,
+  getGitHubPRs,
+  getCalendarToken,
+  getCalendarEvents,
+} from '@/utils/storageManager';
 
 /**
- * Load tasks from localStorage
+ * Load tasks from chrome.storage
  */
-export function loadTasks() {
+export async function loadTasks() {
   try {
-    const storedTodos = localStorage.getItem(STORAGE_KEYS.TODOS);
-    if (storedTodos) {
-      todos.value = JSON.parse(storedTodos);
-      console.log('Loaded', todos.value.length, 'tasks from localStorage');
-    }
+    const storedTodos = await getTodos();
+    todos.value = storedTodos;
+    console.log('Loaded', todos.value.length, 'tasks from storage');
   } catch (error) {
     console.error('Error loading tasks:', error);
   }
 }
 
 /**
- * Load notes from localStorage
+ * Load notes from chrome.storage
  */
-export function loadNotes() {
+export async function loadNotes() {
   try {
-    const storedNotes = localStorage.getItem(STORAGE_KEYS.NOTES);
-    if (storedNotes) {
-      const parsed = JSON.parse(storedNotes);
-      // Migrate old notes to include status field
-      notes.value = parsed.map((note: any) => ({
-        ...note,
-        status: note.status || 'draft',
-      }));
-      console.log('Loaded', notes.value.length, 'notes from localStorage');
-    }
+    const storedNotes = await getNotes();
+    // Migrate old notes to include status field
+    notes.value = storedNotes.map((note: any) => ({
+      ...note,
+      status: note.status || 'draft',
+    }));
+    console.log('Loaded', notes.value.length, 'notes from storage');
   } catch (error) {
     console.error('Error loading notes:', error);
   }
 }
 
 /**
- * Sync all data from external sources and localStorage
- * This is the central place for loading all application data
+ * Load Linear issues from chrome.storage
+ */
+export async function loadLinearIssues() {
+  try {
+    const stored = await getLinearIssues();
+    linearIssues.value = stored;
+    console.log('Loaded Linear issues from storage');
+  } catch (error) {
+    console.error('Error loading Linear issues:', error);
+  }
+}
+
+/**
+ * Load GitHub PRs from chrome.storage
+ */
+export async function loadGitHubPRs() {
+  try {
+    const stored = await getGitHubPRs();
+    githubPRs.value = stored;
+    console.log('Loaded GitHub PRs from storage');
+  } catch (error) {
+    console.error('Error loading GitHub PRs:', error);
+  }
+}
+
+/**
+ * Load calendar token from chrome.storage
+ */
+export async function loadCalendarToken() {
+  try {
+    const token = await getCalendarToken();
+    calendarToken.value = token;
+    console.log('Loaded calendar token from storage');
+  } catch (error) {
+    console.error('Error loading calendar token:', error);
+  }
+}
+
+/**
+ * Load calendar events from chrome.storage
+ */
+export async function loadCalendarEvents() {
+  try {
+    const events = await getCalendarEvents();
+    calendarEvents.value = events;
+    console.log('Loaded', events.length, 'calendar events from storage');
+  } catch (error) {
+    console.error('Error loading calendar events:', error);
+  }
+}
+
+/**
+ * Sync all data from chrome.storage
+ * This loads all cached data that the background script maintains
  */
 export async function syncAllData() {
-  console.log('Syncing all data...');
+  console.log('Loading all data from storage...');
 
-  // Load local data synchronously
-  loadTasks();
-  loadNotes();
+  await Promise.all([
+    loadTasks(),
+    loadNotes(),
+    loadLinearIssues(),
+    loadGitHubPRs(),
+    loadCalendarToken(),
+    loadCalendarEvents(),
+  ]);
 
-  const syncPromises: Promise<any>[] = [];
+  console.log('All data loaded from storage');
+}
 
-  // Sync calendar events if we have a token
-  if (calendarToken.value) {
-    syncPromises.push(
-      fetchTodayEvents(calendarToken.value).catch(err => {
-        console.error('Failed to sync calendar events:', err);
-      })
-    );
+/**
+ * Request background script to sync data immediately
+ * This triggers the background script to fetch fresh data from APIs
+ */
+export async function requestBackgroundSync() {
+  try {
+    // Send message to background script to trigger sync
+    await chrome.runtime.sendMessage({ action: 'syncNow' });
+    console.log('Background sync requested');
+  } catch (error) {
+    console.error('Failed to request background sync:', error);
   }
-
-  // Sync Linear issues if API key is configured
-  if (isLinearConnected()) {
-    syncPromises.push(
-      syncLinear().catch(err => {
-        console.error('Failed to sync Linear issues:', err);
-      })
-    );
-  }
-
-  // Sync GitHub PRs if token is configured
-  if (isGitHubConnected()) {
-    syncPromises.push(
-      syncGitHub().catch(err => {
-        console.error('Failed to sync GitHub PRs:', err);
-      })
-    );
-  }
-
-  // Add more data sync operations here as needed
-  // Example:
-  // syncPromises.push(fetchReadingList());
-  // syncPromises.push(syncNotionNotes());
-
-  await Promise.all(syncPromises);
-  console.log('Data sync complete');
 }
 
 /**
  * Sync calendar data only
+ * @deprecated Use requestBackgroundSync() instead
  */
 export async function syncCalendar() {
-  if (!calendarToken.value) {
-    console.warn('Cannot sync calendar: no token available');
-    return;
-  }
-
-  try {
-    await fetchTodayEvents(calendarToken.value);
-  } catch (err) {
-    console.error('Failed to sync calendar:', err);
-    throw err;
-  }
+  await requestBackgroundSync();
 }
 
 /**
  * Sync Linear issues only
+ * @deprecated Use requestBackgroundSync() instead
  */
 export async function syncLinear() {
-  if (!isLinearConnected()) {
-    console.warn('Cannot sync Linear: no API key configured');
-    return;
-  }
-
-  try {
-    const issues = await fetchAllLinearIssues();
-    linearIssues.value = issues;
-  } catch (err) {
-    console.error('Failed to sync Linear issues:', err);
-    throw err;
-  }
+  await requestBackgroundSync();
 }
 
 /**
@@ -131,18 +148,8 @@ export function isGitHubConnected(): boolean {
 
 /**
  * Sync GitHub pull requests only
+ * @deprecated Use requestBackgroundSync() instead
  */
 export async function syncGitHub() {
-  if (!isGitHubConnected()) {
-    console.warn('Cannot sync GitHub: no token configured');
-    return;
-  }
-
-  try {
-    const prs = await fetchAllGitHubPRs(settings.value.githubToken);
-    githubPRs.value = prs;
-  } catch (err) {
-    console.error('Failed to sync GitHub PRs:', err);
-    throw err;
-  }
+  await requestBackgroundSync();
 }
