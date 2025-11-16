@@ -159,28 +159,13 @@ export default function TodayView() {
   const getLinkIcon = (type: LinkInfo['type']) => {
     switch (type) {
       case 'meet':
+      case 'zoom':
+      case 'teams':
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M15.5 5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2.5"/>
             <path d="M23 12l-5-3v6z"/>
             <rect x="2" y="5" width="12" height="14" rx="2"/>
-          </svg>
-        );
-      case 'zoom':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="10" rx="2"/>
-            <circle cx="8" cy="12" r="2"/>
-            <path d="M14 10l6-3v10l-6-3z"/>
-          </svg>
-        );
-      case 'teams':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         );
       case 'pdf':
@@ -328,7 +313,6 @@ export default function TodayView() {
                         title={link.type}
                       >
                         {getLinkIcon(link.type)}
-                        <span class="today-event-link-label">{link.type}</span>
                       </a>
                     ))}
                   </div>

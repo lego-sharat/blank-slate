@@ -2388,14 +2388,13 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .today-event-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 4px;
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
   transition: all 0.2s;
 }
 
@@ -2404,34 +2403,15 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   color: var(--text-primary);
 }
 
-.today-event-link-label {
-  text-transform: capitalize;
-}
-
-.today-event-link-meet {
-  background-color: rgba(129, 162, 190, 0.15);
-  color: var(--accent-primary);
-}
-
-.today-event-link-meet:hover {
-  background-color: rgba(129, 162, 190, 0.25);
-  color: var(--accent-primary-hover);
-}
-
-.today-event-link-zoom {
-  background-color: rgba(178, 148, 187, 0.15);
-  color: var(--accent-secondary);
-}
-
-.today-event-link-zoom:hover {
-  background-color: rgba(178, 148, 187, 0.25);
-}
-
+.today-event-link-meet,
+.today-event-link-zoom,
 .today-event-link-teams {
   background-color: rgba(129, 162, 190, 0.15);
   color: var(--accent-primary);
 }
 
+.today-event-link-meet:hover,
+.today-event-link-zoom:hover,
 .today-event-link-teams:hover {
   background-color: rgba(129, 162, 190, 0.25);
   color: var(--accent-primary-hover);
