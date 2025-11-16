@@ -13,6 +13,8 @@ import {
   getLinearIssues,
   getGitHubPRs,
   getCalendarEvents,
+  getLastSupabaseSync,
+  setLastSupabaseSync,
 } from './utils/storageManager';
 import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
@@ -206,6 +208,9 @@ async function syncToSupabase() {
 
     console.log(`→ Data loaded: ${todos.length} todos, ${thoughts.length} thoughts, ${history.length} history items`);
     await syncAllToSupabase(todos, thoughts, history);
+
+    // Update last Supabase sync timestamp
+    await setLastSupabaseSync(Date.now());
     console.log('✓ Supabase sync complete');
   } catch (error) {
     console.error('✗ Failed to sync to Supabase:', error);
@@ -242,11 +247,25 @@ async function performPeriodicSync() {
   // Fetch all external data
   await fetchAllExternalData();
 
-  // Sync to Supabase (less frequently)
-  const lastSupabaseSync = await getLastSync();
+  // Sync to Supabase (less frequently - every 10 minutes)
+  const lastSupabaseSync = await getLastSupabaseSync();
   const now = Date.now();
-  if (now - lastSupabaseSync >= SUPABASE_SYNC_INTERVAL) {
+  const timeSinceLastSync = now - lastSupabaseSync;
+  const shouldSync = timeSinceLastSync >= SUPABASE_SYNC_INTERVAL;
+
+  console.log('Supabase sync check:', {
+    lastSync: new Date(lastSupabaseSync).toLocaleTimeString(),
+    timeSinceLastSync: Math.round(timeSinceLastSync / 1000) + 's',
+    interval: Math.round(SUPABASE_SYNC_INTERVAL / 1000) + 's',
+    shouldSync,
+  });
+
+  if (shouldSync) {
+    console.log('→ Time to sync to Supabase');
     await syncToSupabase();
+  } else {
+    const timeUntilNextSync = SUPABASE_SYNC_INTERVAL - timeSinceLastSync;
+    console.log(`⏳ Next Supabase sync in ${Math.round(timeUntilNextSync / 1000)}s`);
   }
 
   console.log('Periodic sync complete');

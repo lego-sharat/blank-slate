@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   GITHUB_PRS: 'github_prs',
   SETTINGS: 'settings',
   LAST_SYNC: 'last_sync',
+  LAST_SUPABASE_SYNC: 'last_supabase_sync',
 } as const;
 
 /**
@@ -153,4 +154,12 @@ export async function getLastSync(): Promise<number> {
 
 export async function setLastSync(timestamp: number): Promise<void> {
   return setInStorage(STORAGE_KEYS.LAST_SYNC, timestamp);
+}
+
+export async function getLastSupabaseSync(): Promise<number> {
+  return getFromStorage<number>(STORAGE_KEYS.LAST_SUPABASE_SYNC, 0);
+}
+
+export async function setLastSupabaseSync(timestamp: number): Promise<void> {
+  return setInStorage(STORAGE_KEYS.LAST_SUPABASE_SYNC, timestamp);
 }
