@@ -2305,6 +2305,208 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 /* ===================================
+   Today View Styles
+   =================================== */
+
+.today-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.today-view .view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.today-view .view-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.today-view .view-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 40px;
+}
+
+.today-events-list {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.today-event-card {
+  display: flex;
+  gap: 20px;
+  padding: 20px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.today-event-card:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-emphasis);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.today-event-time {
+  color: var(--text-secondary);
+  font-size: 13px;
+  min-width: 80px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding-top: 2px;
+}
+
+.today-event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.today-event-title {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.today-event-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.today-event-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.today-event-link:hover {
+  background-color: var(--bg-elevated);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.today-event-link-label {
+  text-transform: capitalize;
+}
+
+.today-event-link-meet {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: var(--accent-primary);
+}
+
+.today-event-link-meet:hover {
+  background-color: rgba(129, 162, 190, 0.25);
+  color: var(--accent-primary-hover);
+}
+
+.today-event-link-zoom {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: var(--accent-secondary);
+}
+
+.today-event-link-zoom:hover {
+  background-color: rgba(178, 148, 187, 0.25);
+}
+
+.today-event-link-teams {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: var(--accent-primary);
+}
+
+.today-event-link-teams:hover {
+  background-color: rgba(129, 162, 190, 0.25);
+  color: var(--accent-primary-hover);
+}
+
+.today-event-link-pdf,
+.today-event-link-gdoc,
+.today-event-link-figma,
+.today-event-link-notion {
+  background-color: rgba(181, 189, 104, 0.15);
+  color: var(--accent-green);
+}
+
+.today-event-link-pdf:hover,
+.today-event-link-gdoc:hover,
+.today-event-link-figma:hover,
+.today-event-link-notion:hover {
+  background-color: rgba(181, 189, 104, 0.25);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 0 0 16px 0;
+}
+
+.empty-state.error {
+  color: var(--accent-red);
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-emphasis);
+}
+
+/* ===================================
    Sidebar Tree Navigation Styles
    =================================== */
 
