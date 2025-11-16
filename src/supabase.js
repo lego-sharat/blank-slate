@@ -77,8 +77,8 @@ export async function signInWithGoogle() {
     throw new Error('Supabase client not initialized');
   }
 
-  // Get the extension's callback URL in chromiumapp.org format (required for OAuth)
-  const callbackUrl = `https://${chrome.runtime.id}.chromiumapp.org/auth-callback.html`;
+  // Get the extension's callback URL
+  const callbackUrl = chrome.runtime.getURL('auth-callback.html');
 
   console.log('Initiating OAuth with callback URL:', callbackUrl);
 
