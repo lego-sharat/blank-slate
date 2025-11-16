@@ -2130,7 +2130,8 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   border-radius: 50%;
   background-color: var(--accent-primary);
   margin-left: 8px;
-  vertical-align: middle;
+  position: relative;
+  top: -1px;
 }
 
 .sidebar-section-chevron {
@@ -2248,7 +2249,8 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   border-radius: 50%;
   background-color: var(--accent-primary);
   margin-left: 8px;
-  vertical-align: middle;
+  position: relative;
+  top: -2px;
 }
 
 .sidebar-item-icon {
@@ -3110,6 +3112,11 @@ body.light-theme {
   justify-content: center;
   border-radius: 3px;
   transition: all 0.2s;
+  opacity: 0;
+}
+
+.sidebar-section-header:hover .sidebar-section-add-btn {
+  opacity: 1;
 }
 
 .sidebar-section-add-btn:hover {
