@@ -1,5 +1,5 @@
 import { useComputed } from '@preact/signals';
-import { todos, notes, nextEvent, currentView, isAuthenticated, linearIssues, settings } from '@/store/store';
+import { todos, notes, nextEvent, currentView, isAuthenticated, linearIssues, githubPRs, settings } from '@/store/store';
 import { toggleTodo } from '@/utils/todoActions';
 import { openNote } from '@/utils/noteActions';
 
@@ -23,6 +23,13 @@ export default function GlanceView() {
         }
         return orderA - orderB;
       })
+      .slice(0, 3);
+  });
+
+  const reviewRequestedPRs = useComputed(() => {
+    // Sort by updated time (most recently updated first)
+    return [...githubPRs.value.reviewRequested]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 3);
   });
 
@@ -65,6 +72,36 @@ export default function GlanceView() {
     if (priority === 3) return 'Medium';
     if (priority === 4) return 'Low';
     return 'No Priority';
+  };
+
+  const getPRStateClass = (state: string, isDraft: boolean): string => {
+    if (isDraft) return 'pr-state-draft';
+    if (state === 'OPEN') return 'pr-state-open';
+    if (state === 'MERGED') return 'pr-state-merged';
+    if (state === 'CLOSED') return 'pr-state-closed';
+    return 'pr-state-other';
+  };
+
+  const getPRStateLabel = (state: string, isDraft: boolean): string => {
+    if (isDraft) return 'Draft';
+    if (state === 'OPEN') return 'Open';
+    if (state === 'MERGED') return 'Merged';
+    if (state === 'CLOSED') return 'Closed';
+    return state;
+  };
+
+  const getReviewClass = (review?: string): string => {
+    if (review === 'APPROVED') return 'review-approved';
+    if (review === 'CHANGES_REQUESTED') return 'review-changes';
+    if (review === 'REVIEW_REQUIRED') return 'review-required';
+    return 'review-none';
+  };
+
+  const getReviewLabel = (review?: string): string => {
+    if (review === 'APPROVED') return 'Approved';
+    if (review === 'CHANGES_REQUESTED') return 'Changes Requested';
+    if (review === 'REVIEW_REQUIRED') return 'Review Required';
+    return '';
   };
 
   return (
@@ -181,6 +218,47 @@ export default function GlanceView() {
                     </div>
                   </div>
                   <div class="glance-linear-title">{issue.title}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* GitHub PRs Section */}
+        {settings.value.githubToken && reviewRequestedPRs.value.length > 0 && (
+          <div class="glance-section">
+            <div class="glance-section-header">
+              <h2 class="glance-section-title">GitHub PRs</h2>
+              <button class="glance-view-all" onClick={() => currentView.value = 'github'}>
+                View all
+              </button>
+            </div>
+
+            <div class="glance-github-list">
+              {reviewRequestedPRs.value.map(pr => (
+                <div
+                  key={pr.id}
+                  class="glance-github-item"
+                  onClick={() => window.open(pr.url, '_blank')}
+                >
+                  <div class="glance-github-header">
+                    <span class="glance-github-repo">{pr.repository.nameWithOwner}</span>
+                    <div class="glance-github-badges">
+                      <span class={`glance-github-state ${getPRStateClass(pr.state, pr.isDraft)}`}>
+                        {getPRStateLabel(pr.state, pr.isDraft)}
+                      </span>
+                      {pr.reviewDecision && (
+                        <span class={`glance-github-review ${getReviewClass(pr.reviewDecision)}`}>
+                          {getReviewLabel(pr.reviewDecision)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div class="glance-github-title">{pr.title}</div>
+                  <div class="glance-github-footer">
+                    <span class="glance-github-number">#{pr.number}</span>
+                    <span class="glance-github-author">@{pr.author.login}</span>
+                  </div>
                 </div>
               ))}
             </div>
