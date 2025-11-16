@@ -2150,6 +2150,33 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   margin-top: 4px;
 }
 
+/* Simple sidebar sections (non-collapsible) */
+.sidebar-section-simple {
+  margin-bottom: 8px;
+}
+
+.sidebar-section-simple .sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.sidebar-section-simple .sidebar-section-header:hover {
+  background: var(--hover-bg);
+}
+
+/* Navigation item styling (for Glance) */
+.sidebar-nav-item {
+  margin-bottom: 8px;
+  padding: 8px 12px !important;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
