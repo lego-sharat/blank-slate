@@ -445,7 +445,7 @@ body.handwriting-font #todoInput {
 }
 
 .sidebar-footer {
-  padding: 16px;
+  padding: 6px 16px;
   border-top: 1px solid var(--border-subtle);
   background-color: var(--bg-secondary); /* Match sidebar background */
   display: flex;
@@ -453,6 +453,7 @@ body.handwriting-font #todoInput {
   gap: 12px;
   align-items: center;
   justify-content: center;
+  min-height: 28px;
 }
 
 .sidebar-item {
@@ -628,8 +629,8 @@ body.handwriting-font #todoInput {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -637,6 +638,7 @@ body.handwriting-font #todoInput {
   transition: all 0.2s;
   border-radius: 50%;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .settings-icon-btn:hover {
@@ -644,13 +646,18 @@ body.handwriting-font #todoInput {
   color: var(--accent-primary);
 }
 
+.settings-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Profile Button */
 .profile-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -658,6 +665,7 @@ body.handwriting-font #todoInput {
   transition: all 0.2s;
   border-radius: 50%;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .profile-btn:hover {
@@ -665,9 +673,14 @@ body.handwriting-font #todoInput {
   color: var(--accent-primary);
 }
 
+.profile-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .profile-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: var(--accent-primary);
   color: var(--bg-primary);
@@ -675,8 +688,8 @@ body.handwriting-font #todoInput {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
 }
 
 /* Content Views */

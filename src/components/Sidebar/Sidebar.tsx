@@ -25,6 +25,24 @@ export default function Sidebar() {
 
   const handleProfileClick = async () => {
     if (!isAuthenticated.value) {
+      // Check if Supabase credentials are configured
+      const supabaseUrl = localStorage.getItem('supabase_url');
+      const supabaseKey = localStorage.getItem('supabase_anon_key');
+
+      if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://your-project.supabase.co' || supabaseKey === 'your-anon-key') {
+        // Credentials not configured, prompt user to go to settings
+        const goToSettings = confirm(
+          'Supabase credentials are not configured.\n\n' +
+          'Please configure your Supabase project URL and anon key in Settings to enable Google sign-in.\n\n' +
+          'Would you like to go to Settings now?'
+        );
+
+        if (goToSettings) {
+          currentView.value = 'settings';
+        }
+        return;
+      }
+
       // Sign in with Google
       try {
         await signIn();
@@ -121,7 +139,7 @@ export default function Sidebar() {
               onClick={handleSettingsClick}
               title="Settings"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M12 1v6m0 6v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
               </svg>
@@ -134,7 +152,7 @@ export default function Sidebar() {
               {isAuthenticated.value ? (
                 <div class="profile-avatar">{getUserInitials()}</div>
               ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                   <circle cx="12" cy="7" r="4"/>
                 </svg>
