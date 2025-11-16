@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { isAuthenticated, calendarToken } from '@/store/store';
+import { isAuthenticated, calendarToken, calendarEvents, saveCalendarEvents } from '@/store/store';
 import { signIn } from '@/utils/auth';
 
 interface CalendarEvent {
@@ -74,7 +74,10 @@ export default function TodayView() {
       }
 
       const data = await response.json();
-      setEvents(data.items || []);
+      const eventsList = data.items || [];
+      setEvents(eventsList);
+      calendarEvents.value = eventsList;
+      saveCalendarEvents();
     } catch (err) {
       console.error('Error fetching calendar events:', err);
       setError('Failed to load calendar events');
