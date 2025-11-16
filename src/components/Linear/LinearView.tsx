@@ -62,29 +62,42 @@ export default function LinearView() {
   };
 
   const getFilteredIssues = (): LinearIssue[] => {
+    let filtered: LinearIssue[];
     switch (filter) {
       case 'assigned':
-        return sortByStatus(issues.assignedToMe);
+        filtered = sortByStatus(issues.assignedToMe);
+        break;
       case 'created':
-        return sortByStatus(issues.createdByMe);
+        filtered = sortByStatus(issues.createdByMe);
+        break;
       case 'mentioning':
         // Already sorted by updatedAt from API
-        return issues.mentioningMe;
+        filtered = issues.mentioningMe;
+        break;
       default:
-        return [];
+        filtered = [];
     }
+    // Limit to 10 issues
+    return filtered.slice(0, 10);
   };
 
   const handleViewAll = () => {
-    const filteredIssues = getFilteredIssues();
-    if (filteredIssues.length > 0) {
-      // Get team key from first issue
-      const teamKey = filteredIssues[0].team.key;
-      window.open(`https://linear.app/${teamKey}/active`, '_blank');
-    } else {
-      // Fallback to general issues page
-      window.open('https://linear.app/issues', '_blank');
+    // Build Linear URL with appropriate filters
+    let url = 'https://linear.app/issues';
+
+    switch (filter) {
+      case 'assigned':
+        url = 'https://linear.app/issues?filter=assignee%3Ame';
+        break;
+      case 'created':
+        url = 'https://linear.app/issues?filter=creator%3Ame';
+        break;
+      case 'mentioning':
+        url = 'https://linear.app/issues?filter=subscribers%3Ame';
+        break;
     }
+
+    window.open(url, '_blank');
   };
 
   const formatRelativeTime = (dateString: string): string => {

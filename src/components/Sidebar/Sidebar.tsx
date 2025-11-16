@@ -116,10 +116,9 @@ export default function Sidebar() {
               class={`sidebar-item sidebar-nav-item ${currentView.value === 'linear' ? 'active' : ''}`}
               onClick={navigateToLinear}
             >
-              <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <svg class="sidebar-item-icon linear-icon" width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M2.5 13.5L8 8L13.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
               </svg>
               <span class="sidebar-item-label">Linear</span>
             </div>

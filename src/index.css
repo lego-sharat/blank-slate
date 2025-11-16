@@ -2638,6 +2638,10 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   color: var(--text-tertiary);
 }
 
+.sidebar-nav-item .linear-icon {
+  color: #81a2be;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
