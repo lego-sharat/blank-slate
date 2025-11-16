@@ -62,7 +62,7 @@ export default function Sidebar() {
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                 </svg>
                 <span class="sidebar-section-title">TASKS</span>
-                {currentView.value !== 'tasks' && todos.value.filter(t => !t.completed).length > 0 && (
+                {todos.value.filter(t => !t.completed).length > 0 && (
                   <span class="sidebar-section-dot"></span>
                 )}
               </div>
@@ -80,7 +80,7 @@ export default function Sidebar() {
                 </svg>
                 <span class="sidebar-section-title">NOTES</span>
                 <div class="sidebar-section-actions">
-                  {currentView.value !== 'notes' && notes.value.filter(n => n.status === 'draft').length > 0 && (
+                  {notes.value.filter(n => n.status === 'draft').length > 0 && (
                     <span class="sidebar-section-dot"></span>
                   )}
                   <button
