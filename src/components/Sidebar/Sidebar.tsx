@@ -1,23 +1,9 @@
-import { signal } from '@preact/signals';
-import { todos, notes, currentView, currentNoteId, sidebarCollapsed } from '@/store/store';
-import SidebarSection from './SidebarSection';
-import { createNote, openNote } from '@/utils/noteActions';
-
-// Track which sections are collapsed (only Notes is collapsible)
-const collapsedSections = signal<Record<string, boolean>>({
-  notes: false,
-});
+import { todos, notes, currentView, sidebarCollapsed } from '@/store/store';
+import { createNote } from '@/utils/noteActions';
 
 export default function Sidebar() {
   const toggleSidebar = () => {
     sidebarCollapsed.value = !sidebarCollapsed.value;
-  };
-
-  const toggleSection = (sectionId: string) => {
-    collapsedSections.value = {
-      ...collapsedSections.value,
-      [sectionId]: !collapsedSections.value[sectionId],
-    };
   };
 
   const navigateToGlance = () => {
@@ -26,6 +12,10 @@ export default function Sidebar() {
 
   const navigateToTasks = () => {
     currentView.value = 'tasks';
+  };
+
+  const navigateToNotes = () => {
+    currentView.value = 'notes';
   };
 
   const handleAddNote = () => {
@@ -78,37 +68,37 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {/* Notes Section - Collapsible */}
-            <SidebarSection
-              title="NOTES"
-              icon="file-text"
-              collapsed={collapsedSections.value.notes}
-              onToggle={() => toggleSection('notes')}
-              showDot={notes.value.filter(n => n.status === 'draft').length > 0}
-            >
-              {notes.value.slice(0, 10).map(note => (
-                <div
-                  key={note.id}
-                  class={`sidebar-item ${currentNoteId.value === note.id ? 'active' : ''}`}
-                  onClick={() => openNote(note.id)}
-                >
-                  <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  <span class="sidebar-item-label">{note.title}</span>
-                  {note.status === 'draft' && (
-                    <span class="sidebar-item-badge draft">draft</span>
+            {/* Notes Section - Clickable header navigates to view */}
+            <div class="sidebar-section-simple">
+              <div
+                class={`sidebar-section-header ${currentView.value === 'notes' ? 'active' : ''}`}
+                onClick={navigateToNotes}
+              >
+                <svg class="sidebar-section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="sidebar-section-title">NOTES</span>
+                <div class="sidebar-section-actions">
+                  {notes.value.filter(n => n.status === 'draft').length > 0 && (
+                    <span class="sidebar-section-dot"></span>
                   )}
+                  <button
+                    class="sidebar-section-add-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddNote();
+                    }}
+                    title="Add note"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
                 </div>
-              ))}
-              {notes.value.length === 0 && (
-                <div class="sidebar-item-empty">No notes yet</div>
-              )}
-              <button class="sidebar-add-item" onClick={handleAddNote}>
-                + Add note
-              </button>
-            </SidebarSection>
+              </div>
+            </div>
           </div>
 
           <div class="sidebar-footer">
