@@ -240,17 +240,15 @@ export default function TodayView() {
 
   if (!isAuthenticated.value) {
     return (
-      <div class="view-container today-view">
-        <div class="view-header">
-          <h2>Today</h2>
+      <div class="today-view">
+        <div class="today-header">
+          <h1 class="today-title">Today</h1>
         </div>
-        <div class="view-content">
-          <div class="empty-state">
-            <p>Sign in with Google to view your calendar events</p>
-            <button class="btn-primary" onClick={handleSignIn}>
-              Sign in with Google
-            </button>
-          </div>
+        <div class="today-empty">
+          <p>Sign in with Google to view your calendar events</p>
+          <button class="today-signin-btn" onClick={handleSignIn}>
+            Sign in with Google
+          </button>
         </div>
       </div>
     );
@@ -258,14 +256,12 @@ export default function TodayView() {
 
   if (loading) {
     return (
-      <div class="view-container today-view">
-        <div class="view-header">
-          <h2>Today</h2>
+      <div class="today-view">
+        <div class="today-header">
+          <h1 class="today-title">Today</h1>
         </div>
-        <div class="view-content">
-          <div class="empty-state">
-            <p>Loading events...</p>
-          </div>
+        <div class="today-empty">
+          <p>Loading events...</p>
         </div>
       </div>
     );
@@ -273,17 +269,15 @@ export default function TodayView() {
 
   if (error) {
     return (
-      <div class="view-container today-view">
-        <div class="view-header">
-          <h2>Today</h2>
+      <div class="today-view">
+        <div class="today-header">
+          <h1 class="today-title">Today</h1>
         </div>
-        <div class="view-content">
-          <div class="empty-state error">
-            <p>{error}</p>
-            <button class="btn-secondary" onClick={fetchTodayEvents}>
-              Try again
-            </button>
-          </div>
+        <div class="today-empty">
+          <p>{error}</p>
+          <button class="today-refresh-btn" onClick={fetchTodayEvents}>
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -291,60 +285,57 @@ export default function TodayView() {
 
   if (events.length === 0) {
     return (
-      <div class="view-container today-view">
-        <div class="view-header">
-          <h2>Today</h2>
+      <div class="today-view">
+        <div class="today-header">
+          <h1 class="today-title">Today</h1>
         </div>
-        <div class="view-content">
-          <div class="empty-state">
-            <p>No events scheduled for today</p>
-          </div>
+        <div class="today-empty">
+          <p>No events scheduled for today</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div class="view-container today-view">
-      <div class="view-header">
-        <h2>Today</h2>
-        <button class="btn-secondary" onClick={fetchTodayEvents}>
-          Refresh
-        </button>
-      </div>
-      <div class="view-content">
-        <div class="today-events-list">
-          {events.map((event) => {
-            const links = extractLinks(event);
-            const time = formatTime(event.start.dateTime, event.start.date);
-
-            return (
-              <div key={event.id} class="today-event-card">
-                <div class="today-event-time">{time}</div>
-                <div class="today-event-content">
-                  <h3 class="today-event-title">{event.summary}</h3>
-                  {links.length > 0 && (
-                    <div class="today-event-links">
-                      {links.map((link, idx) => (
-                        <a
-                          key={idx}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class={`today-event-link today-event-link-${link.type}`}
-                          title={link.type}
-                        >
-                          {getLinkIcon(link.type)}
-                          <span class="today-event-link-label">{link.type}</span>
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+    <div class="today-view">
+      <div class="today-header">
+        <h1 class="today-title">Today</h1>
+        <div class="today-stats">
+          {events.length} {events.length === 1 ? 'event' : 'events'}
         </div>
+      </div>
+
+      <div class="today-events-list">
+        {events.map((event) => {
+          const links = extractLinks(event);
+          const time = formatTime(event.start.dateTime, event.start.date);
+
+          return (
+            <div key={event.id} class="today-event-item">
+              <div class="today-event-time">{time}</div>
+              <div class="today-event-content">
+                <div class="today-event-title">{event.summary}</div>
+                {links.length > 0 && (
+                  <div class="today-event-links">
+                    {links.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class={`today-event-link today-event-link-${link.type}`}
+                        title={link.type}
+                      >
+                        {getLinkIcon(link.type)}
+                        <span class="today-event-link-label">{link.type}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
