@@ -92,6 +92,7 @@ async function fetchAndCacheGitHubPRs() {
 
 /**
  * Fetch Calendar events and cache them
+ * Inline implementation to avoid import issues in background worker
  */
 async function fetchAndCacheCalendarEvents() {
   try {
@@ -102,12 +103,35 @@ async function fetchAndCacheCalendarEvents() {
     }
 
     console.log('Fetching calendar events...');
-    const { fetchTodayEvents } = await import('./utils/calendarActions');
-    const events = await fetchTodayEvents(token);
-    if (events && events.length >= 0) {
-      await setCalendarEvents(events);
-      console.log(`Calendar events cached successfully (${events.length} events)`);
+
+    // Inline calendar fetching - no imports to avoid window references
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
+      `timeMin=${startOfDay.toISOString()}&` +
+      `timeMax=${endOfDay.toISOString()}&` +
+      `singleEvents=true&` +
+      `orderBy=startTime&` +
+      `maxResults=50`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch calendar events: ${response.status}`);
     }
+
+    const data = await response.json();
+    const events = data.items || [];
+
+    await setCalendarEvents(events);
+    console.log(`Calendar events cached successfully (${events.length} events)`);
   } catch (error) {
     console.error('Failed to fetch calendar events:', error);
   }
