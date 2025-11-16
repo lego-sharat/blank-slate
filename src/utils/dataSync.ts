@@ -60,6 +60,37 @@ export async function requestBackgroundRefresh() {
 }
 
 /**
+ * Load data directly from chrome.storage (fast, no message passing)
+ * This loads cached data synchronously on app startup
+ */
+export async function loadCachedDataDirectly() {
+  try {
+    const { getTodos, getThoughts, getLinearIssues, getGitHubPRs, getCalendarEvents } = await import('@/utils/storageManager');
+
+    const [todosData, thoughtsData, linearData, githubData, calendarData] = await Promise.all([
+      getTodos(),
+      getThoughts(),
+      getLinearIssues(),
+      getGitHubPRs(),
+      getCalendarEvents(),
+    ]);
+
+    todos.value = todosData;
+    thoughts.value = thoughtsData.map((thought: any) => ({
+      ...thought,
+      status: thought.status || 'draft',
+    }));
+    linearIssues.value = linearData;
+    githubPRs.value = githubData;
+    calendarEvents.value = calendarData;
+
+    console.log('Cached data loaded directly from chrome.storage');
+  } catch (error) {
+    console.error('Error loading cached data:', error);
+  }
+}
+
+/**
  * Load all data from background and update signals
  * This is the ONLY way the UI should load data
  */

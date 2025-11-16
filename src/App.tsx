@@ -12,17 +12,19 @@ import TasksView from '@/components/Tasks/TasksView';
 import ProfileView from '@/components/Profile/ProfileView';
 import SettingsView from '@/components/Settings/SettingsView';
 import { initAuth } from '@/utils/auth';
-import { syncAllData } from '@/utils/dataSync';
+import { loadCachedDataDirectly } from '@/utils/dataSync';
 
 export function App() {
   useEffect(() => {
-    // Load configuration and cached data from localStorage
+    // Load configuration from localStorage/chrome.storage
     loadFromStorage();
 
-    // Load all application data (tasks, thoughts, calendar, etc.)
-    syncAllData();
+    // Load cached data directly from chrome.storage (fast, no delay)
+    // This loads todos, thoughts, calendar, linear, github instantly
+    loadCachedDataDirectly();
 
-    // Initialize authentication
+    // Initialize authentication (handles user session and calendar token)
+    // Auth will trigger background refresh of calendar data if needed
     initAuth();
 
     // Apply theme
