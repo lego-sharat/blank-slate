@@ -4,17 +4,30 @@
   "description": "A minimal, greyscale new tab page with todo list and notes",
   "type": "module",
   "scripts": {
-    "build": "node build.js",
-    "watch": "node build.js --watch",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
     "deploy-edge-function": "./deploy-edge-function.sh"
   },
-  "keywords": ["chrome-extension", "new-tab", "todo", "notes"],
+  "keywords": [
+    "chrome-extension",
+    "new-tab",
+    "todo",
+    "notes"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@preact/signals": "^2.5.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "preact": "^10.27.2"
   },
   "devDependencies": {
-    "esbuild": "^0.19.0"
+    "@preact/preset-vite": "^2.10.2",
+    "@types/chrome": "^0.1.29",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
   }
 }

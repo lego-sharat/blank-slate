@@ -18,6 +18,7 @@ const NOTES_KEY = 'minimal_newtab_notes';
 const SETTINGS_KEY = 'minimal_newtab_settings';
 const CALENDAR_TOKEN_KEY = 'minimal_newtab_calendar_token';
 const CALENDAR_EVENTS_KEY = 'minimal_newtab_calendar_events';
+const READING_LIST_KEY = 'minimal_newtab_reading_list';
 
 // State
 let todos = [];
