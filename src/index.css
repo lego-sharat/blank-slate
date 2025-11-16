@@ -4826,6 +4826,7 @@ body.light-theme {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 12px;
 }
 
 .history-item-type-badge {
@@ -4839,7 +4840,8 @@ body.light-theme {
 
 .history-item-time {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .history-item-title {
@@ -4848,14 +4850,16 @@ body.light-theme {
   color: var(--text-primary);
   margin-bottom: 6px;
   line-height: 1.4;
+  word-break: break-word;
 }
 
 .history-item-url {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 0.9;
 }
 
 .history-empty-state {

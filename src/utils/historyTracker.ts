@@ -189,6 +189,16 @@ export async function getHistoryByType(type: HistoryItemType, limit: number = 10
 }
 
 /**
+ * Get all history items chronologically, limited to count
+ */
+export async function getAllHistory(limit: number = 50): Promise<HistoryItem[]> {
+  const items = await getHistoryItems();
+  return items
+    .sort((a, b) => b.visitedAt - a.visitedAt)
+    .slice(0, limit);
+}
+
+/**
  * Search history items
  */
 export async function searchHistory(query: string): Promise<HistoryItem[]> {

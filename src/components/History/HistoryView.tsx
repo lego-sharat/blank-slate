@@ -1,27 +1,11 @@
 import { useState, useEffect } from 'preact/hooks';
 import type { HistoryItem, HistoryItemType } from '@/types';
-import { getHistoryByType, searchHistory } from '@/utils/historyTracker';
+import { getAllHistory, getHistoryByType, searchHistory } from '@/utils/historyTracker';
 
 export default function HistoryView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | HistoryItemType>('all');
-  const [historyData, setHistoryData] = useState<{
-    googleDocs: HistoryItem[];
-    notion: HistoryItem[];
-    figma: HistoryItem[];
-    figjam: HistoryItem[];
-    githubRepos: HistoryItem[];
-    githubIssues: HistoryItem[];
-    linear: HistoryItem[];
-  }>({
-    googleDocs: [],
-    notion: [],
-    figma: [],
-    figjam: [],
-    githubRepos: [],
-    githubIssues: [],
-    linear: [],
-  });
+  const [filteredItems, setFilteredItems] = useState<HistoryItem[]>([]);
   const [searchResults, setSearchResults] = useState<HistoryItem[]>([]);
 
   // Load history data
@@ -29,26 +13,31 @@ export default function HistoryView() {
     loadHistory();
   }, []);
 
-  const loadHistory = async () => {
-    const [googleDocs, notion, figma, figjam, githubRepos, githubIssues, linear] = await Promise.all([
-      getHistoryByType('google-docs', 10),
-      getHistoryByType('notion', 10),
-      getHistoryByType('figma', 10),
-      getHistoryByType('figjam', 10),
-      getHistoryByType('github-repo', 10),
-      getHistoryByType('github-issue', 10),
-      getHistoryByType('linear', 10),
-    ]);
+  // Update filtered items when filter changes
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      loadAllHistory();
+    } else {
+      loadFilteredHistory(activeFilter);
+    }
+  }, [activeFilter]);
 
-    setHistoryData({
-      googleDocs,
-      notion,
-      figma,
-      figjam,
-      githubRepos,
-      githubIssues,
-      linear,
-    });
+  const loadHistory = async () => {
+    if (activeFilter === 'all') {
+      await loadAllHistory();
+    } else {
+      await loadFilteredHistory(activeFilter);
+    }
+  };
+
+  const loadAllHistory = async () => {
+    const items = await getAllHistory(50);
+    setFilteredItems(items);
+  };
+
+  const loadFilteredHistory = async (type: HistoryItemType) => {
+    const items = await getHistoryByType(type, 10);
+    setFilteredItems(items);
   };
 
   // Handle search
@@ -95,49 +84,50 @@ export default function HistoryView() {
   const getTypeColor = (type: HistoryItemType): string => {
     const colors: Record<HistoryItemType, string> = {
       'google-docs': '#4285f4',
-      'notion': '#000000',
+      'notion': '#ffffff',
       'figma': '#f24e1e',
       'figjam': '#a259ff',
-      'github-repo': '#238636',
-      'github-issue': '#f85149',
-      'linear': '#5e6ad2',
+      'github-repo': '#8abeb7',
+      'github-issue': '#cc6666',
+      'linear': '#81a2be',
     };
     return colors[type];
   };
 
-  const renderHistorySection = (title: string, items: HistoryItem[], type: HistoryItemType) => {
-    if (items.length === 0) return null;
+  const handleItemClick = (url: string) => {
+    window.location.href = url;
+  };
+
+  const renderHistoryItems = (items: HistoryItem[], showBadges: boolean) => {
+    if (items.length === 0) {
+      return <div class="history-empty-state">No history items found</div>;
+    }
 
     return (
-      <div class="history-section">
-        <div class="history-section-header">
-          <h3 class="history-section-title">{title}</h3>
-          <span class="history-section-count">{items.length}</span>
-        </div>
-
-        <div class="history-items-list">
-          {items.map(item => (
-            <div
-              key={item.id}
-              class="history-item"
-              onClick={() => window.open(item.url, '_blank')}
-            >
-              <div class="history-item-header">
+      <div class="history-items-list">
+        {items.map(item => (
+          <div
+            key={item.id}
+            class="history-item"
+            onClick={() => handleItemClick(item.url)}
+          >
+            <div class="history-item-header">
+              {showBadges && (
                 <span
                   class="history-item-type-badge"
-                  style={{ backgroundColor: `${getTypeColor(type)}20`, color: getTypeColor(type) }}
+                  style={{ backgroundColor: `${getTypeColor(item.type)}20`, color: getTypeColor(item.type) }}
                 >
-                  {getTypeLabel(type)}
+                  {getTypeLabel(item.type)}
                 </span>
-                <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
-              </div>
-
-              <div class="history-item-title">{item.title}</div>
-
-              <div class="history-item-url">{item.url}</div>
+              )}
+              <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
             </div>
-          ))}
-        </div>
+
+            <div class="history-item-title">{item.title}</div>
+
+            <div class="history-item-url">{item.url}</div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -220,47 +210,24 @@ export default function HistoryView() {
               <span class="history-section-count">{searchResults.length}</span>
             </div>
 
-            {searchResults.length === 0 ? (
-              <div class="history-empty-state">No results found</div>
-            ) : (
-              <div class="history-items-list">
-                {searchResults.map(item => (
-                  <div
-                    key={item.id}
-                    class="history-item"
-                    onClick={() => window.open(item.url, '_blank')}
-                  >
-                    <div class="history-item-header">
-                      <span
-                        class="history-item-type-badge"
-                        style={{ backgroundColor: `${getTypeColor(item.type)}20`, color: getTypeColor(item.type) }}
-                      >
-                        {getTypeLabel(item.type)}
-                      </span>
-                      <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
-                    </div>
-
-                    <div class="history-item-title">{item.title}</div>
-
-                    <div class="history-item-url">{item.url}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {renderHistoryItems(searchResults, true)}
           </div>
         </div>
       )}
 
-      {/* History Sections */}
+      {/* History Items */}
       {!searchQuery.trim() && (
         <div class="history-content">
-          {(activeFilter === 'all' || activeFilter === 'google-docs') && renderHistorySection('Google Docs', historyData.googleDocs, 'google-docs')}
-          {(activeFilter === 'all' || activeFilter === 'notion') && renderHistorySection('Notion', historyData.notion, 'notion')}
-          {(activeFilter === 'all' || activeFilter === 'figma') && renderHistorySection('Figma', historyData.figma, 'figma')}
-          {(activeFilter === 'all' || activeFilter === 'figjam') && renderHistorySection('FigJam', historyData.figjam, 'figjam')}
-          {(activeFilter === 'all' || activeFilter === 'github-repo') && renderHistorySection('GitHub Repositories', historyData.githubRepos, 'github-repo')}
-          {(activeFilter === 'all' || activeFilter === 'github-issue') && renderHistorySection('GitHub Issues', historyData.githubIssues, 'github-issue')}
-          {(activeFilter === 'all' || activeFilter === 'linear') && renderHistorySection('Linear', historyData.linear, 'linear')}
+          <div class="history-section">
+            {activeFilter !== 'all' && (
+              <div class="history-section-header">
+                <h3 class="history-section-title">{getTypeLabel(activeFilter)}</h3>
+                <span class="history-section-count">{filteredItems.length}</span>
+              </div>
+            )}
+
+            {renderHistoryItems(filteredItems, activeFilter === 'all')}
+          </div>
         </div>
       )}
     </div>
