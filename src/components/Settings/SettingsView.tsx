@@ -18,8 +18,8 @@ export default function SettingsView() {
   const [redirectUrl, setRedirectUrl] = useState('');
 
   useEffect(() => {
-    // Get the Chrome extension redirect URL
-    const url = chrome.runtime.getURL('auth-callback.html');
+    // Get the Chrome extension redirect URL in chromiumapp.org format (required for OAuth)
+    const url = `https://${chrome.runtime.id}.chromiumapp.org/auth-callback.html`;
     setRedirectUrl(url);
   }, []);
 
