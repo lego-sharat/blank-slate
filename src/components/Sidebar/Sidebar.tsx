@@ -38,6 +38,10 @@ export default function Sidebar() {
     }
   };
 
+  const handleSettingsClick = () => {
+    currentView.value = 'settings';
+  };
+
   return (
     <aside class={`sidebar ${sidebarCollapsed.value ? 'collapsed' : ''}`}>
       <div class="sidebar-header">
@@ -113,9 +117,19 @@ export default function Sidebar() {
 
           <div class="sidebar-footer">
             <button
+              class="settings-icon-btn"
+              onClick={handleSettingsClick}
+              title="Settings"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
+              </svg>
+            </button>
+            <button
               class="profile-btn"
               onClick={handleProfileClick}
-              title={isAuthenticated.value ? 'Profile & Settings' : 'Sign in with Google'}
+              title={isAuthenticated.value ? 'Profile' : 'Sign in with Google'}
             >
               {isAuthenticated.value ? (
                 <div class="profile-avatar">{getUserInitials()}</div>

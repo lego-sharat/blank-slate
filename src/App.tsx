@@ -6,6 +6,7 @@ import NoteEditor from '@/components/Notes/NoteEditor';
 import NotesView from '@/components/Notes/NotesView';
 import TasksView from '@/components/Tasks/TasksView';
 import ProfileView from '@/components/Profile/ProfileView';
+import SettingsView from '@/components/Settings/SettingsView';
 import StatusBar from '@/components/shared/StatusBar';
 import { initAuth } from '@/utils/auth';
 
@@ -90,6 +91,7 @@ export function App() {
           {currentView.value === 'notes' && <NotesView />}
           {currentView.value === 'tasks' && <TasksView />}
           {currentView.value === 'profile' && <ProfileView />}
+          {currentView.value === 'settings' && <SettingsView />}
         </div>
 
         <StatusBar />
