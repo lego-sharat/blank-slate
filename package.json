@@ -8,7 +8,13 @@
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "deploy-edge-function": "./deploy-edge-function.sh"
+    "deploy-edge-function": "./deploy-edge-function.sh",
+    "db:setup": "./scripts/setup-supabase.sh",
+    "db:link": "supabase link",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration new",
+    "db:dump": "supabase db dump --schema public"
   },
   "keywords": [
     "chrome-extension",
