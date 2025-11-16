@@ -2233,3 +2233,231 @@ body.light-theme {
   --status-error-bg: rgba(224, 108, 117, 0.1);
   --status-error-text: #e45649;
 }
+
+/* ===================================
+   Content Container & Layout
+   =================================== */
+
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ===================================
+   Note Editor Styles
+   =================================== */
+
+.note-editor {
+  padding: 40px 60px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.note-editor-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.note-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.note-status-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.status-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.status-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.note-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.note-title-input {
+  width: 100%;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  margin-bottom: 16px;
+  font-family: inherit;
+}
+
+.note-title-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.editor-container {
+  position: relative;
+}
+
+.note-content-input {
+  width: 100%;
+  min-height: 400px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.note-content-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.note-preview {
+  min-height: 400px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.note-preview h1,
+.note-preview h2,
+.note-preview h3,
+.note-preview h4 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.note-preview p {
+  margin: 12px 0;
+}
+
+.note-preview code {
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.note-preview pre {
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.note-preview pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.note-preview ul,
+.note-preview ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.note-preview a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.note-preview a:hover {
+  text-decoration: underline;
+}
+
+/* ===================================
+   Status Bar Styles
+   =================================== */
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 28px;
+}
+
+.status-bar-left,
+.status-bar-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===================================
+   Layout Adjustments
+   =================================== */
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.content-view {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}

@@ -1,5 +1,7 @@
 import { useComputed } from '@preact/signals';
 import { todos, notes, readingList, nextEvent } from '@/store/store';
+import { toggleTodo } from '@/utils/todoActions';
+import { openNote } from '@/utils/noteActions';
 
 export default function GlanceView() {
   // Get most important items for each category
@@ -110,10 +112,8 @@ export default function GlanceView() {
                 checked={false}
                 class="glance-checkbox"
                 onChange={() => {
-                  const todo = todos.value.find(t => t.id === firstIncompleteTodo.value?.id);
-                  if (todo) {
-                    todo.completed = true;
-                    todos.value = [...todos.value];
+                  if (firstIncompleteTodo.value) {
+                    toggleTodo(firstIncompleteTodo.value.id);
                   }
                 }}
               />
@@ -138,8 +138,9 @@ export default function GlanceView() {
             <button
               class="glance-action-btn"
               onClick={() => {
-                // TODO: Navigate to note editor
-                console.log('Open note:', firstDraftNote.value?.id);
+                if (firstDraftNote.value) {
+                  openNote(firstDraftNote.value.id);
+                }
               }}
             >
               Edit

@@ -1,6 +1,9 @@
 import { signal } from '@preact/signals';
 import { todos, notes, readingList, todayEvents, currentView, sidebarCollapsed } from '@/store/store';
 import SidebarSection from './SidebarSection';
+import { toggleTodo } from '@/utils/todoActions';
+import { createNote, openNote } from '@/utils/noteActions';
+import { addReadingItem } from '@/utils/readingListActions';
 
 // Track which sections are collapsed
 const collapsedSections = signal<Record<string, boolean>>({
@@ -26,8 +29,16 @@ export default function Sidebar() {
     currentView.value = 'glance';
   };
 
-  const navigateToPlanner = () => {
-    currentView.value = 'planner';
+  const handleAddNote = () => {
+    createNote();
+  };
+
+  const handleAddReadingItem = () => {
+    const title = prompt('Enter title:');
+    const url = prompt('Enter URL (optional):');
+    if (title) {
+      addReadingItem(title, url || undefined);
+    }
   };
 
   return (
@@ -45,22 +56,18 @@ export default function Sidebar() {
       {!sidebarCollapsed.value && (
         <>
           <div class="sidebar-actions">
-            <button class="sidebar-action-btn" onClick={navigateToGlance} title="Glance">
+            <button class="sidebar-action-btn" onClick={navigateToGlance} title="Home">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-                <line x1="9" y1="21" x2="9" y2="9"/>
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
-              <span>Glance</span>
+              <span>Home</span>
             </button>
-            <button class="sidebar-action-btn" onClick={navigateToPlanner} title="Planner">
+            <button class="sidebar-action-btn" onClick={handleAddNote} title="New Note">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
+                <path d="M12 5v14M5 12h14"/>
               </svg>
-              <span>Planner</span>
+              <span>New Note</span>
             </button>
           </div>
 
@@ -110,13 +117,7 @@ export default function Sidebar() {
                     checked={todo.completed}
                     class="sidebar-item-checkbox"
                     onClick={(e) => e.stopPropagation()}
-                    onChange={() => {
-                      const todoItem = todos.value.find(t => t.id === todo.id);
-                      if (todoItem) {
-                        todoItem.completed = !todoItem.completed;
-                        todos.value = [...todos.value];
-                      }
-                    }}
+                    onChange={() => toggleTodo(todo.id)}
                   />
                   <span class="sidebar-item-label">{todo.text}</span>
                 </div>
@@ -135,10 +136,7 @@ export default function Sidebar() {
               itemCount={notes.value.length}
             >
               {notes.value.slice(0, 5).map(note => (
-                <div key={note.id} class="sidebar-item" onClick={() => {
-                  // TODO: Navigate to note
-                  console.log('View note:', note.id);
-                }}>
+                <div key={note.id} class="sidebar-item" onClick={() => openNote(note.id)}>
                   <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
@@ -152,10 +150,7 @@ export default function Sidebar() {
               {notes.value.length === 0 && (
                 <div class="sidebar-item-empty">No notes yet</div>
               )}
-              <button class="sidebar-add-item" onClick={() => {
-                // TODO: Add new note
-                console.log('Add note');
-              }}>
+              <button class="sidebar-add-item" onClick={handleAddNote}>
                 + Add note
               </button>
             </SidebarSection>
@@ -181,10 +176,7 @@ export default function Sidebar() {
               {readingList.value.filter(r => r.status === 'unread').length === 0 && (
                 <div class="sidebar-item-empty">Nothing to read</div>
               )}
-              <button class="sidebar-add-item" onClick={() => {
-                // TODO: Add reading item
-                console.log('Add reading item');
-              }}>
+              <button class="sidebar-add-item" onClick={handleAddReadingItem}>
                 + Add item
               </button>
             </SidebarSection>

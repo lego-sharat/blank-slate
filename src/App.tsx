@@ -2,6 +2,8 @@ import { useEffect } from 'preact/hooks';
 import { currentView, loadFromStorage, settings } from '@/store/store';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import GlanceView from '@/components/Glance/GlanceView';
+import NoteEditor from '@/components/Notes/NoteEditor';
+import StatusBar from '@/components/shared/StatusBar';
 
 export function App() {
   useEffect(() => {
@@ -73,17 +75,12 @@ export function App() {
           </div>
         </div>
 
-        {currentView.value === 'glance' && <GlanceView />}
-        {currentView.value === 'planner' && (
-          <div class="content-view">
-            <p>Planner view - coming soon</p>
-          </div>
-        )}
-        {currentView.value === 'note' && (
-          <div class="content-view">
-            <p>Note view - coming soon</p>
-          </div>
-        )}
+        <div class="content-container">
+          {currentView.value === 'glance' && <GlanceView />}
+          {currentView.value === 'note' && <NoteEditor />}
+        </div>
+
+        <StatusBar />
       </main>
     </div>
   );
