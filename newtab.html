@@ -104,8 +104,24 @@
         </div>
       </div>
 
+      <!-- Glance View (Home) -->
+      <div id="glanceView" class="content-view">
+        <div class="glance-container">
+          <div class="glance-header">
+            <h1 class="glance-title">SLATE</h1>
+            <div class="glance-datetime">
+              <span id="glanceTime" class="glance-time">00:00</span>
+              <span id="glanceDay" class="glance-day">MONDAY</span>
+            </div>
+          </div>
+          <div id="glanceContent" class="glance-content">
+            <!-- Content will be dynamically generated -->
+          </div>
+        </div>
+      </div>
+
       <!-- Planner View (2-column: Todos + Calendar) -->
-      <div id="plannerView" class="content-view">
+      <div id="plannerView" class="content-view hidden">
         <div class="view-body planner-view-body">
           <div class="planner-columns">
             <!-- Left Column: Tasks -->
