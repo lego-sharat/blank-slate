@@ -106,8 +106,8 @@ body.light-theme {
 
 body {
   font-family: 'Courier New', Courier, monospace;
-  background-color: var(--bg-light);
-  color: var(--text-light-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
 }
@@ -487,7 +487,7 @@ body.handwriting-font #todoInput {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: var(--bg-light);
+  background-color: var(--bg-primary);
 }
 
 .main-header {
@@ -495,8 +495,8 @@ body.handwriting-font #todoInput {
   align-items: center;
   justify-content: space-between;
   padding: 16px 40px;
-  border-bottom: 1px solid var(--bg-light-elevated);
-  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-primary);
 }
 
 /* Clock in Main Header */
@@ -509,7 +509,7 @@ body.handwriting-font #todoInput {
 .time {
   font-size: 32px;
   font-weight: 300;
-  color: var(--text-light-primary);
+  color: var(--text-primary);
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
 }
@@ -517,7 +517,7 @@ body.handwriting-font #todoInput {
 .date {
   font-size: 12px;
   font-weight: normal;
-  color: var(--text-light-tertiary);
+  color: var(--text-secondary);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -535,9 +535,9 @@ body.handwriting-font #todoInput {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid var(--border-light-default);
-  background-color: var(--bg-light);
-  color: var(--text-light-secondary);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -547,19 +547,20 @@ body.handwriting-font #todoInput {
 }
 
 .icon-btn:hover {
-  background-color: var(--bg-light-elevated);
-  border-color: var(--border-light-emphasis);
+  background-color: var(--hover-bg);
+  border-color: var(--border-emphasis);
+  color: var(--text-primary);
 }
 
 .icon-btn.active {
-  background-color: var(--text-light-primary);
-  color: var(--bg-white);
-  border-color: var(--text-light-primary);
+  background-color: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
 }
 
 .icon-btn.active:hover {
-  background-color: var(--text-light-secondary);
-  border-color: var(--text-light-secondary);
+  background-color: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
 }
 
 .icon-btn svg {
