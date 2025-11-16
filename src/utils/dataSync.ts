@@ -1,4 +1,4 @@
-import { calendarToken, todos, notes, STORAGE_KEYS, saveTodos, saveNotes } from '@/store/store';
+import { calendarToken, todos, notes, STORAGE_KEYS } from '@/store/store';
 import { fetchTodayEvents } from '@/utils/calendarActions';
 
 /**
