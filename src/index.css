@@ -2566,10 +2566,14 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   justify-content: center;
 }
 
-/* Navigation item styling (for Glance) */
+/* Navigation item styling (for Glance and Today) */
 .sidebar-nav-item {
   border-bottom: 1px solid var(--border-subtle);
   padding: 10px 14px !important;
+}
+
+.sidebar-nav-item .sidebar-item-icon {
+  color: var(--text-tertiary);
 }
 
 .sidebar-item {
