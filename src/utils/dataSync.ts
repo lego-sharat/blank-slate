@@ -1,12 +1,51 @@
-import { calendarToken } from '@/store/store';
+import { calendarToken, todos, notes, STORAGE_KEYS, saveTodos, saveNotes } from '@/store/store';
 import { fetchTodayEvents } from '@/utils/calendarActions';
 
 /**
- * Sync all data from external sources
- * This is the central place for fetching data from APIs, databases, etc.
+ * Load tasks from localStorage
+ */
+export function loadTasks() {
+  try {
+    const storedTodos = localStorage.getItem(STORAGE_KEYS.TODOS);
+    if (storedTodos) {
+      todos.value = JSON.parse(storedTodos);
+      console.log('Loaded', todos.value.length, 'tasks from localStorage');
+    }
+  } catch (error) {
+    console.error('Error loading tasks:', error);
+  }
+}
+
+/**
+ * Load notes from localStorage
+ */
+export function loadNotes() {
+  try {
+    const storedNotes = localStorage.getItem(STORAGE_KEYS.NOTES);
+    if (storedNotes) {
+      const parsed = JSON.parse(storedNotes);
+      // Migrate old notes to include status field
+      notes.value = parsed.map((note: any) => ({
+        ...note,
+        status: note.status || 'draft',
+      }));
+      console.log('Loaded', notes.value.length, 'notes from localStorage');
+    }
+  } catch (error) {
+    console.error('Error loading notes:', error);
+  }
+}
+
+/**
+ * Sync all data from external sources and localStorage
+ * This is the central place for loading all application data
  */
 export async function syncAllData() {
   console.log('Syncing all data...');
+
+  // Load local data synchronously
+  loadTasks();
+  loadNotes();
 
   const syncPromises: Promise<any>[] = [];
 

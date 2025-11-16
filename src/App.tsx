@@ -10,11 +10,15 @@ import ProfileView from '@/components/Profile/ProfileView';
 import SettingsView from '@/components/Settings/SettingsView';
 import StatusBar from '@/components/shared/StatusBar';
 import { initAuth } from '@/utils/auth';
+import { syncAllData } from '@/utils/dataSync';
 
 export function App() {
   useEffect(() => {
-    // Load data from localStorage on mount
+    // Load configuration and cached data from localStorage
     loadFromStorage();
+
+    // Load all application data (tasks, notes, calendar, etc.)
+    syncAllData();
 
     // Initialize authentication
     initAuth();

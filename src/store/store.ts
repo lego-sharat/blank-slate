@@ -97,22 +97,10 @@ export const nextEvent = computed(() => {
   return upcoming[0] || null;
 });
 
-// Load data from localStorage
+// Load configuration and cached data from localStorage
+// Note: Tasks and notes are loaded via dataSync.syncAllData()
 export const loadFromStorage = () => {
   try {
-    const storedTodos = localStorage.getItem(STORAGE_KEYS.TODOS);
-    if (storedTodos) todos.value = JSON.parse(storedTodos);
-
-    const storedNotes = localStorage.getItem(STORAGE_KEYS.NOTES);
-    if (storedNotes) {
-      const parsed = JSON.parse(storedNotes);
-      // Migrate old notes to include status field
-      notes.value = parsed.map((note: any) => ({
-        ...note,
-        status: note.status || 'draft',
-      }));
-    }
-
     const storedReadingList = localStorage.getItem(STORAGE_KEYS.READING_LIST);
     if (storedReadingList) readingList.value = JSON.parse(storedReadingList);
 
