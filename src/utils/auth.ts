@@ -94,6 +94,22 @@ export async function signIn() {
       throw new Error('Failed to open popup window');
     }
 
+    // Helper to safely close popup (COOP may block access to popup.closed)
+    const safeClosePopup = () => {
+      try {
+        if (popup && !popup.closed) {
+          popup.close();
+        }
+      } catch (e) {
+        // COOP may block access to popup.closed, just try to close it
+        try {
+          popup?.close();
+        } catch (closeError) {
+          // Popup already closed or can't be closed
+        }
+      }
+    };
+
     // Wait for the callback
     return new Promise((resolve, reject) => {
       // Listen for storage changes from the auth callback
@@ -107,9 +123,7 @@ export async function signIn() {
             await chrome.storage.local.remove('supabase_auth_callback');
 
             // Close popup if still open
-            if (popup && !popup.closed) {
-              popup.close();
-            }
+            safeClosePopup();
 
             // Refresh auth state
             const user = await getCurrentUser();
@@ -138,9 +152,7 @@ export async function signIn() {
       // Timeout after 2 minutes
       setTimeout(() => {
         clearInterval(checkAuth);
-        if (popup && !popup.closed) {
-          popup.close();
-        }
+        safeClosePopup();
         reject(new Error('Authentication timeout'));
       }, 120000);
     });
