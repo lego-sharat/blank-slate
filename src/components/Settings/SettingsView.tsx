@@ -1,24 +1,17 @@
 import { currentView, settings } from '@/store/store';
 import { useState, useEffect } from 'preact/hooks';
+import type { Settings } from '@/types';
 
 export default function SettingsView() {
   const handleBack = () => {
     currentView.value = 'glance';
   };
 
-  // Get current values from localStorage
-  const [supabaseUrl, setSupabaseUrl] = useState(
-    localStorage.getItem('supabase_url') || ''
-  );
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(
-    localStorage.getItem('supabase_anon_key') || ''
-  );
-  const [linearApiKey, setLinearApiKey] = useState(
-    localStorage.getItem('linear_api_key') || ''
-  );
-  const [githubToken, setGithubToken] = useState(
-    localStorage.getItem('github_token') || ''
-  );
+  // State for settings
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [linearApiKey, setLinearApiKey] = useState('');
+  const [githubToken, setGithubToken] = useState('');
 
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
@@ -27,21 +20,43 @@ export default function SettingsView() {
     // Get the Chrome extension redirect URL
     const url = chrome.runtime.getURL('auth-callback.html');
     setRedirectUrl(url);
+
+    // Load settings from chrome.storage (background script uses this)
+    chrome.storage.local.get('settings', (result) => {
+      const storedSettings = result.settings as Partial<Settings> | undefined;
+      if (storedSettings) {
+        setSupabaseUrl(storedSettings.supabaseUrl || '');
+        setSupabaseAnonKey(storedSettings.supabaseKey || '');
+        setLinearApiKey(storedSettings.linearApiKey || '');
+        setGithubToken(storedSettings.githubToken || '');
+      } else {
+        // Fallback to localStorage for backwards compatibility
+        setSupabaseUrl(localStorage.getItem('supabase_url') || '');
+        setSupabaseAnonKey(localStorage.getItem('supabase_anon_key') || '');
+        setLinearApiKey(localStorage.getItem('linear_api_key') || '');
+        setGithubToken(localStorage.getItem('github_token') || '');
+      }
+    });
   }, []);
 
-  const handleSave = () => {
-    // Save to localStorage
+  const handleSave = async () => {
+    // Save to localStorage for backwards compatibility
     localStorage.setItem('supabase_url', supabaseUrl);
     localStorage.setItem('supabase_anon_key', supabaseAnonKey);
     localStorage.setItem('linear_api_key', linearApiKey);
     localStorage.setItem('github_token', githubToken);
 
-    // Update settings signal
+    // Update settings signal AND save to chrome.storage
     settings.value = {
       ...settings.value,
+      supabaseUrl: supabaseUrl,
+      supabaseKey: supabaseAnonKey,
       linearApiKey: linearApiKey,
       githubToken: githubToken,
     };
+
+    // Save settings to chrome.storage (used by background script)
+    await chrome.storage.local.set({ settings: settings.value });
 
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
