@@ -51,10 +51,11 @@ const CREATED_BY_ME_QUERY = `
 
 /**
  * GraphQL query for fetching PRs assigned to the current user for review
+ * Note: The search query is built dynamically with the username
  */
-const REVIEW_REQUESTED_QUERY = `
-  query ReviewRequested($username: String!) {
-    search(query: "is:pr is:open review-requested:$username", type: ISSUE, first: 10) {
+const buildReviewRequestedQuery = (username: string) => `
+  query ReviewRequested {
+    search(query: "is:pr is:open review-requested:${username}", type: ISSUE, first: 10) {
       nodes {
         ... on PullRequest {
           id
@@ -184,8 +185,8 @@ export async function fetchReviewRequested(token: string): Promise<GitHubPR[]> {
     const userData = await fetchGitHubGraphQL(userQuery, {}, token) as { viewer: { login: string } };
     const username = userData.viewer.login;
 
-    // Then fetch PRs with review requested
-    const data = await fetchGitHubGraphQL(REVIEW_REQUESTED_QUERY, { username }, token) as {
+    // Then fetch PRs with review requested using dynamically built query
+    const data = await fetchGitHubGraphQL(buildReviewRequestedQuery(username), {}, token) as {
       search: {
         nodes: Array<{
           id: string;
