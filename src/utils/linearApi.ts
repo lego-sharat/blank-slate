@@ -130,7 +130,7 @@ const ASSIGNED_TO_ME_QUERY = `
         filter: {
           state: { type: { nin: ["completed", "canceled"] } }
         }
-        orderBy: updatedAt
+        orderBy: createdAt
         first: 50
       ) {
         nodes {
@@ -206,7 +206,7 @@ const CREATED_BY_ME_QUERY = `
         filter: {
           state: { type: { nin: ["completed", "canceled"] } }
         }
-        orderBy: updatedAt
+        orderBy: createdAt
         first: 50
       ) {
         nodes {
@@ -281,7 +281,7 @@ const MENTIONING_ME_QUERY = `
         subscribers: { id: { eq: $userId } }
         state: { type: { nin: ["completed", "canceled"] } }
       }
-      orderBy: updatedAt
+      orderBy: createdAt
       first: 50
     ) {
       nodes {

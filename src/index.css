@@ -3988,7 +3988,7 @@ body.light-theme {
 .linear-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 24px;
 }
 
@@ -3999,9 +3999,37 @@ body.light-theme {
   letter-spacing: -0.5px;
 }
 
+.linear-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .linear-stats {
   font-size: 15px;
   color: var(--text-secondary);
+}
+
+.linear-view-all-btn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.linear-view-all-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 /* Linear Filters - Match Tasks styling */
@@ -4060,16 +4088,62 @@ body.light-theme {
 }
 
 .linear-issue-status {
-  color: var(--text-secondary);
   font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: capitalize;
+}
+
+/* Tomorrow Night themed status colors */
+.linear-issue-status.status-in-progress {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.linear-issue-status.status-backlog {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.linear-issue-status.status-todo {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.linear-issue-status.status-default {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .linear-issue-priority {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* Tomorrow Night themed priority colors */
+.linear-issue-priority.priority-urgent {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+.linear-issue-priority.priority-high {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.linear-issue-priority.priority-medium {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.linear-issue-priority.priority-low {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
 }
 
 .linear-issue-updated {

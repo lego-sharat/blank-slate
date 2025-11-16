@@ -53,6 +53,18 @@ export default function LinearView() {
     }
   };
 
+  const handleViewAll = () => {
+    const filteredIssues = getFilteredIssues();
+    if (filteredIssues.length > 0) {
+      // Get team key from first issue
+      const teamKey = filteredIssues[0].team.key;
+      window.open(`https://linear.app/${teamKey}/active`, '_blank');
+    } else {
+      // Fallback to general issues page
+      window.open('https://linear.app/issues', '_blank');
+    }
+  };
+
   const formatRelativeTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -72,6 +84,29 @@ export default function LinearView() {
   const truncateComment = (text: string, maxLength: number = 100): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
+  };
+
+  const getStatusColorClass = (stateType: string): string => {
+    switch (stateType) {
+      case 'started':
+        return 'status-in-progress';
+      case 'backlog':
+        return 'status-backlog';
+      case 'unstarted':
+        return 'status-todo';
+      default:
+        return 'status-default';
+    }
+  };
+
+  const getPriorityColorClass = (priority: number): string => {
+    switch (priority) {
+      case 1: return 'priority-urgent';
+      case 2: return 'priority-high';
+      case 3: return 'priority-medium';
+      case 4: return 'priority-low';
+      default: return 'priority-none';
+    }
   };
 
   if (!hasApiKey) {
@@ -126,8 +161,18 @@ export default function LinearView() {
     <div class="linear-view">
       <div class="linear-header">
         <h1 class="linear-title">Linear</h1>
-        <div class="linear-stats">
-          {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+        <div class="linear-header-actions">
+          <div class="linear-stats">
+            {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+          </div>
+          <button class="linear-view-all-btn" onClick={handleViewAll}>
+            View All
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -169,15 +214,17 @@ export default function LinearView() {
               <div class="linear-issue-header">
                 <div class="linear-issue-meta-row">
                   <span class="linear-issue-id">{issue.identifier}</span>
-                  <span class="linear-issue-status">{issue.state.name}</span>
+                  <span class={`linear-issue-status ${getStatusColorClass(issue.state.type)}`}>
+                    {issue.state.name}
+                  </span>
                   {issue.priority > 0 && (
-                    <span class="linear-issue-priority">
+                    <span class={`linear-issue-priority ${getPriorityColorClass(issue.priority)}`}>
                       {getPriorityLabel(issue.priority)}
                     </span>
                   )}
                 </div>
                 <span class="linear-issue-updated">
-                  {formatRelativeTime(issue.updatedAt)}
+                  {formatRelativeTime(issue.createdAt)}
                 </span>
               </div>
 
@@ -200,9 +247,6 @@ export default function LinearView() {
                     {issue.project.name}
                   </span>
                 )}
-                <span class="linear-issue-team">
-                  {issue.team.name}
-                </span>
                 {issue.assignee && filter !== 'assigned' && (
                   <span class="linear-issue-assignee">
                     {issue.assignee.name}
