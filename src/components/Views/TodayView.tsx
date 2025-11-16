@@ -163,9 +163,9 @@ export default function TodayView() {
       case 'teams':
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15.5 5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2.5"/>
-            <path d="M23 12l-5-3v6z"/>
-            <rect x="2" y="5" width="12" height="14" rx="2"/>
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
         );
       case 'pdf':
