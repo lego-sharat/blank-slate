@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
-import { isAuthenticated, calendarToken, calendarEvents, saveCalendarEvents } from '@/store/store';
+import { isAuthenticated, calendarToken, calendarEvents } from '@/store/store';
 import { signIn } from '@/utils/auth';
+import { fetchTodayEvents } from '@/utils/calendarActions';
 
 interface CalendarEvent {
   id: string;
@@ -34,50 +35,24 @@ interface LinkInfo {
 }
 
 export default function TodayView() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const events = calendarEvents.value;
 
   useEffect(() => {
-    if (isAuthenticated.value && calendarToken.value) {
-      fetchTodayEvents();
+    if (isAuthenticated.value && calendarToken.value && events.length === 0) {
+      handleFetchEvents();
     }
   }, [isAuthenticated.value, calendarToken.value]);
 
-  const fetchTodayEvents = async () => {
+  const handleFetchEvents = async () => {
     if (!calendarToken.value) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-        `timeMin=${startOfDay.toISOString()}&` +
-        `timeMax=${endOfDay.toISOString()}&` +
-        `singleEvents=true&` +
-        `orderBy=startTime&` +
-        `maxResults=50`,
-        {
-          headers: {
-            Authorization: `Bearer ${calendarToken.value}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch calendar events');
-      }
-
-      const data = await response.json();
-      const eventsList = data.items || [];
-      setEvents(eventsList);
-      calendarEvents.value = eventsList;
-      saveCalendarEvents();
+      await fetchTodayEvents(calendarToken.value);
     } catch (err) {
       console.error('Error fetching calendar events:', err);
       setError('Failed to load calendar events');
@@ -265,7 +240,7 @@ export default function TodayView() {
         </div>
         <div class="today-empty">
           <p>{error}</p>
-          <button class="today-refresh-btn" onClick={fetchTodayEvents}>
+          <button class="today-refresh-btn" onClick={handleFetchEvents}>
             Try again
           </button>
         </div>

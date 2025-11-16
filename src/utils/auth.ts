@@ -1,4 +1,5 @@
 import { currentUser, isAuthenticated, calendarToken, saveCalendarToken } from '@/store/store';
+import { fetchTodayEvents } from '@/utils/calendarActions';
 // @ts-ignore
 import { initSupabase, signInWithGoogle, signOut as supabaseSignOut, getCurrentUser, getGoogleAccessToken, handleOAuthCallback } from '@/supabase';
 
@@ -37,6 +38,8 @@ export async function initAuth() {
       if (token) {
         calendarToken.value = token;
         saveCalendarToken();
+        // Fetch today's events
+        await fetchTodayEvents(token);
       }
     }
   } catch (error) {
@@ -56,6 +59,8 @@ export async function initAuth() {
       if (token) {
         calendarToken.value = token;
         saveCalendarToken();
+        // Fetch today's events
+        await fetchTodayEvents(token);
       }
     } else {
       currentUser.value = null;
@@ -142,6 +147,8 @@ export async function signIn() {
               if (token) {
                 calendarToken.value = token;
                 saveCalendarToken();
+                // Fetch today's events
+                await fetchTodayEvents(token);
               }
 
               resolve(user);
