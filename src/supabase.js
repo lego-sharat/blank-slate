@@ -106,6 +106,62 @@ export async function signInWithGoogle() {
 }
 
 /**
+ * Process OAuth callback and establish session
+ * @param {string} callbackUrl - The full callback URL with hash fragment
+ */
+export async function handleOAuthCallback(callbackUrl) {
+  if (!supabaseClient) {
+    throw new Error('Supabase client not initialized');
+  }
+
+  console.log('Processing OAuth callback...');
+
+  // Parse the hash fragment to extract tokens
+  const url = new URL(callbackUrl);
+  const hash = url.hash.substring(1); // Remove the # symbol
+  const params = new URLSearchParams(hash);
+
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  const provider_token = params.get('provider_token');
+  const provider_refresh_token = params.get('provider_refresh_token');
+
+  if (!access_token || !refresh_token) {
+    throw new Error('Missing tokens in callback URL');
+  }
+
+  console.log('Setting session with tokens from callback');
+
+  // Set the session using the tokens from the callback
+  const { data, error } = await supabaseClient.auth.setSession({
+    access_token,
+    refresh_token
+  });
+
+  if (error) {
+    console.error('Error setting session:', error);
+    throw error;
+  }
+
+  console.log('Session established successfully');
+
+  // Store the provider tokens separately for Calendar API access
+  if (provider_token) {
+    console.log('Storing Google provider token');
+    await chrome.storage.local.set({
+      google_provider_token: {
+        token: provider_token,
+        refresh_token: provider_refresh_token || refresh_token,
+        expires_in: 3600,
+        timestamp: Date.now()
+      }
+    });
+  }
+
+  return data;
+}
+
+/**
  * Sign out the current user
  */
 export async function signOut() {

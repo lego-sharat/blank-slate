@@ -1,6 +1,6 @@
 import { currentUser, isAuthenticated, calendarToken, saveCalendarToken } from '@/store/store';
 // @ts-ignore
-import { initSupabase, signInWithGoogle, signOut as supabaseSignOut, getCurrentUser, getGoogleAccessToken } from '@/supabase';
+import { initSupabase, signInWithGoogle, signOut as supabaseSignOut, getCurrentUser, getGoogleAccessToken, handleOAuthCallback } from '@/supabase';
 
 // Default Supabase credentials (user can change in settings)
 const DEFAULT_SUPABASE_URL = 'https://your-project.supabase.co';
@@ -119,13 +119,19 @@ export async function signIn() {
           if (result.supabase_auth_callback) {
             clearInterval(checkAuth);
 
+            const callbackData = result.supabase_auth_callback;
+
             // Clear the callback data
             await chrome.storage.local.remove('supabase_auth_callback');
 
             // Close popup if still open
             safeClosePopup();
 
-            // Refresh auth state
+            // Process the OAuth callback to establish session
+            console.log('Processing OAuth callback...');
+            await handleOAuthCallback(callbackData.callback_url);
+
+            // Get the user after session is established
             const user = await getCurrentUser();
             if (user) {
               currentUser.value = user;
