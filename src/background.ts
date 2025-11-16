@@ -14,7 +14,7 @@ import {
   getGitHubPRs,
   getCalendarEvents,
 } from './utils/storageManager';
-import { initSupabase } from './utils/supabaseClient';
+import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';
@@ -42,11 +42,17 @@ async function initializeSupabase() {
   try {
     const settings = await getSettings();
     if (settings.supabaseUrl && settings.supabaseKey) {
-      initSupabase(settings.supabaseUrl, settings.supabaseKey);
-      console.log('Supabase initialized in background');
+      const client = initSupabase(settings.supabaseUrl, settings.supabaseKey);
+      if (client) {
+        console.log('✓ Supabase initialized in background');
+      } else {
+        console.error('✗ Supabase initialization failed - client is null');
+      }
+    } else {
+      console.log('ℹ Supabase not configured (no URL or key in settings)');
     }
   } catch (error) {
-    console.error('Failed to initialize Supabase:', error);
+    console.error('✗ Failed to initialize Supabase:', error);
   }
 }
 
@@ -144,7 +150,14 @@ async function syncToSupabase() {
   try {
     const settings = await getSettings();
     if (!settings.supabaseUrl || !settings.supabaseKey) {
-      console.log('Supabase not configured, skipping sync');
+      console.log('Supabase not configured, skipping sync (no URL or key in settings)');
+      return;
+    }
+
+    // Verify client is initialized
+    const client = getSupabaseClient();
+    if (!client) {
+      console.warn('Supabase client not initialized despite having settings - this is unexpected');
       return;
     }
 
@@ -155,6 +168,7 @@ async function syncToSupabase() {
       getHistory(),
     ]);
 
+    console.log(`Syncing ${todos.length} todos, ${thoughts.length} thoughts, ${history.length} history items`);
     await syncAllToSupabase(todos, thoughts, history);
     console.log('Supabase sync complete');
   } catch (error) {

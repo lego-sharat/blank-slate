@@ -7,7 +7,7 @@ import type { Todo, Thought, HistoryItem } from '@/types';
 export async function syncTodosToSupabase(todos: Todo[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    console.warn('Supabase not configured, skipping todos sync');
+    console.warn('⚠ Supabase client not initialized, skipping todos sync');
     return;
   }
 
@@ -18,9 +18,9 @@ export async function syncTodosToSupabase(todos: Todo[]): Promise<void> {
       .upsert(todos, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('Synced', todos.length, 'todos to Supabase');
+    console.log(`✓ Synced ${todos.length} todos to Supabase`);
   } catch (error) {
-    console.error('Failed to sync todos to Supabase:', error);
+    console.error('✗ Failed to sync todos to Supabase:', error);
     throw error;
   }
 }
@@ -56,7 +56,7 @@ export async function fetchTodosFromSupabase(): Promise<Todo[]> {
 export async function syncThoughtsToSupabase(thoughts: Thought[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    console.warn('Supabase not configured, skipping thoughts sync');
+    console.warn('⚠ Supabase client not initialized, skipping thoughts sync');
     return;
   }
 
@@ -66,9 +66,9 @@ export async function syncThoughtsToSupabase(thoughts: Thought[]): Promise<void>
       .upsert(thoughts, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('Synced', thoughts.length, 'thoughts to Supabase');
+    console.log(`✓ Synced ${thoughts.length} thoughts to Supabase`);
   } catch (error) {
-    console.error('Failed to sync thoughts to Supabase:', error);
+    console.error('✗ Failed to sync thoughts to Supabase:', error);
     throw error;
   }
 }
@@ -104,7 +104,7 @@ export async function fetchThoughtsFromSupabase(): Promise<Thought[]> {
 export async function syncHistoryToSupabase(history: HistoryItem[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    console.warn('Supabase not configured, skipping history sync');
+    console.warn('⚠ Supabase client not initialized, skipping history sync');
     return;
   }
 
@@ -114,9 +114,9 @@ export async function syncHistoryToSupabase(history: HistoryItem[]): Promise<voi
       .upsert(history, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('Synced', history.length, 'history items to Supabase');
+    console.log(`✓ Synced ${history.length} history items to Supabase`);
   } catch (error) {
-    console.error('Failed to sync history to Supabase:', error);
+    console.error('✗ Failed to sync history to Supabase:', error);
     throw error;
   }
 }
@@ -157,13 +157,18 @@ export async function syncAllToSupabase(
 ): Promise<void> {
   console.log('Starting full Supabase sync...');
 
-  await Promise.all([
-    syncTodosToSupabase(todos),
-    syncThoughtsToSupabase(thoughts),
-    syncHistoryToSupabase(history),
-  ]);
+  try {
+    await Promise.all([
+      syncTodosToSupabase(todos),
+      syncThoughtsToSupabase(thoughts),
+      syncHistoryToSupabase(history),
+    ]);
 
-  console.log('Full Supabase sync complete');
+    console.log('✓ Full Supabase sync complete');
+  } catch (error) {
+    console.error('✗ Full Supabase sync failed:', error);
+    throw error;
+  }
 }
 
 /**
