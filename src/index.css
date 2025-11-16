@@ -2270,11 +2270,23 @@ body.light-theme {
 
 .note-editor-toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.note-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-actions-divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-subtle);
 }
 
 /* Toggle Switch for Draft/Ready */

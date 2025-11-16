@@ -111,19 +111,20 @@ export default function NoteEditor() {
   return (
     <div class="note-editor">
       <div class="note-editor-toolbar">
-        <div class="note-status-toggle">
-          <span class="status-label">Draft</span>
-          <label class="toggle-switch">
-            <input
-              type="checkbox"
-              checked={note.status === 'ready'}
-              onChange={toggleStatus}
-            />
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="status-label">Ready</span>
-        </div>
-        <div class="note-actions">
+        <div class="note-actions-group">
+          <div class="note-status-toggle">
+            <span class="status-label">Draft</span>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                checked={note.status === 'ready'}
+                onChange={toggleStatus}
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="status-label">Ready</span>
+          </div>
+          <div class="note-actions-divider"></div>
           <button
             class={`icon-btn-small ${isPreviewMode.value ? 'active' : ''}`}
             onClick={togglePreview}
