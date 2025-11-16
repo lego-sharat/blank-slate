@@ -29,6 +29,10 @@ export default function Sidebar() {
     currentView.value = 'glance';
   };
 
+  const navigateToTasks = () => {
+    currentView.value = 'tasks';
+  };
+
   const handleAddNote = () => {
     createNote();
   };
@@ -125,6 +129,9 @@ export default function Sidebar() {
               {todos.value.filter(t => !t.completed).length === 0 && (
                 <div class="sidebar-item-empty">All done!</div>
               )}
+              <button class="sidebar-add-item" onClick={navigateToTasks}>
+                View all tasks
+              </button>
             </SidebarSection>
 
             {/* Notes Section */}

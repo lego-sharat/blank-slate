@@ -3,6 +3,7 @@ import { currentView, loadFromStorage, settings } from '@/store/store';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import GlanceView from '@/components/Glance/GlanceView';
 import NoteEditor from '@/components/Notes/NoteEditor';
+import TasksView from '@/components/Tasks/TasksView';
 import StatusBar from '@/components/shared/StatusBar';
 
 export function App() {
@@ -78,6 +79,7 @@ export function App() {
         <div class="content-container">
           {currentView.value === 'glance' && <GlanceView />}
           {currentView.value === 'note' && <NoteEditor />}
+          {currentView.value === 'tasks' && <TasksView />}
         </div>
 
         <StatusBar />
