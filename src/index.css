@@ -3569,3 +3569,43 @@ body.light-theme {
   color: var(--text-tertiary);
   margin: 0;
 }
+
+.settings-url-display {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-url-display .settings-input {
+  flex: 1;
+}
+
+.settings-copy-btn {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-copy-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.settings-instructions-sub {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin-top: 6px;
+}
+
+.settings-instructions-sub li {
+  margin-bottom: 4px;
+}

@@ -1,5 +1,5 @@
 import { currentView } from '@/store/store';
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 
 export default function SettingsView() {
   const handleBack = () => {
@@ -15,6 +15,13 @@ export default function SettingsView() {
   );
 
   const [isSaved, setIsSaved] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState('');
+
+  useEffect(() => {
+    // Get the Chrome extension redirect URL
+    const url = chrome.runtime.getURL('auth-callback.html');
+    setRedirectUrl(url);
+  }, []);
 
   const handleSave = () => {
     // Save to localStorage
@@ -26,6 +33,11 @@ export default function SettingsView() {
 
     // Show message
     alert('Settings saved! Please refresh the page for changes to take effect.');
+  };
+
+  const handleCopyRedirectUrl = () => {
+    navigator.clipboard.writeText(redirectUrl);
+    alert('Redirect URL copied to clipboard!');
   };
 
   return (
@@ -91,6 +103,42 @@ export default function SettingsView() {
           </div>
         </div>
 
+        {/* Redirect URL */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Extension Redirect URL</h3>
+          <div class="settings-section-description">
+            Copy this URL and add it to your Supabase and Google OAuth configuration.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label">
+                Chrome Extension Redirect URL
+              </label>
+              <div class="settings-url-display">
+                <input
+                  type="text"
+                  class="settings-input"
+                  value={redirectUrl}
+                  readOnly
+                />
+                <button
+                  class="settings-copy-btn"
+                  onClick={handleCopyRedirectUrl}
+                  title="Copy to clipboard"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="settings-hint">
+                This URL must be added to both Supabase and Google Cloud Console
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Instructions */}
         <div class="settings-section">
           <h3 class="settings-section-title">Setup Instructions</h3>
@@ -102,10 +150,25 @@ export default function SettingsView() {
                   supabase.com
                 </a>
               </li>
-              <li>Enable Google OAuth provider in Authentication → Providers</li>
-              <li>Add calendar scope: <code>https://www.googleapis.com/auth/calendar.readonly</code></li>
-              <li>Copy your project URL and anon key from Settings → API</li>
-              <li>Paste the credentials above and save</li>
+              <li>
+                Go to Authentication → Providers → Google
+              </li>
+              <li>
+                Enable Google provider and configure:
+                <ul class="settings-instructions-sub">
+                  <li>Add the redirect URL above to "Redirect URLs"</li>
+                  <li>Add scope: <code>https://www.googleapis.com/auth/calendar.readonly</code></li>
+                </ul>
+              </li>
+              <li>
+                In Google Cloud Console OAuth consent screen:
+                <ul class="settings-instructions-sub">
+                  <li>Add the redirect URL above to "Authorized redirect URIs"</li>
+                  <li>Add calendar scope to your OAuth app</li>
+                </ul>
+              </li>
+              <li>Copy your Supabase project URL and anon key from Settings → API</li>
+              <li>Paste the credentials in the fields above and save</li>
               <li>Refresh the page and sign in with Google</li>
             </ol>
           </div>
