@@ -5,6 +5,7 @@ import {
   setThoughts as saveToStorage_Notes,
   setSettings as saveToStorage_Settings,
   setCalendarToken as saveToStorage_CalendarToken,
+  getSettings,
 } from '@/utils/storageManager';
 
 // Storage keys (kept for backwards compatibility)
@@ -169,7 +170,6 @@ export const loadFromStorage = async () => {
     if (storedReadingList) readingList.value = JSON.parse(storedReadingList);
 
     // Load settings from chrome.storage
-    const { getSettings } = await import('@/utils/storageManager');
     const storedSettings = await getSettings();
     if (storedSettings) {
       settings.value = { ...settings.value, ...storedSettings };

@@ -1,4 +1,5 @@
 import { calendarToken, todos, thoughts, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
+import { getCalendarToken } from '@/utils/storageManager';
 
 /**
  * Data sync utility - ALL data comes from background script
@@ -159,7 +160,6 @@ export async function loadGitHubPRs() {
 export async function loadCalendarToken() {
   // Calendar token is still in chrome.storage
   // This is OK since it's just a token, not fetched data
-  const { getCalendarToken } = await import('@/utils/storageManager');
   const token = await getCalendarToken();
   calendarToken.value = token;
 }
