@@ -2174,8 +2174,12 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   background: var(--hover-bg);
 }
 
-.sidebar-section-simple .sidebar-section-title {
-  margin-left: 18px; /* Align with collapsible sections (chevron 12px + gap 6px) */
+.sidebar-section-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Navigation item styling (for Glance) */
