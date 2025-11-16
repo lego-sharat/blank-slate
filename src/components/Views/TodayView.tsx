@@ -52,8 +52,9 @@ export default function TodayView() {
 
     try {
       const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      // TODO: Temporarily fetching tomorrow's events for testing - change back to today
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
