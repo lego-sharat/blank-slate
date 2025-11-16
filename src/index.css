@@ -1191,7 +1191,7 @@ body.handwriting-font #todoInput {
   background-color: transparent;
   color: var(--text-primary); /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.8;
   resize: none;
   outline: none;
@@ -1218,7 +1218,7 @@ body.handwriting-font #todoInput {
   background-color: transparent;
   color: var(--text-primary); /* Tomorrow Night theme text color */
   font-family: 'Courier New', Courier, monospace;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.8;
   overflow-y: auto; /* Internal scrolling for preview */
   box-sizing: border-box;
@@ -1974,7 +1974,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .glance-item-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -1982,7 +1982,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .glance-item-timing {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
   font-weight: 400;
 }
@@ -2016,12 +2016,12 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .glance-todo-text {
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text-primary);
 }
 
 .glance-status-badge {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 4px;
@@ -2035,7 +2035,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .glance-item-preview {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-secondary);
   margin-bottom: 12px;
   line-height: 1.5;
@@ -2123,7 +2123,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-section-title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -2132,7 +2132,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-section-count {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-tertiary);
   background: var(--bg-light);
   padding: 2px 6px;
@@ -2209,7 +2209,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-item-label {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-primary);
   flex: 1;
   white-space: nowrap;
@@ -2226,7 +2226,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-item-badge {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 3px;
@@ -2241,7 +2241,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 .sidebar-item-empty {
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-tertiary);
   font-style: italic;
 }
@@ -2249,7 +2249,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-add-item {
   margin-top: 6px;
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   background: transparent;
   border: none;
@@ -2625,7 +2625,7 @@ body.light-theme {
 }
 
 .tasks-stats {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
 }
 
@@ -2652,7 +2652,7 @@ body.light-theme {
   border: none;
   outline: none;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   padding: 0;
 }
@@ -2693,7 +2693,7 @@ body.light-theme {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   padding: 6px 12px;
@@ -2723,7 +2723,7 @@ body.light-theme {
   text-align: center;
   padding: 48px 24px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* Task Item */
@@ -2796,7 +2796,7 @@ body.light-theme {
 .task-text {
   flex: 1;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   cursor: pointer;
   user-select: none;
@@ -2815,7 +2815,7 @@ body.light-theme {
   border-radius: 4px;
   padding: 6px 8px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
 }
