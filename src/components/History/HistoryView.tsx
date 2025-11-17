@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'preact/hooks';
-import { useComputed } from '@preact/signals';
+import { useState, useEffect, useMemo } from 'preact/hooks';
 import type { HistoryItem, HistoryItemType } from '@/types';
 import { history } from '@/store/store';
 
@@ -8,8 +7,8 @@ export default function HistoryView() {
   const [activeFilter, setActiveFilter] = useState<'all' | HistoryItemType>('all');
   const [openTabs, setOpenTabs] = useState<Map<string, number>>(new Map());
 
-  // Computed filtered items based on activeFilter
-  const filteredItems = useComputed(() => {
+  // Filtered items based on activeFilter
+  const filteredItems = useMemo(() => {
     const allItems = history.value;
 
     if (activeFilter === 'all') {
@@ -19,10 +18,10 @@ export default function HistoryView() {
         .filter(item => item.type === activeFilter)
         .slice(0, 10);
     }
-  });
+  }, [history.value, activeFilter]);
 
-  // Computed search results
-  const searchResults = useComputed(() => {
+  // Search results
+  const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
       return [];
     }
@@ -32,7 +31,7 @@ export default function HistoryView() {
       item.title.toLowerCase().includes(lowerQuery) ||
       item.url.toLowerCase().includes(lowerQuery)
     ).slice(0, 50);
-  });
+  }, [history.value, searchQuery]);
 
   // Check open tabs on mount and periodically
   useEffect(() => {
@@ -121,16 +120,14 @@ export default function HistoryView() {
     }
   };
 
-  const renderHistoryItems = (items: HistoryItem[] | { value: HistoryItem[] }, showBadges: boolean) => {
-    const itemsArray = Array.isArray(items) ? items : items.value;
-
-    if (itemsArray.length === 0) {
+  const renderHistoryItems = (items: HistoryItem[], showBadges: boolean) => {
+    if (items.length === 0) {
       return <div class="history-empty-state">No history items found</div>;
     }
 
     return (
       <div class="history-items-list">
-        {itemsArray.map(item => {
+        {items.map(item => {
           const isOpen = openTabs.has(item.url);
 
           return (
@@ -246,7 +243,7 @@ export default function HistoryView() {
           <div class="history-section">
             <div class="history-section-header">
               <h3 class="history-section-title">Search Results</h3>
-              <span class="history-section-count">{searchResults.value.length}</span>
+              <span class="history-section-count">{searchResults.length}</span>
             </div>
 
             {renderHistoryItems(searchResults, true)}
@@ -261,7 +258,7 @@ export default function HistoryView() {
             {activeFilter !== 'all' && (
               <div class="history-section-header">
                 <h3 class="history-section-title">{getTypeLabel(activeFilter)}</h3>
-                <span class="history-section-count">{filteredItems.value.length}</span>
+                <span class="history-section-count">{filteredItems.length}</span>
               </div>
             )}
 
