@@ -1,50 +1,46 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useMemo } from 'preact/hooks';
 import type { HistoryItem, HistoryItemType } from '@/types';
-import { getAllHistory, getHistoryByType, searchHistory } from '@/utils/historyTracker';
+import { history } from '@/store/store';
 
 export default function HistoryView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | HistoryItemType>('all');
-  const [filteredItems, setFilteredItems] = useState<HistoryItem[]>([]);
-  const [searchResults, setSearchResults] = useState<HistoryItem[]>([]);
   const [openTabs, setOpenTabs] = useState<Map<string, number>>(new Map());
 
-  // Load history data and check open tabs
+  // Filtered items based on activeFilter
+  const filteredItems = useMemo(() => {
+    const allItems = history.value;
+
+    if (activeFilter === 'all') {
+      return allItems.slice(0, 50);
+    } else {
+      return allItems
+        .filter(item => item.type === activeFilter)
+        .slice(0, 10);
+    }
+  }, [history, activeFilter]);
+
+  // Search results
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return [];
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+    return history.value.filter(item =>
+      item.title.toLowerCase().includes(lowerQuery) ||
+      item.url.toLowerCase().includes(lowerQuery)
+    ).slice(0, 50);
+  }, [history, searchQuery]);
+
+  // Check open tabs on mount and periodically
   useEffect(() => {
-    loadHistory();
     checkOpenTabs();
 
     // Refresh open tabs periodically
     const interval = setInterval(checkOpenTabs, 2000);
     return () => clearInterval(interval);
   }, []);
-
-  // Update filtered items when filter changes
-  useEffect(() => {
-    if (activeFilter === 'all') {
-      loadAllHistory();
-    } else {
-      loadFilteredHistory(activeFilter);
-    }
-  }, [activeFilter]);
-
-  const loadHistory = async () => {
-    if (activeFilter === 'all') {
-      await loadAllHistory();
-    } else {
-      await loadFilteredHistory(activeFilter);
-    }
-  };
-
-  const loadAllHistory = async () => {
-    const items = await getAllHistory(50);
-    setFilteredItems(items);
-  };
-
-  const loadFilteredHistory = async (type: HistoryItemType) => {
-    const items = await getHistoryByType(type, 10);
-    setFilteredItems(items);
-  };
 
   const checkOpenTabs = async () => {
     try {
@@ -62,20 +58,6 @@ export default function HistoryView() {
       console.error('Error checking open tabs:', e);
     }
   };
-
-  // Handle search
-  useEffect(() => {
-    const performSearch = async () => {
-      if (searchQuery.trim()) {
-        const results = await searchHistory(searchQuery);
-        setSearchResults(results);
-      } else {
-        setSearchResults([]);
-      }
-    };
-
-    performSearch();
-  }, [searchQuery]);
 
   const formatTimeAgo = (timestamp: number): string => {
     const now = Date.now();

@@ -1,4 +1,4 @@
-import { calendarToken, todos, thoughts, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
+import { calendarToken, todos, thoughts, history, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
 import { getCalendarToken } from '@/utils/storageManager';
 
 /**
@@ -65,11 +65,12 @@ export async function requestBackgroundRefresh() {
  */
 export async function loadCachedDataDirectly() {
   try {
-    const { getTodos, getThoughts, getLinearIssues, getGitHubPRs, getCalendarEvents } = await import('@/utils/storageManager');
+    const { getTodos, getThoughts, getHistory, getLinearIssues, getGitHubPRs, getCalendarEvents } = await import('@/utils/storageManager');
 
-    const [todosData, thoughtsData, linearData, githubData, calendarData] = await Promise.all([
+    const [todosData, thoughtsData, historyData, linearData, githubData, calendarData] = await Promise.all([
       getTodos(),
       getThoughts(),
+      getHistory(),
       getLinearIssues(),
       getGitHubPRs(),
       getCalendarEvents(),
@@ -80,6 +81,7 @@ export async function loadCachedDataDirectly() {
       ...thought,
       status: thought.status || 'draft',
     }));
+    history.value = historyData;
     linearIssues.value = linearData;
     githubPRs.value = githubData;
     calendarEvents.value = calendarData;
@@ -110,6 +112,7 @@ export async function syncAllData() {
     ...thought,
     status: thought.status || 'draft',
   }));
+  history.value = data.history || [];
 
   linearIssues.value = data.linearIssues || {
     assignedToMe: [],
@@ -127,6 +130,7 @@ export async function syncAllData() {
   console.log('All data loaded from background:');
   console.log('- Todos:', todos.value.length);
   console.log('- Thoughts:', thoughts.value.length);
+  console.log('- History:', history.value.length);
   console.log('- Linear issues:', linearIssues.value.assignedToMe.length + linearIssues.value.createdByMe.length);
   console.log('- GitHub PRs:', githubPRs.value.createdByMe.length + githubPRs.value.reviewRequested.length);
   console.log('- Calendar events:', calendarEvents.value.length);
@@ -153,6 +157,7 @@ export async function refreshAllData() {
     ...thought,
     status: thought.status || 'draft',
   }));
+  history.value = data.history || [];
 
   linearIssues.value = data.linearIssues || {
     assignedToMe: [],
