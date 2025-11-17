@@ -3,23 +3,28 @@ import { currentView, loadFromStorage, settings } from '@/store/store';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import GlanceView from '@/components/Glance/GlanceView';
 import TodayView from '@/components/Views/TodayView';
-import NoteEditor from '@/components/Notes/NoteEditor';
-import NotesView from '@/components/Notes/NotesView';
+import LinearView from '@/components/Linear/LinearView';
+import GitHubView from '@/components/GitHub/GitHubView';
+import HistoryView from '@/components/History/HistoryView';
+import ThoughtEditor from '@/components/Thoughts/ThoughtEditor';
+import ThoughtsView from '@/components/Thoughts/ThoughtsView';
 import TasksView from '@/components/Tasks/TasksView';
 import ProfileView from '@/components/Profile/ProfileView';
 import SettingsView from '@/components/Settings/SettingsView';
 import { initAuth } from '@/utils/auth';
-import { syncAllData } from '@/utils/dataSync';
+import { loadCachedDataDirectly } from '@/utils/dataSync';
 
 export function App() {
   useEffect(() => {
-    // Load configuration and cached data from localStorage
+    // Load configuration from localStorage/chrome.storage
     loadFromStorage();
 
-    // Load all application data (tasks, notes, calendar, etc.)
-    syncAllData();
+    // Load cached data directly from chrome.storage (fast, no delay)
+    // This loads todos, thoughts, calendar, linear, github instantly
+    loadCachedDataDirectly();
 
-    // Initialize authentication
+    // Initialize authentication (handles user session and calendar token)
+    // Auth will trigger background refresh of calendar data if needed
     initAuth();
 
     // Apply theme
@@ -92,8 +97,11 @@ export function App() {
         <div class="content-container">
           {currentView.value === 'glance' && <GlanceView />}
           {currentView.value === 'today' && <TodayView />}
-          {currentView.value === 'note' && <NoteEditor />}
-          {currentView.value === 'notes' && <NotesView />}
+          {currentView.value === 'linear' && <LinearView />}
+          {currentView.value === 'github' && <GitHubView />}
+          {currentView.value === 'history' && <HistoryView />}
+          {currentView.value === 'thought' && <ThoughtEditor />}
+          {currentView.value === 'thoughts' && <ThoughtsView />}
           {currentView.value === 'tasks' && <TasksView />}
           {currentView.value === 'profile' && <ProfileView />}
           {currentView.value === 'settings' && <SettingsView />}

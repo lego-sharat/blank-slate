@@ -27,6 +27,7 @@ export default defineConfig({
       input: {
         newtab: resolve(__dirname, 'newtab.html'),
         'auth-callback': resolve(__dirname, 'auth-callback.html'),
+        background: resolve(__dirname, 'src/background.ts'),
       },
       output: {
         entryFileNames: '[name].js',

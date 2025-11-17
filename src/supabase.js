@@ -21,14 +21,15 @@ export function initSupabase(url, supabaseKey) {
         persistSession: true,
         detectSessionInUrl: false,
         storage: {
-          getItem: (key) => {
-            return localStorage.getItem(key);
+          getItem: async (key) => {
+            const result = await chrome.storage.local.get(key);
+            return result[key] || null;
           },
-          setItem: (key, value) => {
-            localStorage.setItem(key, value);
+          setItem: async (key, value) => {
+            await chrome.storage.local.set({ [key]: value });
           },
-          removeItem: (key) => {
-            localStorage.removeItem(key);
+          removeItem: async (key) => {
+            await chrome.storage.local.remove(key);
           }
         }
       }

@@ -1,5 +1,5 @@
 import { currentView, sidebarCollapsed, isAuthenticated } from '@/store/store';
-import { createNote } from '@/utils/noteActions';
+import { createNote } from '@/utils/thoughtActions';
 import { signIn, getUserInitials } from '@/utils/auth';
 
 export default function Sidebar() {
@@ -15,12 +15,24 @@ export default function Sidebar() {
     currentView.value = 'today';
   };
 
+  const navigateToLinear = () => {
+    currentView.value = 'linear';
+  };
+
+  const navigateToGitHub = () => {
+    currentView.value = 'github';
+  };
+
+  const navigateToHistory = () => {
+    currentView.value = 'history';
+  };
+
   const navigateToTasks = () => {
     currentView.value = 'tasks';
   };
 
   const navigateToNotes = () => {
-    currentView.value = 'notes';
+    currentView.value = 'thoughts';
   };
 
   const handleAddNote = () => {
@@ -107,6 +119,41 @@ export default function Sidebar() {
               <span class="sidebar-item-label">Today</span>
             </div>
 
+            {/* Linear Section - Simple clickable item */}
+            <div
+              class={`sidebar-item sidebar-nav-item ${currentView.value === 'linear' ? 'active' : ''}`}
+              onClick={navigateToLinear}
+            >
+              <svg class="sidebar-item-icon linear-icon" width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M2.5 13.5L8 8L13.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              </svg>
+              <span class="sidebar-item-label">Linear</span>
+            </div>
+
+            {/* GitHub Section - Simple clickable item */}
+            <div
+              class={`sidebar-item sidebar-nav-item ${currentView.value === 'github' ? 'active' : ''}`}
+              onClick={navigateToGitHub}
+            >
+              <svg class="sidebar-item-icon github-icon" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              <span class="sidebar-item-label">GitHub</span>
+            </div>
+
+            {/* History Section - Simple clickable item */}
+            <div
+              class={`sidebar-item sidebar-nav-item ${currentView.value === 'history' ? 'active' : ''}`}
+              onClick={navigateToHistory}
+            >
+              <svg class="sidebar-item-icon history-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="sidebar-item-label">History</span>
+            </div>
+
             {/* Tasks Section - Clickable header navigates to view */}
             <div class="sidebar-section-simple">
               <div
@@ -121,17 +168,17 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {/* Notes Section - Clickable header navigates to view */}
+            {/* Thoughts Section - Clickable header navigates to view */}
             <div class="sidebar-section-simple">
               <div
-                class={`sidebar-section-header ${currentView.value === 'notes' ? 'active' : ''}`}
+                class={`sidebar-section-header ${currentView.value === 'thoughts' ? 'active' : ''}`}
                 onClick={navigateToNotes}
               >
                 <svg class="sidebar-section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <span class="sidebar-section-title">NOTES</span>
+                <span class="sidebar-section-title">THOUGHTS</span>
                 <div class="sidebar-section-actions">
                   <button
                     class="sidebar-section-add-btn"
@@ -139,7 +186,7 @@ export default function Sidebar() {
                       e.stopPropagation();
                       handleAddNote();
                     }}
-                    title="Add note"
+                    title="Add thought"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <line x1="12" y1="5" x2="12" y2="19"/>

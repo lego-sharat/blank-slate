@@ -1,21 +1,46 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Note, ReadingItem, CalendarEvent, Settings, ViewType } from '@/types';
+import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR } from '@/types';
+import {
+  setTodos as saveToStorage_Todos,
+  setThoughts as saveToStorage_Notes,
+  setSettings as saveToStorage_Settings,
+  setCalendarToken as saveToStorage_CalendarToken,
+  getSettings,
+} from '@/utils/storageManager';
 
-// Storage keys
+// Storage keys (kept for backwards compatibility)
 export const STORAGE_KEYS = {
-  TODOS: 'minimal_newtab_todos',
-  NOTES: 'minimal_newtab_notes',
-  READING_LIST: 'minimal_newtab_reading_list',
-  SETTINGS: 'minimal_newtab_settings',
-  CALENDAR_TOKEN: 'minimal_newtab_calendar_token',
-  CALENDAR_EVENTS: 'minimal_newtab_calendar_events',
+  TODOS: 'todos',
+  THOUGHTS: 'thoughts',
+  READING_LIST: 'reading_list',
+  SETTINGS: 'settings',
+  CALENDAR_TOKEN: 'calendar_token',
+  CALENDAR_EVENTS: 'calendar_events',
+  LINEAR_ISSUES: 'linear_issues',
+  GITHUB_PRS: 'github_prs',
 } as const;
 
 // Core signals
 export const todos = signal<Todo[]>([]);
-export const notes = signal<Note[]>([]);
+export const thoughts = signal<Thought[]>([]);
 export const readingList = signal<ReadingItem[]>([]);
 export const calendarEvents = signal<CalendarEvent[]>([]);
+export const linearIssues = signal<{
+  assignedToMe: LinearIssue[];
+  createdByMe: LinearIssue[];
+  mentioningMe: LinearIssue[];
+}>({
+  assignedToMe: [],
+  createdByMe: [],
+  mentioningMe: [],
+});
+export const githubPRs = signal<{
+  createdByMe: GitHubPR[];
+  reviewRequested: GitHubPR[];
+}>({
+  createdByMe: [],
+  reviewRequested: [],
+});
 export const settings = signal<Settings>({
   notionApiKey: '',
   notionDatabaseId: '',
@@ -24,11 +49,13 @@ export const settings = signal<Settings>({
   supabaseUrl: '',
   supabaseKey: '',
   theme: 'dark',
+  linearApiKey: '',
+  githubToken: '',
 });
 
 // UI state signals
 export const currentView = signal<ViewType>('glance');
-export const currentNoteId = signal<number | null>(null);
+export const currentThoughtId = signal<number | null>(null);
 export const isPreviewMode = signal<boolean>(false);
 export const sidebarCollapsed = signal<boolean>(false);
 
@@ -38,10 +65,10 @@ export const isAuthenticated = signal<boolean>(false);
 export const calendarToken = signal<string | null>(null);
 
 // Computed signals
-export const currentNote = computed(() => {
-  const noteId = currentNoteId.value;
+export const currentThought = computed(() => {
+  const noteId = currentThoughtId.value;
   if (!noteId) return null;
-  return notes.value.find(note => note.id === noteId) || null;
+  return thoughts.value.find(thought => thought.id === noteId) || null;
 });
 
 export const incompleteTodos = computed(() => {
@@ -52,12 +79,12 @@ export const completedTodos = computed(() => {
   return todos.value.filter(todo => todo.completed);
 });
 
-export const draftNotes = computed(() => {
-  return notes.value.filter(note => note.status === 'draft');
+export const draftThoughts = computed(() => {
+  return thoughts.value.filter(thought => thought.status === 'draft');
 });
 
-export const readyNotes = computed(() => {
-  return notes.value.filter(note => note.status === 'ready');
+export const readyThoughts = computed(() => {
+  return thoughts.value.filter(thought => thought.status === 'ready');
 });
 
 export const unreadItems = computed(() => {
@@ -97,51 +124,108 @@ export const nextEvent = computed(() => {
   return upcoming[0] || null;
 });
 
-// Load configuration and cached data from localStorage
-// Note: Tasks and notes are loaded via dataSync.syncAllData()
-export const loadFromStorage = () => {
+// Linear computed signals
+export const assignedLinearIssues = computed(() => {
+  return linearIssues.value.assignedToMe;
+});
+
+export const createdLinearIssues = computed(() => {
+  return linearIssues.value.createdByMe;
+});
+
+export const mentioningLinearIssues = computed(() => {
+  return linearIssues.value.mentioningMe;
+});
+
+export const allLinearIssues = computed(() => {
+  return [
+    ...linearIssues.value.assignedToMe,
+    ...linearIssues.value.createdByMe,
+    ...linearIssues.value.mentioningMe,
+  ];
+});
+
+// GitHub computed signals
+export const createdGitHubPRs = computed(() => {
+  return githubPRs.value.createdByMe;
+});
+
+export const reviewRequestedGitHubPRs = computed(() => {
+  return githubPRs.value.reviewRequested;
+});
+
+export const allGitHubPRs = computed(() => {
+  return [
+    ...githubPRs.value.createdByMe,
+    ...githubPRs.value.reviewRequested,
+  ];
+});
+
+// Load configuration and cached data from chrome.storage
+// Thought: All data is now loaded via dataSync.syncAllData()
+export const loadFromStorage = async () => {
   try {
-    const storedReadingList = localStorage.getItem(STORAGE_KEYS.READING_LIST);
+    // Load reading list from localStorage (not migrated to chrome.storage yet)
+    const storedReadingList = localStorage.getItem('reading_list');
     if (storedReadingList) readingList.value = JSON.parse(storedReadingList);
 
-    const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    if (storedSettings) settings.value = { ...settings.value, ...JSON.parse(storedSettings) };
+    // Load settings from chrome.storage
+    const storedSettings = await getSettings();
+    if (storedSettings) {
+      settings.value = { ...settings.value, ...storedSettings };
+    }
 
-    const storedCalendarEvents = localStorage.getItem(STORAGE_KEYS.CALENDAR_EVENTS);
-    if (storedCalendarEvents) calendarEvents.value = JSON.parse(storedCalendarEvents);
+    // Load Linear API key from localStorage for backwards compatibility
+    const linearApiKey = localStorage.getItem('linear_api_key');
+    if (linearApiKey && !settings.value.linearApiKey) {
+      settings.value = { ...settings.value, linearApiKey };
+      await saveSettings();
+    }
 
-    const storedCalendarToken = localStorage.getItem(STORAGE_KEYS.CALENDAR_TOKEN);
-    if (storedCalendarToken) calendarToken.value = storedCalendarToken;
+    // Load GitHub token from localStorage for backwards compatibility
+    const githubToken = localStorage.getItem('github_token');
+    if (githubToken && !settings.value.githubToken) {
+      settings.value = { ...settings.value, githubToken };
+      await saveSettings();
+    }
   } catch (error) {
     console.error('Error loading from storage:', error);
   }
 };
 
-// Save data to localStorage
-export const saveTodos = () => {
-  localStorage.setItem(STORAGE_KEYS.TODOS, JSON.stringify(todos.value));
+// Save data to chrome.storage
+export const saveTodos = async () => {
+  await saveToStorage_Todos(todos.value);
 };
 
-export const saveNotes = () => {
-  localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes.value));
+export const saveThoughts = async () => {
+  await saveToStorage_Notes(thoughts.value);
 };
 
 export const saveReadingList = () => {
-  localStorage.setItem(STORAGE_KEYS.READING_LIST, JSON.stringify(readingList.value));
+  // Still using localStorage for reading list
+  localStorage.setItem('reading_list', JSON.stringify(readingList.value));
 };
 
-export const saveSettings = () => {
-  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings.value));
+export const saveSettings = async () => {
+  await saveToStorage_Settings(settings.value);
 };
 
 export const saveCalendarEvents = () => {
-  localStorage.setItem(STORAGE_KEYS.CALENDAR_EVENTS, JSON.stringify(calendarEvents.value));
+  // Calendar events are managed by background script
+  console.log('Calendar events are managed by background script');
 };
 
-export const saveCalendarToken = () => {
-  if (calendarToken.value) {
-    localStorage.setItem(STORAGE_KEYS.CALENDAR_TOKEN, calendarToken.value);
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.CALENDAR_TOKEN);
-  }
+export const saveCalendarToken = async () => {
+  await saveToStorage_CalendarToken(calendarToken.value);
+};
+
+export const saveLinearIssues = () => {
+  // Linear issues are managed by background script
+  console.log('Linear issues are managed by background script');
+};
+
+export const saveGitHubPRs = () => {
+  // GitHub PRs are managed by background script
+  console.log('GitHub PRs are managed by background script');
 };

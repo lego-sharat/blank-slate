@@ -118,9 +118,9 @@ body.handwriting-font {
   font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
 }
 
-body.handwriting-font .note-title-input,
-body.handwriting-font .note-content-input,
-body.handwriting-font .note-preview {
+body.handwriting-font .thought-title-input,
+body.handwriting-font .thought-content-input,
+body.handwriting-font .thought-preview {
   font-family: 'Caveat', 'Comic Sans MS', 'Bradley Hand', cursive;
 }
 
@@ -1360,17 +1360,17 @@ body.handwriting-font #todoInput {
   background-color: var(--bg-primary); /* Tomorrow Night theme background */
 }
 
-.note-editor {
+.thought-editor {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 100%; /* Ensure it takes full height */
 }
 
-.note-title-input {
+.thought-title-input {
   width: 100%;
   max-width: 720px;
-  padding: 80px 16px 0 16px; /* Top padding moved from .note-editor */
+  padding: 80px 16px 0 16px; /* Top padding moved from .thought-editor */
   margin: 0 auto 24px auto; /* Center and add bottom margin */
   border: none;
   background-color: transparent;
@@ -1386,7 +1386,7 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-title-input::placeholder {
+.thought-title-input::placeholder {
   color: var(--text-tertiary); /* Darker placeholder for dark theme */
 }
 
@@ -1402,7 +1402,7 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-content-input {
+.thought-content-input {
   width: 100%;
   padding: 0;
   border: none;
@@ -1418,17 +1418,17 @@ body.handwriting-font #todoInput {
   min-height: 400px; /* Minimum height */
 }
 
-.note-content-input::placeholder {
+.thought-content-input::placeholder {
   color: var(--text-tertiary); /* Darker placeholder for dark theme */
 }
 
 /* Text selection color for dark theme */
-.note-content-input::selection,
-.note-title-input::selection {
+.thought-content-input::selection,
+.thought-title-input::selection {
   background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
-.note-preview {
+.thought-preview {
   width: 100%;
   flex: 1; /* Fill available space in editor-container */
   padding: 0;
@@ -1442,54 +1442,54 @@ body.handwriting-font #todoInput {
   box-sizing: border-box;
 }
 
-.note-preview::selection {
+.thought-preview::selection {
   background-color: var(--bg-tertiary); /* Tomorrow Night theme selection color */
 }
 
-.note-preview h1 {
+.thought-preview h1 {
   font-size: 32px;
   margin-top: 24px;
   margin-bottom: 12px;
   font-weight: bold;
 }
 
-.note-preview h2 {
+.thought-preview h2 {
   font-size: 24px;
   margin-top: 20px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
-.note-preview h3 {
+.thought-preview h3 {
   font-size: 20px;
   margin-top: 16px;
   margin-bottom: 8px;
   font-weight: bold;
 }
 
-.note-preview p {
+.thought-preview p {
   margin-bottom: 12px;
 }
 
-.note-preview ul, .note-preview ol {
+.thought-preview ul, .thought-preview ol {
   margin-left: 24px;
   margin-bottom: 12px;
 }
 
-.note-preview li {
+.thought-preview li {
   margin-bottom: 6px;
 }
 
-.note-preview a {
+.thought-preview a {
   color: var(--accent-primary); /* Tomorrow Night theme blue for links */
   text-decoration: underline;
 }
 
-.note-preview a:hover {
+.thought-preview a:hover {
   color: var(--accent-secondary); /* Tomorrow Night theme purple on hover */
 }
 
-.note-preview code {
+.thought-preview code {
   background-color: var(--bg-secondary); /* Darker background for inline code */
   color: var(--accent-yellow); /* Tomorrow Night theme yellow for code */
   padding: 2px 6px;
@@ -1497,7 +1497,7 @@ body.handwriting-font #todoInput {
   font-size: 14px;
 }
 
-.note-preview pre {
+.thought-preview pre {
   background-color: var(--bg-secondary); /* Darker background for code blocks */
   padding: 12px;
   overflow-x: auto;
@@ -1505,17 +1505,17 @@ body.handwriting-font #todoInput {
   border-radius: 4px;
 }
 
-.note-preview pre code {
+.thought-preview pre code {
   background-color: transparent; /* Remove double background */
   padding: 0; /* Remove double padding */
   color: var(--text-primary); /* Regular text color for code blocks */
 }
 
-.note-preview strong {
+.thought-preview strong {
   font-weight: bold;
 }
 
-.note-preview em {
+.thought-preview em {
   font-style: italic;
 }
 
@@ -2054,7 +2054,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
     gap: 40px;
   }
 
-  .note-title-input {
+  .thought-title-input {
     padding: 40px 20px 0 20px; /* Reduced top padding on mobile */
     font-size: 32px; /* Smaller title on mobile */
   }
@@ -2063,7 +2063,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
     padding: 0 20px 40px 20px; /* Reduced padding on mobile */
   }
 
-  .note-content-input {
+  .thought-content-input {
     font-size: 14px; /* Smaller content on mobile */
   }
 }
@@ -2335,13 +2335,13 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 /* Notes List */
-.glance-notes-list {
+.glance-thoughts-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.glance-note-item {
+.glance-thought-item {
   padding: 12px;
   background: var(--bg-secondary);
   border-radius: 6px;
@@ -2349,21 +2349,225 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   transition: background 0.2s;
 }
 
-.glance-note-item:hover {
+.glance-thought-item:hover {
   background: var(--bg-tertiary);
 }
 
-.glance-note-title {
+.glance-thought-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
-.glance-note-preview {
+.glance-thought-preview {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Linear Issues List */
+.glance-linear-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.glance-linear-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.glance-linear-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.glance-linear-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.glance-linear-identifier {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.glance-linear-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.glance-linear-status,
+.glance-linear-priority {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Status colors - Tomorrow Night theme */
+.glance-linear-status.status-in-progress {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.glance-linear-status.status-backlog {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.glance-linear-status.status-todo {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+/* Priority colors - Tomorrow Night theme */
+.glance-linear-priority.priority-urgent {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+.glance-linear-priority.priority-high {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.glance-linear-priority.priority-medium {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.glance-linear-priority.priority-low {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.glance-linear-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* GitHub PRs List in Glance */
+.glance-github-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.glance-github-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.glance-github-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.glance-github-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.glance-github-repo {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.glance-github-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.glance-github-state,
+.glance-github-review {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* PR State colors - Tomorrow Night theme */
+.glance-github-state.pr-state-open {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.glance-github-state.pr-state-merged {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.glance-github-state.pr-state-closed {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+.glance-github-state.pr-state-draft {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+/* Review colors - Tomorrow Night theme */
+.glance-github-review.review-approved {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.glance-github-review.review-changes {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.glance-github-review.review-required {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.glance-github-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.glance-github-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.glance-github-number {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.glance-github-author {
+  color: var(--text-tertiary);
 }
 
 /* ===================================
@@ -2638,6 +2842,10 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   color: var(--text-tertiary);
 }
 
+.sidebar-nav-item .linear-icon {
+  color: #81a2be;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -2763,20 +2971,20 @@ body.light-theme {
    Note Editor Styles
    =================================== */
 
-.note-editor {
+.thought-editor {
   padding: 16px 32px;
   max-width: 900px;
   margin: 0 auto;
 }
 
-.note-editor-empty {
+.thought-editor-empty {
   padding: 60px 20px;
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;
 }
 
-.note-editor-toolbar {
+.thought-editor-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2785,7 +2993,7 @@ body.light-theme {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.note-back-btn {
+.thought-back-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -2798,25 +3006,25 @@ body.light-theme {
   transition: all 0.2s;
 }
 
-.note-back-btn:hover {
+.thought-back-btn:hover {
   background: var(--hover-bg);
   color: var(--accent-primary);
 }
 
-.note-actions-group {
+.thought-actions-group {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.note-actions-divider {
+.thought-actions-divider {
   width: 1px;
   height: 24px;
   background-color: var(--border-subtle);
 }
 
 /* Toggle Switch for Draft/Ready */
-.note-status-toggle {
+.thought-status-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2883,7 +3091,7 @@ body.light-theme {
   background-color: var(--accent-primary-hover);
 }
 
-.note-actions {
+.thought-actions {
   display: flex;
   gap: 8px;
 }
@@ -2906,7 +3114,7 @@ body.light-theme {
   color: var(--text-primary);
 }
 
-.note-title-input {
+.thought-title-input {
   width: 100%;
   font-size: 24px;
   font-weight: 600;
@@ -2921,7 +3129,7 @@ body.light-theme {
   line-height: 1.3;
 }
 
-.note-title-input::placeholder {
+.thought-title-input::placeholder {
   color: var(--text-tertiary);
 }
 
@@ -2929,7 +3137,7 @@ body.light-theme {
   position: relative;
 }
 
-.note-content-input {
+.thought-content-input {
   width: 100%;
   min-height: 300px;
   font-size: 14px;
@@ -2942,32 +3150,32 @@ body.light-theme {
   font-family: inherit;
 }
 
-.note-content-input::placeholder {
+.thought-content-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.note-preview {
+.thought-preview {
   min-height: 300px;
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-primary);
 }
 
-.note-preview h1,
-.note-preview h2,
-.note-preview h3,
-.note-preview h4 {
+.thought-preview h1,
+.thought-preview h2,
+.thought-preview h3,
+.thought-preview h4 {
   margin-top: 24px;
   margin-bottom: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.note-preview p {
+.thought-preview p {
   margin: 12px 0;
 }
 
-.note-preview code {
+.thought-preview code {
   background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 3px;
@@ -2975,7 +3183,7 @@ body.light-theme {
   font-size: 14px;
 }
 
-.note-preview pre {
+.thought-preview pre {
   background: var(--bg-secondary);
   padding: 16px;
   border-radius: 6px;
@@ -2983,23 +3191,23 @@ body.light-theme {
   margin: 16px 0;
 }
 
-.note-preview pre code {
+.thought-preview pre code {
   background: transparent;
   padding: 0;
 }
 
-.note-preview ul,
-.note-preview ol {
+.thought-preview ul,
+.thought-preview ol {
   margin: 12px 0;
   padding-left: 24px;
 }
 
-.note-preview a {
+.thought-preview a {
   color: var(--accent-primary);
   text-decoration: none;
 }
 
-.note-preview a:hover {
+.thought-preview a:hover {
   text-decoration: underline;
 }
 
@@ -3325,39 +3533,39 @@ body.light-theme {
    NOTES VIEW - Grid Layout
    ============================================ */
 
-.notes-view {
+.thoughts-view {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
 }
 
-.notes-header {
+.thoughts-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 24px;
 }
 
-.notes-title {
+.thoughts-title {
   font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
-.notes-stats {
+.thoughts-stats {
   font-size: 15px;
   color: var(--text-secondary);
 }
 
-.notes-grid {
+.thoughts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
 
-.note-card {
+.thought-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
@@ -3369,14 +3577,14 @@ body.light-theme {
   min-height: 200px;
 }
 
-.note-card:hover {
+.thought-card:hover {
   background: var(--bg-tertiary);
   border-color: var(--border-emphasis);
   transform: translateY(-2px);
 }
 
 /* Add Note Card */
-.add-note-card {
+.add-thought-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3387,34 +3595,34 @@ body.light-theme {
   background: transparent;
 }
 
-.add-note-card:hover {
+.add-thought-card:hover {
   background: var(--hover-bg);
   border-color: var(--accent-primary);
   transform: translateY(-2px);
 }
 
-.add-note-icon {
+.add-thought-icon {
   color: var(--text-secondary);
   margin-bottom: 8px;
   transition: color 0.2s;
 }
 
-.add-note-card:hover .add-note-icon {
+.add-thought-card:hover .add-thought-icon {
   color: var(--accent-primary);
 }
 
-.add-note-text {
+.add-thought-text {
   font-size: 15px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-.add-note-card:hover .add-note-text {
+.add-thought-card:hover .add-thought-text {
   color: var(--accent-primary);
 }
 
 /* Note Card Content */
-.note-card-header {
+.thought-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -3422,7 +3630,7 @@ body.light-theme {
   gap: 8px;
 }
 
-.note-card-title {
+.thought-card-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -3435,7 +3643,7 @@ body.light-theme {
   -webkit-box-orient: vertical;
 }
 
-.note-card-delete {
+.thought-card-delete {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -3450,16 +3658,16 @@ body.light-theme {
   flex-shrink: 0;
 }
 
-.note-card:hover .note-card-delete {
+.thought-card:hover .thought-card-delete {
   opacity: 1;
 }
 
-.note-card-delete:hover {
+.thought-card-delete:hover {
   background: var(--bg-primary);
   color: var(--accent-red);
 }
 
-.note-card-preview {
+.thought-card-preview {
   flex: 1;
   font-size: 14px;
   line-height: 1.6;
@@ -3472,14 +3680,14 @@ body.light-theme {
   margin-bottom: 12px;
 }
 
-.note-card-footer {
+.thought-card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
 }
 
-.note-card-badge {
+.thought-card-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 7px;
@@ -3488,18 +3696,18 @@ body.light-theme {
   letter-spacing: 0.3px;
 }
 
-.note-card-badge.draft {
+.thought-card-badge.draft {
   background: var(--status-warning-bg);
   color: var(--status-warning-text);
 }
 
-.note-card-date {
+.thought-card-date {
   font-size: 12px;
   color: var(--text-tertiary);
   margin-left: auto;
 }
 
-.notes-empty {
+.thoughts-empty {
   text-align: center;
   padding: 48px 24px;
   color: var(--text-secondary);
@@ -3770,7 +3978,7 @@ body.light-theme {
 
 .settings-back-btn:hover {
   background: var(--hover-bg);
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .settings-title {
@@ -3844,7 +4052,7 @@ body.light-theme {
 
 .settings-input:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--text-secondary);
   background: var(--bg-tertiary);
 }
 
@@ -3864,8 +4072,8 @@ body.light-theme {
   padding: 12px;
   margin-top: 20px;
   border: 1px solid var(--border-default);
-  background: var(--accent-primary);
-  color: var(--bg-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -3874,8 +4082,8 @@ body.light-theme {
 }
 
 .settings-save-btn:hover {
-  background: var(--accent-primary-hover);
-  border-color: var(--accent-primary-hover);
+  background: var(--bg-elevated);
+  border-color: var(--text-secondary);
 }
 
 .settings-instructions {
@@ -3896,16 +4104,17 @@ body.light-theme {
   border-radius: 3px;
   font-size: 12px;
   font-family: 'Courier New', Courier, monospace;
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .settings-instructions a {
-  color: var(--accent-primary);
-  text-decoration: none;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--border-default);
 }
 
 .settings-instructions a:hover {
-  text-decoration: underline;
+  text-decoration-color: var(--text-secondary);
 }
 
 .settings-about-text {
@@ -3947,8 +4156,8 @@ body.light-theme {
 
 .settings-copy-btn:hover {
   background: var(--bg-tertiary);
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .settings-instructions-sub {
@@ -3959,4 +4168,727 @@ body.light-theme {
 
 .settings-instructions-sub li {
   margin-bottom: 4px;
+}
+
+.settings-info-box {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.settings-info-box p {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.settings-info-box a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--border-default);
+}
+
+.settings-info-box a:hover {
+  text-decoration-color: var(--text-secondary);
+}
+
+/* ===================================
+   Linear View Styles
+   =================================== */
+
+.linear-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.linear-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.linear-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.linear-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.linear-stats {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.linear-view-all-btn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.linear-view-all-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* Linear Filters - Match Tasks styling */
+.linear-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Issues List */
+.linear-issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Issue Item - Match Tasks item styling */
+.linear-issue-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  transition: background 0.2s;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.linear-issue-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.linear-issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.linear-issue-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.linear-issue-id {
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linear-issue-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: capitalize;
+}
+
+/* Tomorrow Night themed status colors */
+.linear-issue-status.status-in-progress {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.linear-issue-status.status-backlog {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.linear-issue-status.status-todo {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.linear-issue-status.status-default {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.linear-issue-priority {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* Tomorrow Night themed priority colors */
+.linear-issue-priority.priority-urgent {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+.linear-issue-priority.priority-high {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.linear-issue-priority.priority-medium {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.linear-issue-priority.priority-low {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.linear-issue-updated {
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.linear-issue-title {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.linear-issue-comment {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  background: var(--bg-tertiary);
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.linear-issue-comment-author {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-right: 4px;
+}
+
+.linear-issue-comment-text {
+  color: var(--text-secondary);
+}
+
+.linear-issue-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.linear-issue-project,
+.linear-issue-team,
+.linear-issue-assignee {
+  color: var(--text-secondary);
+}
+
+/* Empty States */
+.linear-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.linear-empty p {
+  margin: 0 0 16px 0;
+}
+
+.linear-configure-btn,
+.linear-refresh-btn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.linear-configure-btn:hover,
+.linear-refresh-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* ===================================
+   GitHub View Styles
+   =================================== */
+
+.github-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.github-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.github-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.github-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.github-stats {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.github-view-all-button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.github-view-all-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-tertiary);
+}
+
+.github-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.github-filter-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.github-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.github-filter-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.github-filter-count {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.github-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.github-pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.github-pr-item {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.github-pr-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.github-pr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.github-pr-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.github-pr-repo {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.github-pr-number {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.github-pr-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.github-pr-state,
+.github-pr-review {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* GitHub PR State colors */
+.github-pr-state.state-open {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.github-pr-state.state-merged {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.github-pr-state.state-closed {
+  background-color: rgba(204, 102, 102, 0.15);
+  color: #cc6666;
+}
+
+/* GitHub PR Review colors */
+.github-pr-review.review-approved {
+  background-color: rgba(138, 190, 183, 0.15);
+  color: #8abeb7;
+}
+
+.github-pr-review.review-changes {
+  background-color: rgba(222, 147, 95, 0.15);
+  color: #de935f;
+}
+
+.github-pr-review.review-required {
+  background-color: rgba(240, 198, 116, 0.15);
+  color: #f0c674;
+}
+
+.github-pr-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.github-pr-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.github-pr-author {
+  color: var(--text-tertiary);
+}
+
+.github-pr-time {
+  color: var(--text-tertiary);
+}
+
+.github-pr-stats {
+  color: var(--text-tertiary);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+/* ===================================
+   Sidebar Icon Styles
+   =================================== */
+
+.sidebar-nav-item .github-icon {
+  color: var(--text-tertiary);
+}
+
+.sidebar-item.active .github-icon {
+  color: var(--text-primary);
+}
+
+.sidebar-nav-item .history-icon {
+  color: var(--text-tertiary);
+}
+
+.sidebar-item.active .history-icon {
+  color: var(--text-primary);
+}
+
+/* ===================================
+   History View Styles
+   =================================== */
+
+.history-view {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.history-header {
+  margin-bottom: 24px;
+}
+
+.history-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.history-search-container {
+  margin-bottom: 16px;
+}
+
+.history-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.history-search-input:focus {
+  outline: none;
+  border-color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+}
+
+.history-search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.history-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.history-filter-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.history-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.history-filter-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.history-section-count {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.history-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  background: var(--bg-secondary);
+  padding: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border: 1px solid var(--border-subtle);
+}
+
+.history-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-default);
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.history-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-item-type-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-item-open-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  background: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-item.is-open {
+  border-color: rgba(129, 162, 190, 0.3);
+}
+
+.history-item-time {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.history-item-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.history-item-url {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.history-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+  font-size: 15px;
 }

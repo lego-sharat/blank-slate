@@ -8,8 +8,14 @@
   },
   "permissions": [
     "storage",
-    "identity"
+    "identity",
+    "tabs",
+    "alarms"
   ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "host_permissions": [
     "https://api.notion.com/*",
     "https://www.googleapis.com/*",

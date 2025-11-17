@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'preact/hooks';
-import { isAuthenticated, calendarToken } from '@/store/store';
+import { useEffect } from 'preact/hooks';
+import { isAuthenticated, calendarEvents } from '@/store/store';
+import { refreshAllData } from '@/utils/dataSync';
 
 interface CalendarEvent {
   id: string;
@@ -33,54 +34,16 @@ interface LinkInfo {
 }
 
 export default function Calendar() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use cached events from signal (fetched by background script)
+  const events = calendarEvents.value as CalendarEvent[];
 
+  // Refresh data when component mounts if authenticated
   useEffect(() => {
-    if (isAuthenticated.value && calendarToken.value) {
-      fetchTodayEvents();
+    if (isAuthenticated.value) {
+      // Request fresh data from background
+      refreshAllData();
     }
-  }, [isAuthenticated.value, calendarToken.value]);
-
-  const fetchTodayEvents = async () => {
-    if (!calendarToken.value) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-        `timeMin=${startOfDay.toISOString()}&` +
-        `timeMax=${endOfDay.toISOString()}&` +
-        `singleEvents=true&` +
-        `orderBy=startTime&` +
-        `maxResults=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${calendarToken.value}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch calendar events');
-      }
-
-      const data = await response.json();
-      setEvents(data.items || []);
-    } catch (err) {
-      console.error('Error fetching calendar events:', err);
-      setError('Failed to load calendar events');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isAuthenticated.value]);
 
   const extractLinks = (event: CalendarEvent): LinkInfo[] => {
     const links: LinkInfo[] = [];
@@ -232,22 +195,6 @@ export default function Calendar() {
     return (
       <div class="calendar-widget">
         <div class="calendar-empty">Sign in to view calendar</div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div class="calendar-widget">
-        <div class="calendar-loading">Loading events...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div class="calendar-widget">
-        <div class="calendar-error">{error}</div>
       </div>
     );
   }

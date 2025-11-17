@@ -1,18 +1,17 @@
-import { currentView } from '@/store/store';
+import { currentView, settings } from '@/store/store';
 import { useState, useEffect } from 'preact/hooks';
+import type { Settings } from '@/types';
 
 export default function SettingsView() {
   const handleBack = () => {
     currentView.value = 'glance';
   };
 
-  // Get current values from localStorage
-  const [supabaseUrl, setSupabaseUrl] = useState(
-    localStorage.getItem('supabase_url') || ''
-  );
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(
-    localStorage.getItem('supabase_anon_key') || ''
-  );
+  // State for settings
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [linearApiKey, setLinearApiKey] = useState('');
+  const [githubToken, setGithubToken] = useState('');
 
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
@@ -21,18 +20,44 @@ export default function SettingsView() {
     // Get the Chrome extension redirect URL
     const url = chrome.runtime.getURL('auth-callback.html');
     setRedirectUrl(url);
+
+    // Load settings from chrome.storage only
+    chrome.storage.local.get('settings', (result) => {
+      const storedSettings = result.settings as Partial<Settings> | undefined;
+      if (storedSettings) {
+        setSupabaseUrl(storedSettings.supabaseUrl || '');
+        setSupabaseAnonKey(storedSettings.supabaseKey || '');
+        setLinearApiKey(storedSettings.linearApiKey || '');
+        setGithubToken(storedSettings.githubToken || '');
+      }
+    });
   }, []);
 
-  const handleSave = () => {
-    // Save to localStorage
-    localStorage.setItem('supabase_url', supabaseUrl);
-    localStorage.setItem('supabase_anon_key', supabaseAnonKey);
+  const handleSave = async () => {
+    // Update settings signal AND save to chrome.storage
+    settings.value = {
+      ...settings.value,
+      supabaseUrl: supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+      linearApiKey: linearApiKey,
+      githubToken: githubToken,
+    };
+
+    // Save settings to chrome.storage (single source of truth)
+    await chrome.storage.local.set({ settings: settings.value });
 
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
 
+    console.log('Settings saved to chrome.storage:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseAnonKey,
+      hasLinearKey: !!linearApiKey,
+      hasGithubToken: !!githubToken,
+    });
+
     // Show message
-    alert('Settings saved! Please refresh the page for changes to take effect.');
+    alert('Settings saved! Reload the extension for changes to take effect.');
   };
 
   const handleCopyRedirectUrl = () => {
@@ -92,6 +117,98 @@ export default function SettingsView() {
               <div class="settings-hint">
                 Found in your Supabase project settings under "API" → "Project API keys" → "anon public"
               </div>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleSave}
+            >
+              {isSaved ? 'Saved!' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* Linear Configuration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Linear Integration</h3>
+          <div class="settings-section-description">
+            Configure your Linear API key to view issues assigned to you, created by you, and mentioning you.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label" for="linear-api-key">
+                Linear API Key
+              </label>
+              <input
+                id="linear-api-key"
+                type="password"
+                class="settings-input"
+                placeholder="lin_api_..."
+                value={linearApiKey}
+                onInput={(e) => setLinearApiKey((e.target as HTMLInputElement).value)}
+              />
+              <div class="settings-hint">
+                Create a personal API key in Linear Settings → Account → API → Personal API keys
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <p>
+                <strong>How to get your Linear API key:</strong>
+              </p>
+              <ol class="settings-instructions-sub">
+                <li>Go to <a href="https://linear.app/settings/api" target="_blank" rel="noopener noreferrer">Linear Settings → API</a></li>
+                <li>Click "Create key" under Personal API keys</li>
+                <li>Give it a name (e.g., "Slate Extension")</li>
+                <li>Copy the generated key and paste it above</li>
+              </ol>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleSave}
+            >
+              {isSaved ? 'Saved!' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* GitHub Configuration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">GitHub Integration</h3>
+          <div class="settings-section-description">
+            Configure your GitHub personal access token to view pull requests created by you and assigned to you for review.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label" for="github-token">
+                GitHub Personal Access Token
+              </label>
+              <input
+                id="github-token"
+                type="password"
+                class="settings-input"
+                placeholder="ghp_..."
+                value={githubToken}
+                onInput={(e) => setGithubToken((e.target as HTMLInputElement).value)}
+              />
+              <div class="settings-hint">
+                Create a personal access token in GitHub Settings → Developer settings → Personal access tokens
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <p>
+                <strong>How to create a GitHub Personal Access Token:</strong>
+              </p>
+              <ol class="settings-instructions-sub">
+                <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">GitHub Settings → Personal access tokens → Tokens (classic)</a></li>
+                <li>Click "Generate new token" → "Generate new token (classic)"</li>
+                <li>Give it a name (e.g., "Slate Extension")</li>
+                <li>Select scopes: <code>repo</code> (Full control of private repositories)</li>
+                <li>Click "Generate token" and copy the generated token</li>
+                <li>Paste it above (you won't be able to see it again!)</li>
+              </ol>
             </div>
 
             <button
@@ -187,7 +304,7 @@ export default function SettingsView() {
           <h3 class="settings-section-title">About</h3>
           <div class="settings-section-content">
             <p class="settings-about-text">
-              Slate - A minimal new tab extension with tasks, notes, and calendar integration.
+              Slate - A minimal new tab extension with tasks, thoughts, and calendar integration.
             </p>
             <p class="settings-about-version">Version 1.0.0</p>
           </div>
