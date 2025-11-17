@@ -87,8 +87,17 @@ export function cleanUrl(url: string): string {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
 
-    // First, use the clean-urls library
-    let cleaned = cleanUrls(url);
+    // Use clean-urls library only if not in service worker context
+    // (the library requires DOM APIs not available in service workers)
+    let cleaned = url;
+    if (typeof window !== 'undefined') {
+      try {
+        cleaned = cleanUrls(url);
+      } catch (e) {
+        console.warn('clean-urls library failed, continuing without it:', e);
+        cleaned = url;
+      }
+    }
 
     // Normalize Notion URLs to canonical format (removes slug variations)
     if (hostname.includes('notion.so')) {
