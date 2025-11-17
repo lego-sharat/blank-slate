@@ -42,6 +42,9 @@ function extractTitle(url: string, pageTitle?: string): string {
     } else if (url.includes('figma.com/file')) {
       const parts = pathname.split('/');
       return parts[3]?.replace(/-/g, ' ') || 'Figma File';
+    } else if (url.includes('figma.com/board') || url.includes('figjam')) {
+      const parts = pathname.split('/');
+      return parts[3]?.replace(/-/g, ' ') || 'FigJam Board';
     } else if (url.includes('github.com')) {
       const parts = pathname.split('/').filter(p => p);
       if (parts.length >= 2) {
@@ -81,6 +84,19 @@ function determineType(url: string): HistoryItemType | null {
       return null; // Other GitHub pages we don't track
     }
 
+    // Special handling for Figma vs FigJam
+    if (baseType === 'figma') {
+      // FigJam uses /board/ in the path or has figjam in the URL
+      if (pathname.includes('/board/') || url.includes('figjam')) {
+        return 'figjam';
+      }
+      // Regular Figma files use /file/
+      if (pathname.includes('/file/')) {
+        return 'figma';
+      }
+      return null;
+    }
+
     return baseType as HistoryItemType;
   } catch (e) {
     return null;
@@ -109,6 +125,7 @@ export function shouldTrackUrl(url: string): boolean {
 
     if (url.includes('notion.so') && !url.includes('/login')) return true;
     if (url.includes('figma.com/file')) return true;
+    if (url.includes('figma.com/board') || url.includes('figjam')) return true;
     if (url.includes('github.com')) {
       const type = determineType(url);
       return type === 'github-repo' || type === 'github-issue';
@@ -162,22 +179,17 @@ export async function getHistoryItems(): Promise<HistoryItem[]> {
  */
 export async function saveHistoryItem(item: HistoryItem): Promise<void> {
   try {
-    const items = await getHistoryItems();
+    let items = await getHistoryItems();
 
-    // Check if URL was recently visited (within last 5 minutes)
-    const recentItem = items.find(
-      i => i.url === item.url && (Date.now() - i.visitedAt) < 5 * 60 * 1000
-    );
+    // Check if this URL already exists (regardless of when it was visited)
+    const existingIndex = items.findIndex(i => i.url === item.url);
 
-    if (recentItem) {
-      // Update visit time and title instead of adding duplicate
-      recentItem.visitedAt = Date.now();
-      recentItem.title = item.title;
-      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
-      return;
+    if (existingIndex !== -1) {
+      // Remove the existing item from its current position
+      items.splice(existingIndex, 1);
     }
 
-    // Add new item at the beginning
+    // Add the new/updated item at the beginning (most recent first)
     items.unshift(item);
 
     // Keep only last 100 items total
