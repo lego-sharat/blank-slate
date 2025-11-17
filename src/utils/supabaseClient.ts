@@ -12,7 +12,25 @@ export function initSupabase(supabaseUrl: string, supabaseKey: string): Supabase
   }
 
   try {
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        storage: {
+          getItem: async (key: string): Promise<string | null> => {
+            const result = await chrome.storage.local.get(key);
+            return result[key] ? String(result[key]) : null;
+          },
+          setItem: async (key: string, value: string): Promise<void> => {
+            await chrome.storage.local.set({ [key]: value });
+          },
+          removeItem: async (key: string): Promise<void> => {
+            await chrome.storage.local.remove(key);
+          }
+        }
+      }
+    });
     console.log('Supabase client initialized');
     return supabaseClient;
   } catch (error) {
