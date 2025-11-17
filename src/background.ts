@@ -438,6 +438,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           break;
         }
 
+        case 'deleteHistoryItem': {
+          // Delete a history item by ID
+          const { deleteHistoryItem } = await import('./utils/historyTracker');
+          await deleteHistoryItem(message.id);
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'deleteHistoryItemByUrl': {
+          // Delete a history item by URL
+          const { deleteHistoryItemByUrl } = await import('./utils/historyTracker');
+          await deleteHistoryItemByUrl(message.url);
+          sendResponse({ success: true });
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }

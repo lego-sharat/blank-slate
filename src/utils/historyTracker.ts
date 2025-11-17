@@ -348,6 +348,33 @@ export async function searchHistory(query: string): Promise<HistoryItem[]> {
 }
 
 /**
+ * Delete a single history item by ID
+ */
+export async function deleteHistoryItem(id: string): Promise<void> {
+  try {
+    const items = await getHistoryItems();
+    const filtered = items.filter(item => item.id !== id);
+    await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: filtered });
+  } catch (e) {
+    console.error('Error deleting history item:', e);
+  }
+}
+
+/**
+ * Delete a history item by URL
+ */
+export async function deleteHistoryItemByUrl(url: string): Promise<void> {
+  try {
+    const items = await getHistoryItems();
+    const cleanedUrl = cleanUrl(url);
+    const filtered = items.filter(item => cleanUrl(item.url) !== cleanedUrl);
+    await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: filtered });
+  } catch (e) {
+    console.error('Error deleting history item by URL:', e);
+  }
+}
+
+/**
  * Clear all history
  */
 export async function clearHistory(): Promise<void> {

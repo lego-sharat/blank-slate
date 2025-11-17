@@ -62,6 +62,34 @@ chrome.runtime.sendMessage({ action: 'debugResetMigration' }, (response) => {
 
 Then reload the extension (chrome://extensions -> click reload button)
 
+### 4. Delete Individual History Item by ID
+
+```javascript
+chrome.runtime.sendMessage({
+  action: 'deleteHistoryItem',
+  id: 'ITEM_ID_HERE'
+}, (response) => {
+  if (response.success) {
+    console.log('Item deleted successfully');
+  }
+});
+```
+
+### 5. Delete History Item by URL
+
+```javascript
+chrome.runtime.sendMessage({
+  action: 'deleteHistoryItemByUrl',
+  url: 'https://example.com/page'
+}, (response) => {
+  if (response.success) {
+    console.log('Item deleted successfully');
+  }
+});
+```
+
+This will delete all history items matching the cleaned URL (so it handles URLs with different tracking params as the same).
+
 ## Quick Fix
 
 If you just want to clean everything quickly:
