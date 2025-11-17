@@ -73,6 +73,12 @@ const GOOGLE_DOCS_PRESERVED_PARAMS = [
   'comment',
 ];
 
+const NOTION_PRESERVED_PARAMS = [
+  'p', // block/paragraph ID
+  'pm', // page mention
+  'pvs', // page version state
+];
+
 /**
  * Clean URL by removing tracking parameters while preserving important ones
  */
@@ -83,6 +89,11 @@ export function cleanUrl(url: string): string {
 
     // First, use the clean-urls library
     let cleaned = cleanUrls(url);
+
+    // Normalize Notion URLs to canonical format (removes slug variations)
+    if (hostname.includes('notion.so')) {
+      cleaned = normalizeNotionUrl(cleaned);
+    }
 
     // Then apply our custom cleaning for tracking parameters
     const cleanedUrl = new URL(cleaned);
@@ -95,6 +106,8 @@ export function cleanUrl(url: string): string {
       preservedParams = FIGMA_PRESERVED_PARAMS;
     } else if (hostname.includes('docs.google.com')) {
       preservedParams = GOOGLE_DOCS_PRESERVED_PARAMS;
+    } else if (hostname.includes('notion.so')) {
+      preservedParams = NOTION_PRESERVED_PARAMS;
     }
 
     // Remove tracking parameters
@@ -185,3 +198,62 @@ export function extractFigmaFileKey(url: string): string | null {
     return null;
   }
 }
+
+/**
+ * Extract Notion page ID from URL
+ * Notion URLs format: /workspace/Page-Title-{pageId} or /{pageId}
+ * The pageId is a 32-character hex string
+ */
+export function extractNotionPageId(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+
+    // Notion page ID is 32 characters (hex) at the end of the path
+    // Match pattern: 32 hex characters, optionally followed by query params
+    const match = pathname.match(/([a-f0-9]{32})(?:\/|$)/i);
+
+    if (match) {
+      return match[1];
+    }
+
+    return null;
+  } catch (e) {
+    console.error('Error extracting Notion page ID:', e);
+    return null;
+  }
+}
+
+/**
+ * Normalize Notion URL to use canonical format based on page ID
+ * This ensures different slugs for the same page are treated as identical
+ */
+export function normalizeNotionUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const pageId = extractNotionPageId(url);
+
+    if (!pageId) {
+      return url; // Return as-is if we can't extract ID
+    }
+
+    // Get workspace from path (first segment after domain)
+    const pathParts = urlObj.pathname.split('/').filter(p => p);
+    const workspace = pathParts.length > 0 && !pathParts[0].match(/^[a-f0-9]{32}$/i)
+      ? pathParts[0]
+      : '';
+
+    // Construct canonical URL: /workspace/{pageId} or /{pageId}
+    const canonicalPath = workspace ? `/${workspace}/${pageId}` : `/${pageId}`;
+
+    // Preserve query parameters (like blockId, etc.)
+    const canonicalUrl = new URL(canonicalPath, urlObj.origin);
+    canonicalUrl.search = urlObj.search;
+
+    return canonicalUrl.toString();
+  } catch (e) {
+    console.error('Error normalizing Notion URL:', e);
+    return url;
+  }
+}
+
