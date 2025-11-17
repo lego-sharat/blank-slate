@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR } from '@/types';
+import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR, HistoryItem } from '@/types';
 import {
   setTodos as saveToStorage_Todos,
   setThoughts as saveToStorage_Notes,
@@ -24,6 +24,7 @@ export const STORAGE_KEYS = {
 export const todos = signal<Todo[]>([]);
 export const thoughts = signal<Thought[]>([]);
 export const readingList = signal<ReadingItem[]>([]);
+export const history = signal<HistoryItem[]>([]);
 export const calendarEvents = signal<CalendarEvent[]>([]);
 export const linearIssues = signal<{
   assignedToMe: LinearIssue[];

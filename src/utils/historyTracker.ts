@@ -44,6 +44,9 @@ function extractTitle(url: string, pageTitle?: string): string {
     } else if (url.includes('figma.com/file')) {
       const parts = pathname.split('/');
       return parts[3]?.replace(/-/g, ' ') || 'Figma File';
+    } else if (url.includes('figma.com/board') || url.includes('figjam')) {
+      const parts = pathname.split('/');
+      return parts[3]?.replace(/-/g, ' ') || 'FigJam Board';
     } else if (url.includes('github.com')) {
       const parts = pathname.split('/').filter(p => p);
       if (parts.length >= 2) {
@@ -102,6 +105,19 @@ function determineType(url: string): HistoryItemType | null {
       return null; // Other GitHub pages we don't track
     }
 
+    // Special handling for Figma vs FigJam
+    if (baseType === 'figma') {
+      // FigJam uses /board/ in the path or has figjam in the URL
+      if (pathname.includes('/board/') || url.includes('figjam')) {
+        return 'figjam';
+      }
+      // Regular Figma files use /file/
+      if (pathname.includes('/file/')) {
+        return 'figma';
+      }
+      return null;
+    }
+
     return baseType as HistoryItemType;
   } catch (e) {
     return null;
@@ -134,6 +150,10 @@ export function shouldTrackUrl(url: string): boolean {
     // Figma tracking
     if (url.includes('figma.com/file')) {
       console.log('[History Tracker] Figma file URL detected:', url);
+      return true;
+    }
+    if (url.includes('figma.com/board') || url.includes('figjam')) {
+      console.log('[History Tracker] FigJam board URL detected:', url);
       return true;
     }
 
@@ -234,32 +254,25 @@ export async function getHistoryItems(): Promise<HistoryItem[]> {
  */
 export async function saveHistoryItem(item: HistoryItem): Promise<void> {
   try {
-    const items = await getHistoryItems();
+    let items = await getHistoryItems();
 
     // Clean the item URL (should already be clean, but just in case)
     const cleanedItemUrl = cleanUrl(item.url);
-
-    // Check if URL was recently visited (within last 5 minutes)
-    // Compare cleaned URLs to handle legacy items with tracking params
-    const recentItem = items.find(i => {
-      const cleanedExistingUrl = cleanUrl(i.url);
-      return cleanedExistingUrl === cleanedItemUrl &&
-             (Date.now() - i.visitedAt) < 5 * 60 * 1000;
-    });
-
-    if (recentItem) {
-      // Update visit time, title, and clean the URL
-      recentItem.visitedAt = Date.now();
-      recentItem.title = item.title;
-      recentItem.url = cleanedItemUrl; // Update to cleaned URL
-      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
-      return;
-    }
-
-    // Ensure the item URL is cleaned
     item.url = cleanedItemUrl;
 
-    // Add new item at the beginning
+    // Check if this URL already exists (regardless of when it was visited)
+    // Compare cleaned URLs to handle legacy items with tracking params
+    const existingIndex = items.findIndex(i => {
+      const cleanedExistingUrl = cleanUrl(i.url);
+      return cleanedExistingUrl === cleanedItemUrl;
+    });
+
+    if (existingIndex !== -1) {
+      // Remove the existing item from its current position
+      items.splice(existingIndex, 1);
+    }
+
+    // Add the new/updated item at the beginning (most recent first)
     items.unshift(item);
 
     // Keep only last 100 items total
