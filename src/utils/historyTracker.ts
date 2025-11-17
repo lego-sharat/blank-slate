@@ -118,6 +118,7 @@ export function shouldTrackUrl(url: string): boolean {
 
     // Check if domain is tracked
     if (!(hostname in TRACKED_DOMAINS)) {
+      console.log('[History Tracker] Domain not tracked:', hostname);
       return false;
     }
 
@@ -129,15 +130,23 @@ export function shouldTrackUrl(url: string): boolean {
     if (url.includes('docs.google.com/forms')) return true;
 
     if (url.includes('notion.so') && !url.includes('/login')) return true;
-    if (url.includes('figma.com/file')) return true;
+
+    // Figma tracking
+    if (url.includes('figma.com/file')) {
+      console.log('[History Tracker] Figma file URL detected:', url);
+      return true;
+    }
+
     if (url.includes('github.com')) {
       const type = determineType(url);
       return type === 'github-repo' || type === 'github-issue';
     }
     if (url.includes('linear.app/') && url.match(/linear\.app\/[^\/]+\/issue/)) return true;
 
+    console.log('[History Tracker] URL not matching any pattern:', url);
     return false;
   } catch (e) {
+    console.error('[History Tracker] Error in shouldTrackUrl:', e);
     return false;
   }
 }
@@ -171,28 +180,39 @@ export function createHistoryItem(url: string, title?: string): HistoryItem | nu
  * Create a history item from URL and title (async version with Figma API support)
  */
 export async function createHistoryItemAsync(url: string, title?: string): Promise<HistoryItem | null> {
+  console.log('[History Tracker] createHistoryItemAsync called with URL:', url);
+
   if (!shouldTrackUrl(url)) {
+    console.log('[History Tracker] URL not tracked, skipping');
     return null;
   }
 
   const type = determineType(url);
   if (!type) {
+    console.log('[History Tracker] Could not determine type for URL:', url);
     return null;
   }
 
+  console.log('[History Tracker] URL type determined:', type);
+
   // Clean the URL before storing
   const cleanedUrl = cleanUrl(url);
+  console.log('[History Tracker] Cleaned URL:', cleanedUrl);
 
   // Get enhanced title (uses Figma API for Figma URLs)
   const enhancedTitle = await extractTitleAsync(url, title);
+  console.log('[History Tracker] Enhanced title:', enhancedTitle);
 
-  return {
+  const historyItem = {
     id: `${cleanedUrl}-${Date.now()}`,
     type,
     title: enhancedTitle,
     url: cleanedUrl,
     visitedAt: Date.now(),
   };
+
+  console.log('[History Tracker] Created history item:', historyItem);
+  return historyItem;
 }
 
 /**
@@ -216,18 +236,28 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
   try {
     const items = await getHistoryItems();
 
+    // Clean the item URL (should already be clean, but just in case)
+    const cleanedItemUrl = cleanUrl(item.url);
+
     // Check if URL was recently visited (within last 5 minutes)
-    const recentItem = items.find(
-      i => i.url === item.url && (Date.now() - i.visitedAt) < 5 * 60 * 1000
-    );
+    // Compare cleaned URLs to handle legacy items with tracking params
+    const recentItem = items.find(i => {
+      const cleanedExistingUrl = cleanUrl(i.url);
+      return cleanedExistingUrl === cleanedItemUrl &&
+             (Date.now() - i.visitedAt) < 5 * 60 * 1000;
+    });
 
     if (recentItem) {
-      // Update visit time and title instead of adding duplicate
+      // Update visit time, title, and clean the URL
       recentItem.visitedAt = Date.now();
       recentItem.title = item.title;
+      recentItem.url = cleanedItemUrl; // Update to cleaned URL
       await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
       return;
     }
+
+    // Ensure the item URL is cleaned
+    item.url = cleanedItemUrl;
 
     // Add new item at the beginning
     items.unshift(item);
@@ -248,11 +278,16 @@ export async function updateHistoryItemTitle(url: string, newTitle: string): Pro
   try {
     const items = await getHistoryItems();
 
-    // Find the most recent item with this URL
-    const item = items.find(i => i.url === url);
+    // Clean the URL to match against cleaned items
+    const cleanedUrl = cleanUrl(url);
+
+    // Find the most recent item with this URL (compare cleaned URLs)
+    const item = items.find(i => cleanUrl(i.url) === cleanedUrl);
 
     if (item && newTitle && newTitle !== 'undefined') {
       item.title = newTitle;
+      // Also ensure the URL is cleaned
+      item.url = cleanedUrl;
       await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
     }
   } catch (e) {

@@ -1,6 +1,7 @@
 import { currentView, settings } from '@/store/store';
 import { useState, useEffect } from 'preact/hooks';
 import type { Settings } from '@/types';
+import { cleanAndDeduplicateHistory, getHistoryStats } from '@/utils/cleanHistory';
 
 export default function SettingsView() {
   const handleBack = () => {
@@ -16,6 +17,8 @@ export default function SettingsView() {
 
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
+  const [isCleaningHistory, setIsCleaningHistory] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState('');
 
   useEffect(() => {
     // Get the Chrome extension redirect URL
@@ -67,6 +70,39 @@ export default function SettingsView() {
   const handleCopyRedirectUrl = () => {
     navigator.clipboard.writeText(redirectUrl);
     alert('Redirect URL copied to clipboard!');
+  };
+
+  const handleCleanHistory = async () => {
+    try {
+      setIsCleaningHistory(true);
+      setCleanupMessage('Analyzing history...');
+
+      // Get stats first
+      const stats = await getHistoryStats();
+
+      if (stats.potentialDuplicates === 0 && stats.urlsWithTracking === 0) {
+        setCleanupMessage('History is already clean!');
+        setTimeout(() => setCleanupMessage(''), 3000);
+        return;
+      }
+
+      setCleanupMessage('Cleaning and deduplicating...');
+
+      // Clean and deduplicate
+      const result = await cleanAndDeduplicateHistory();
+
+      setCleanupMessage(
+        `Done! Removed ${result.duplicatesRemoved} duplicates. Cleaned ${stats.urlsWithTracking} URLs with tracking parameters.`
+      );
+
+      setTimeout(() => setCleanupMessage(''), 5000);
+    } catch (e) {
+      console.error('Error cleaning history:', e);
+      setCleanupMessage('Error cleaning history. Check console for details.');
+      setTimeout(() => setCleanupMessage(''), 3000);
+    } finally {
+      setIsCleaningHistory(false);
+    }
   };
 
   return (
@@ -349,6 +385,40 @@ export default function SettingsView() {
               <li>Paste the credentials in the fields above and save</li>
               <li>Refresh the page and sign in with Google</li>
             </ol>
+          </div>
+        </div>
+
+        {/* History Cleanup */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">History Maintenance</h3>
+          <div class="settings-section-description">
+            Clean up your browsing history by removing tracking parameters and duplicate entries.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-info-box">
+              <p>
+                <strong>What this does:</strong>
+              </p>
+              <ul class="settings-instructions-sub">
+                <li>Removes tracking parameters (UTM, fbclid, etc.) from stored URLs</li>
+                <li>Removes duplicate entries (keeps the most recent visit)</li>
+                <li>Cleans up legacy data to match the new URL cleaning system</li>
+              </ul>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleCleanHistory}
+              disabled={isCleaningHistory}
+            >
+              {isCleaningHistory ? 'Cleaning...' : 'Clean & Deduplicate History'}
+            </button>
+
+            {cleanupMessage && (
+              <div class="settings-hint" style="margin-top: 10px; color: #4a9eff;">
+                {cleanupMessage}
+              </div>
+            )}
           </div>
         </div>
 
