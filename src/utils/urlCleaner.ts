@@ -154,7 +154,7 @@ export function isFigmaFileUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
     return urlObj.hostname.includes('figma.com') &&
-           urlObj.pathname.includes('/file/');
+           (urlObj.pathname.includes('/file/') || urlObj.pathname.includes('/design/'));
   } catch (e) {
     return false;
   }
@@ -168,10 +168,15 @@ export function extractFigmaFileKey(url: string): string | null {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/');
 
-    // Figma URL format: /file/{fileKey}/{fileName}
+    // Figma URL format: /file/{fileKey}/{fileName} or /design/{fileKey}/{fileName}
     const fileIndex = pathParts.indexOf('file');
     if (fileIndex !== -1 && pathParts.length > fileIndex + 1) {
       return pathParts[fileIndex + 1];
+    }
+
+    const designIndex = pathParts.indexOf('design');
+    if (designIndex !== -1 && pathParts.length > designIndex + 1) {
+      return pathParts[designIndex + 1];
     }
 
     return null;

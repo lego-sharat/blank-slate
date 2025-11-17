@@ -41,7 +41,7 @@ function extractTitle(url: string, pageTitle?: string): string {
     } else if (url.includes('notion.so')) {
       const parts = pathname.split('/').filter(p => p);
       return parts[parts.length - 1]?.replace(/-/g, ' ') || 'Notion Page';
-    } else if (url.includes('figma.com/file')) {
+    } else if (url.includes('figma.com/file') || url.includes('figma.com/design')) {
       const parts = pathname.split('/');
       return parts[3]?.replace(/-/g, ' ') || 'Figma File';
     } else if (url.includes('figma.com/board') || url.includes('figjam')) {
@@ -111,8 +111,8 @@ function determineType(url: string): HistoryItemType | null {
       if (pathname.includes('/board/') || url.includes('figjam')) {
         return 'figjam';
       }
-      // Regular Figma files use /file/
-      if (pathname.includes('/file/')) {
+      // Regular Figma files use /file/ or /design/
+      if (pathname.includes('/file/') || pathname.includes('/design/')) {
         return 'figma';
       }
       return null;
@@ -148,7 +148,7 @@ export function shouldTrackUrl(url: string): boolean {
     if (url.includes('notion.so') && !url.includes('/login')) return true;
 
     // Figma tracking
-    if (url.includes('figma.com/file')) {
+    if (url.includes('figma.com/file') || url.includes('figma.com/design')) {
       console.log('[History Tracker] Figma file URL detected:', url);
       return true;
     }
