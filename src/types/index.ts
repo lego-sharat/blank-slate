@@ -69,6 +69,7 @@ export interface Settings {
   theme: 'dark' | 'light';
   linearApiKey: string;
   githubToken: string;
+  figmaApiKey: string;
 }
 
 // Linear types

@@ -12,6 +12,7 @@ export default function SettingsView() {
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
   const [linearApiKey, setLinearApiKey] = useState('');
   const [githubToken, setGithubToken] = useState('');
+  const [figmaApiKey, setFigmaApiKey] = useState('');
 
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
@@ -29,6 +30,7 @@ export default function SettingsView() {
         setSupabaseAnonKey(storedSettings.supabaseKey || '');
         setLinearApiKey(storedSettings.linearApiKey || '');
         setGithubToken(storedSettings.githubToken || '');
+        setFigmaApiKey(storedSettings.figmaApiKey || '');
       }
     });
   }, []);
@@ -41,6 +43,7 @@ export default function SettingsView() {
       supabaseKey: supabaseAnonKey,
       linearApiKey: linearApiKey,
       githubToken: githubToken,
+      figmaApiKey: figmaApiKey,
     };
 
     // Save settings to chrome.storage (single source of truth)
@@ -54,6 +57,7 @@ export default function SettingsView() {
       hasSupabaseKey: !!supabaseAnonKey,
       hasLinearKey: !!linearApiKey,
       hasGithubToken: !!githubToken,
+      hasFigmaApiKey: !!figmaApiKey,
     });
 
     // Show message
@@ -209,6 +213,55 @@ export default function SettingsView() {
                 <li>Click "Generate token" and copy the generated token</li>
                 <li>Paste it above (you won't be able to see it again!)</li>
               </ol>
+            </div>
+
+            <button
+              class="settings-save-btn"
+              onClick={handleSave}
+            >
+              {isSaved ? 'Saved!' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* Figma Configuration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Figma Integration</h3>
+          <div class="settings-section-description">
+            Configure your Figma personal access token to automatically fetch node names and file titles for Figma URLs in your history.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-field">
+              <label class="settings-label" for="figma-api-key">
+                Figma Personal Access Token
+              </label>
+              <input
+                id="figma-api-key"
+                type="password"
+                class="settings-input"
+                placeholder="figd_..."
+                value={figmaApiKey}
+                onInput={(e) => setFigmaApiKey((e.target as HTMLInputElement).value)}
+              />
+              <div class="settings-hint">
+                Create a personal access token in Figma Settings → Account → Personal access tokens
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <p>
+                <strong>How to get your Figma Personal Access Token:</strong>
+              </p>
+              <ol class="settings-instructions-sub">
+                <li>Go to <a href="https://www.figma.com/settings" target="_blank" rel="noopener noreferrer">Figma Settings → Account</a></li>
+                <li>Scroll down to "Personal access tokens"</li>
+                <li>Click "Create a new personal access token"</li>
+                <li>Give it a name (e.g., "Slate Extension")</li>
+                <li>Copy the generated token and paste it above</li>
+              </ol>
+              <p class="settings-note">
+                <strong>Note:</strong> With this token configured, when you visit Figma URLs with node IDs, the extension will automatically fetch the node name and display it as "File Name - Node Name" in your history.
+              </p>
             </div>
 
             <button

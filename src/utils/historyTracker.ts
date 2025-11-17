@@ -1,4 +1,6 @@
 import type { HistoryItem, HistoryItemType } from '@/types';
+import { cleanUrl, isFigmaFileUrl } from './urlCleaner';
+import { getFigmaTitle } from './figmaApi';
 
 /**
  * Configuration for tracking different platforms
@@ -16,7 +18,7 @@ const TRACKED_DOMAINS = {
 const HISTORY_STORAGE_KEY = 'history_items';
 
 /**
- * Extract title from page
+ * Extract title from page (synchronous version for non-Figma URLs)
  */
 function extractTitle(url: string, pageTitle?: string): string {
   if (pageTitle && pageTitle !== 'undefined') {
@@ -56,6 +58,25 @@ function extractTitle(url: string, pageTitle?: string): string {
   }
 
   return url;
+}
+
+/**
+ * Extract enhanced title from page (async version that uses Figma API for Figma URLs)
+ */
+async function extractTitleAsync(url: string, pageTitle?: string): Promise<string> {
+  // For Figma URLs, try to get the title from the API
+  if (isFigmaFileUrl(url)) {
+    try {
+      const figmaTitle = await getFigmaTitle(url, pageTitle);
+      return figmaTitle;
+    } catch (e) {
+      console.error('Error getting Figma title from API:', e);
+      // Fall back to regular title extraction
+    }
+  }
+
+  // For non-Figma URLs or if Figma API fails, use regular extraction
+  return extractTitle(url, pageTitle);
 }
 
 /**
@@ -122,7 +143,7 @@ export function shouldTrackUrl(url: string): boolean {
 }
 
 /**
- * Create a history item from URL and title
+ * Create a history item from URL and title (synchronous version)
  */
 export function createHistoryItem(url: string, title?: string): HistoryItem | null {
   if (!shouldTrackUrl(url)) {
@@ -134,11 +155,42 @@ export function createHistoryItem(url: string, title?: string): HistoryItem | nu
     return null;
   }
 
+  // Clean the URL before storing
+  const cleanedUrl = cleanUrl(url);
+
   return {
-    id: `${url}-${Date.now()}`,
+    id: `${cleanedUrl}-${Date.now()}`,
     type,
     title: extractTitle(url, title),
-    url,
+    url: cleanedUrl,
+    visitedAt: Date.now(),
+  };
+}
+
+/**
+ * Create a history item from URL and title (async version with Figma API support)
+ */
+export async function createHistoryItemAsync(url: string, title?: string): Promise<HistoryItem | null> {
+  if (!shouldTrackUrl(url)) {
+    return null;
+  }
+
+  const type = determineType(url);
+  if (!type) {
+    return null;
+  }
+
+  // Clean the URL before storing
+  const cleanedUrl = cleanUrl(url);
+
+  // Get enhanced title (uses Figma API for Figma URLs)
+  const enhancedTitle = await extractTitleAsync(url, title);
+
+  return {
+    id: `${cleanedUrl}-${Date.now()}`,
+    type,
+    title: enhancedTitle,
+    url: cleanedUrl,
     visitedAt: Date.now(),
   };
 }

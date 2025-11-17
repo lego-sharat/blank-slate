@@ -1,4 +1,4 @@
-import { shouldTrackUrl, createHistoryItem, updateHistoryItemTitle } from './utils/historyTracker';
+import { shouldTrackUrl, updateHistoryItemTitle } from './utils/historyTracker';
 import {
   getTodos,
   getThoughts,
@@ -316,11 +316,11 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
 
     // Check if we should track this URL
     if (shouldTrackUrl(url)) {
-      const historyItem = createHistoryItem(url, tab.title);
+      const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+      const historyItem = await createHistoryItemAsync(url, tab.title);
 
       if (historyItem) {
         // Save to chrome.storage
-        const { saveHistoryItem } = await import('./utils/historyTracker');
         await saveHistoryItem(historyItem);
       }
     }
@@ -336,10 +336,10 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const url = tab.url;
 
       if (shouldTrackUrl(url)) {
-        const historyItem = createHistoryItem(url, tab.title);
+        const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+        const historyItem = await createHistoryItemAsync(url, tab.title);
 
         if (historyItem) {
-          const { saveHistoryItem } = await import('./utils/historyTracker');
           await saveHistoryItem(historyItem);
         }
       }

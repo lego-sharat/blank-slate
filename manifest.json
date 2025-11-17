@@ -19,7 +19,8 @@
   "host_permissions": [
     "https://api.notion.com/*",
     "https://www.googleapis.com/*",
-    "https://*.supabase.co/*"
+    "https://*.supabase.co/*",
+    "https://api.figma.com/*"
   ],
   "web_accessible_resources": [
     {
