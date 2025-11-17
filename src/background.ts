@@ -414,6 +414,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           sendResponse({ success: true });
           break;
 
+        case 'debugInspectHistory': {
+          // Debug: Inspect history for duplicates
+          const { inspectHistory } = await import('./utils/debugHistory');
+          const stats = await inspectHistory();
+          sendResponse({ success: true, data: stats });
+          break;
+        }
+
+        case 'debugForceCleanHistory': {
+          // Debug: Force cleanup of history
+          const { forceCleanHistory } = await import('./utils/debugHistory');
+          const result = await forceCleanHistory();
+          sendResponse({ success: true, data: result });
+          break;
+        }
+
+        case 'debugResetMigration': {
+          // Debug: Reset migration flag
+          const { resetMigrationFlag } = await import('./utils/debugHistory');
+          await resetMigrationFlag();
+          sendResponse({ success: true });
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }
