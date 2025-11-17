@@ -18,7 +18,7 @@ export default function HistoryView() {
         .filter(item => item.type === activeFilter)
         .slice(0, 10);
     }
-  }, [history.value, activeFilter]);
+  }, [history, activeFilter]);
 
   // Search results
   const searchResults = useMemo(() => {
@@ -31,7 +31,7 @@ export default function HistoryView() {
       item.title.toLowerCase().includes(lowerQuery) ||
       item.url.toLowerCase().includes(lowerQuery)
     ).slice(0, 50);
-  }, [history.value, searchQuery]);
+  }, [history, searchQuery]);
 
   // Check open tabs on mount and periodically
   useEffect(() => {
