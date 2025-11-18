@@ -20,6 +20,8 @@ interface ActionItem {
 interface SummaryResult {
   summary: string
   actionItems: ActionItem[]
+  satisfactionScore?: number
+  satisfactionAnalysis?: string
 }
 
 /**
@@ -107,7 +109,7 @@ serve(async (req) => {
         // Check if thread already has a recent summary (less than 1 hour old)
         const { data: existingThread } = await supabase
           .from('mail_threads')
-          .select('summary, summary_generated_at')
+          .select('summary, summary_generated_at, category')
           .eq('user_id', userId)
           .eq('gmail_thread_id', threadId)
           .single()
@@ -144,16 +146,25 @@ serve(async (req) => {
         console.log(`[AI Summary] Generating summary for thread ${threadId} with ${messages.length} messages`)
 
         // Generate thread summary using Claude Haiku
-        const summaryResult = await generateThreadSummary(messages, anthropicApiKey)
+        const category = existingThread?.category || 'general'
+        const summaryResult = await generateThreadSummary(messages, category, anthropicApiKey)
 
-        // Update thread with summary and action items
+        // Update thread with summary, action items, and satisfaction score (if applicable)
+        const updateData: any = {
+          summary: summaryResult.summary,
+          action_items: summaryResult.actionItems,
+          summary_generated_at: new Date().toISOString()
+        }
+
+        // Add satisfaction score for onboarding/support threads
+        if ((category === 'onboarding' || category === 'support') && summaryResult.satisfactionScore) {
+          updateData.satisfaction_score = summaryResult.satisfactionScore
+          updateData.satisfaction_analysis = summaryResult.satisfactionAnalysis
+        }
+
         const { error: updateError } = await supabase
           .from('mail_threads')
-          .update({
-            summary: summaryResult.summary,
-            action_items: summaryResult.actionItems,
-            summary_generated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('user_id', userId)
           .eq('gmail_thread_id', threadId)
 
@@ -217,8 +228,9 @@ serve(async (req) => {
 /**
  * Generate thread summary and action items using Claude Haiku
  * Analyzes the entire conversation with full context
+ * For onboarding/support threads, also extracts customer satisfaction score
  */
-async function generateThreadSummary(messages: any[], apiKey: string): Promise<SummaryResult> {
+async function generateThreadSummary(messages: any[], category: string, apiKey: string): Promise<SummaryResult> {
   // Build conversation context
   const threadContext = messages.map((msg, idx) => {
     return `
@@ -229,7 +241,45 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 ---`
   }).join('\n')
 
-  const prompt = `You are an AI assistant that helps summarize email threads and extract action items.
+  // Build prompt based on category
+  const isCustomerFacing = category === 'onboarding' || category === 'support'
+
+  const satisfactionInstructions = isCustomerFacing ? `
+
+3. Customer Satisfaction Score (1-10):
+   - Analyze the customer's tone, sentiment, and overall experience
+   - Consider: Was their issue resolved? Did they express gratitude or frustration?
+   - Look for indicators: positive language, complaints, escalations, unresolved issues
+   - Score 1-3: Unhappy/frustrated customer
+   - Score 4-6: Neutral experience, some issues
+   - Score 7-10: Satisfied/happy customer
+   - Provide a brief analysis explaining the score` : ''
+
+  const responseFormat = isCustomerFacing ? `
+{
+  "summary": "Brief summary of the entire conversation",
+  "actionItems": [
+    {
+      "description": "Specific action item with context",
+      "dueDate": "YYYY-MM-DD" or null,
+      "priority": "high" | "medium" | "low"
+    }
+  ],
+  "satisfactionScore": 7,
+  "satisfactionAnalysis": "Brief explanation of the satisfaction score"
+}` : `
+{
+  "summary": "Brief summary of the entire conversation",
+  "actionItems": [
+    {
+      "description": "Specific action item with context",
+      "dueDate": "YYYY-MM-DD" or null,
+      "priority": "high" | "medium" | "low"
+    }
+  ]
+}`
+
+  const prompt = `You are an AI assistant that helps summarize email threads and extract action items${isCustomerFacing ? ' and analyze customer satisfaction' : ''}.
 
 This is an email conversation with ${messages.length} message(s):
 ${threadContext}
@@ -244,18 +294,10 @@ Please analyze this entire email thread and provide:
    - Only include actionable items that require someone to do something
    - Include context about who needs to do what
    - Identify any mentioned deadlines or timeframes
+${satisfactionInstructions}
 
 Respond in JSON format:
-{
-  "summary": "Brief summary of the entire conversation",
-  "actionItems": [
-    {
-      "description": "Specific action item with context",
-      "dueDate": "YYYY-MM-DD" or null,
-      "priority": "high" | "medium" | "low"
-    }
-  ]
-}
+${responseFormat}
 
 If there are no action items, return an empty array.
 Focus on actionable items, not general statements.`
@@ -305,6 +347,15 @@ Focus on actionable items, not general statements.`
 
   if (!Array.isArray(result.actionItems)) {
     result.actionItems = []
+  }
+
+  // Validate satisfaction score if present
+  if (result.satisfactionScore !== undefined) {
+    if (typeof result.satisfactionScore !== 'number' || result.satisfactionScore < 1 || result.satisfactionScore > 10) {
+      console.warn('Invalid satisfaction score from Claude, ignoring')
+      delete result.satisfactionScore
+      delete result.satisfactionAnalysis
+    }
   }
 
   return result
