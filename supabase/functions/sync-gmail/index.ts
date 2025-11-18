@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me'
-const SKIP_LABELS = ['SPAM', 'TRASH', 'CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES']
+const SKIP_LABELS = ['SPAM', 'TRASH', 'CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES', 'DTC']
 
 interface OAuthToken {
   user_id: string
@@ -236,7 +236,7 @@ async function fetchRecentThreads(accessToken: string): Promise<Set<string>> {
   const params = new URLSearchParams({
     maxResults: '500',
     labelIds: 'INBOX',
-    q: '-in:spam -in:trash -category:promotions -category:social -category:updates'
+    q: '-in:spam -in:trash -category:promotions -category:social -category:updates -label:dtc'
   })
 
   const response = await fetch(`${GMAIL_API_BASE}/messages?${params}`, {
@@ -414,7 +414,7 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
       subject,
       participants,
       category,
-      labels: labelIds,
+      gmail_labels: labelIds,
       is_unread: isUnread,
       has_attachments: hasAttachments,
       message_count: messages.length,

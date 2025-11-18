@@ -157,7 +157,7 @@ serve(async (req) => {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
           ai_topic: summaryResult.topic,
-          labels: summaryResult.labels || [],
+          ai_labels: summaryResult.labels || [],
           summary_generated_at: new Date().toISOString()
         }
 

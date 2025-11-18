@@ -1,6 +1,7 @@
--- Add integration tracking and flexible labels for threads
+-- Add integration tracking and flexible AI labels for threads
 -- Integration: AI extracts any integration/service name mentioned (not limited to predefined list)
--- Labels: Flexible categorization for filtering (customer, promotional, internal, etc.)
+-- AI Labels: Flexible categorization for filtering (customer, promotional, internal, etc.)
+-- Note: gmail_labels are separate and store Gmail's label IDs (INBOX, UNREAD, DTC, etc.)
 
 -- Add columns if they don't exist
 DO $$
@@ -11,19 +12,19 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                 WHERE table_name = 'mail_threads' AND column_name = 'labels') THEN
-    ALTER TABLE mail_threads ADD COLUMN labels TEXT[] DEFAULT '{}';
+                 WHERE table_name = 'mail_threads' AND column_name = 'ai_labels') THEN
+    ALTER TABLE mail_threads ADD COLUMN ai_labels TEXT[] DEFAULT '{}';
   END IF;
 END $$;
 
 -- Add index for filtering by integration
 CREATE INDEX IF NOT EXISTS idx_mail_threads_integration ON mail_threads(user_id, integration_name) WHERE integration_name IS NOT NULL;
 
--- Add GIN index for labels array for fast filtering
-CREATE INDEX IF NOT EXISTS idx_mail_threads_labels ON mail_threads USING GIN(labels);
+-- Add GIN index for AI labels array for fast filtering
+CREATE INDEX IF NOT EXISTS idx_mail_threads_ai_labels ON mail_threads USING GIN(ai_labels);
 
 COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted integration/service name mentioned in thread (e.g., Yotpo Reviews, Klaviyo, Recharge). Free-form text, not limited to predefined list.';
-COMMENT ON COLUMN mail_threads.labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, etc.';
+COMMENT ON COLUMN mail_threads.ai_labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, etc.';
 
 -- Add function to get integration-specific stats
 -- Useful for understanding which integrations need the most support
