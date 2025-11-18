@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'preact/hooks';
-import { signal, computed } from '@preact/signals';
+import { useSignal, useComputed } from '@preact/signals';
 import type { HistoryItem, HistoryItemType } from '@/types';
 import { history } from '@/store/store';
 import { deleteHistoryItem, getHistoryItems } from '@/utils/historyTracker';
 
 export default function HistoryView() {
-  const searchQuery = signal('');
-  const activeFilter = signal<'all' | HistoryItemType>('all');
+  const searchQuery = useSignal('');
+  const activeFilter = useSignal<'all' | HistoryItemType>('all');
   const [openTabs, setOpenTabs] = useState<Map<string, number>>(new Map());
 
   // Filtered items based on activeFilter
-  const filteredItems = computed(() => {
+  const filteredItems = useComputed(() => {
     const allItems = history.value;
 
     if (activeFilter.value === 'all') {
@@ -23,7 +23,7 @@ export default function HistoryView() {
   });
 
   // Search results
-  const searchResults = computed(() => {
+  const searchResults = useComputed(() => {
     if (!searchQuery.value.trim()) {
       return [];
     }
