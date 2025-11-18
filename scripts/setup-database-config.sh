@@ -52,11 +52,9 @@ echo "  • Service role key: [HIDDEN]"
 echo "  • Supabase URL: $SUPABASE_URL"
 echo ""
 
-# Create SQL to set database settings
-SQL_CONFIG="
-ALTER DATABASE postgres SET app.service_role_key TO '$SERVICE_ROLE_KEY';
-ALTER DATABASE postgres SET app.supabase_url TO '$SUPABASE_URL';
-"
+# Create SQL to set config using the _config table
+SQL_CONFIG="SELECT set_config('service_role_key', '$SERVICE_ROLE_KEY');
+SELECT set_config('supabase_url', '$SUPABASE_URL');"
 
 # Execute SQL
 echo "$SQL_CONFIG" | supabase db execute
@@ -65,5 +63,5 @@ echo ""
 echo "✅ Database settings configured successfully!"
 echo ""
 echo "Verify the settings:"
-echo "  SELECT name, setting FROM pg_settings WHERE name LIKE 'app.%';"
+echo "  SELECT * FROM _config;"
 echo ""
