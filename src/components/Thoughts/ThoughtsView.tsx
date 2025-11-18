@@ -4,6 +4,7 @@ import { createThought, openThought, deleteThought, reorderThoughts } from '@/ut
 
 export default function ThoughtsView() {
   const draggedIndex = useSignal<number | null>(null);
+  const dragOverIndex = useSignal<number | null>(null);
 
   const handleAddThought = () => {
     createThought();
@@ -24,8 +25,11 @@ export default function ThoughtsView() {
     draggedIndex.value = index;
   };
 
-  const handleDragOver = (e: DragEvent) => {
+  const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault(); // Allow drop
+    if (draggedIndex.value !== null && draggedIndex.value !== index) {
+      dragOverIndex.value = index;
+    }
   };
 
   const handleDrop = (e: DragEvent, dropIndex: number) => {
@@ -34,10 +38,12 @@ export default function ThoughtsView() {
       reorderThoughts(draggedIndex.value, dropIndex);
     }
     draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   const handleDragEnd = () => {
     draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   return (
@@ -65,11 +71,11 @@ export default function ThoughtsView() {
         {thoughts.value.map((thought, index) => (
           <div
             key={thought.id}
-            class={`thought-card ${draggedIndex.value === index ? 'dragging' : ''}`}
+            class={`thought-card ${draggedIndex.value === index ? 'dragging' : ''} ${dragOverIndex.value === index && draggedIndex.value !== index ? 'drop-target' : ''}`}
             onClick={() => handleOpenThought(thought.id)}
             draggable={true}
             onDragStart={() => handleDragStart(index)}
-            onDragOver={handleDragOver}
+            onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
           >

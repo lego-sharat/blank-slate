@@ -3435,6 +3435,11 @@ body.light-theme {
   opacity: 0.5;
 }
 
+.task-item.drop-target {
+  border-top: 2px solid var(--accent-primary);
+  padding-top: 10px;
+}
+
 .task-item:hover {
   background: var(--bg-tertiary);
 }
@@ -3611,6 +3616,11 @@ body.light-theme {
 
 .thought-card.dragging {
   opacity: 0.5;
+}
+
+.thought-card.drop-target {
+  border: 2px solid var(--accent-primary);
+  box-shadow: 0 0 0 4px rgba(129, 162, 190, 0.2);
 }
 
 .thought-card:hover {

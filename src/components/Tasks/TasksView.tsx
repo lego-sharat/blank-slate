@@ -11,6 +11,7 @@ export default function TasksView() {
   const editingId = useSignal<number | null>(null);
   const editText = useSignal('');
   const draggedIndex = useSignal<number | null>(null);
+  const dragOverIndex = useSignal<number | null>(null);
 
   const filteredTodos = useComputed(() => {
     const allTodos = todos.value;
@@ -67,8 +68,11 @@ export default function TasksView() {
     draggedIndex.value = index;
   };
 
-  const handleDragOver = (e: DragEvent) => {
+  const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault(); // Allow drop
+    if (draggedIndex.value !== null && draggedIndex.value !== index) {
+      dragOverIndex.value = index;
+    }
   };
 
   const handleDrop = (e: DragEvent, dropIndex: number) => {
@@ -82,10 +86,12 @@ export default function TasksView() {
       reorderTodos(fromIndex, toIndex);
     }
     draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   const handleDragEnd = () => {
     draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   const hasNoTasks = todos.value.length === 0;
@@ -153,10 +159,10 @@ export default function TasksView() {
           filteredTodos.value.map((todo, index) => (
             <div
               key={todo.id}
-              class={`task-item ${todo.completed ? 'completed' : ''} ${draggedIndex.value === index ? 'dragging' : ''}`}
+              class={`task-item ${todo.completed ? 'completed' : ''} ${draggedIndex.value === index ? 'dragging' : ''} ${dragOverIndex.value === index && draggedIndex.value !== index ? 'drop-target' : ''}`}
               draggable={!editingId.value}
               onDragStart={() => handleDragStart(index)}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
             >
