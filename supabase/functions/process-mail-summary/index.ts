@@ -296,7 +296,8 @@ Please analyze this entire email thread and provide:
    - Identify any mentioned deadlines or timeframes
 ${satisfactionInstructions}
 
-Respond in JSON format:
+IMPORTANT: Respond with ONLY a valid JSON object, no other text or markdown formatting.
+Use this exact structure:
 ${responseFormat}
 
 If there are no action items, return an empty array.
