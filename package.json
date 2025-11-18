@@ -25,6 +25,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@inframanufaktur/clean-urls": "^1.0.1",
     "@preact/signals": "^2.5.0",
     "@supabase/supabase-js": "^2.39.0",
     "preact": "^10.27.2"

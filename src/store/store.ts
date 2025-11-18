@@ -52,6 +52,7 @@ export const settings = signal<Settings>({
   theme: 'dark',
   linearApiKey: '',
   githubToken: '',
+  figmaApiKey: '',
 });
 
 // UI state signals

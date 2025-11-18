@@ -1,4 +1,4 @@
-import { shouldTrackUrl, createHistoryItem, updateHistoryItemTitle } from './utils/historyTracker';
+import { shouldTrackUrl, updateHistoryItemTitle } from './utils/historyTracker';
 import {
   getTodos,
   getThoughts,
@@ -6,7 +6,6 @@ import {
   getSettings,
   setLinearIssues,
   setGitHubPRs,
-  getCalendarToken,
   setCalendarEvents,
   setLastSync,
   getLastSync,
@@ -20,6 +19,8 @@ import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';
+import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
+import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
 
 /**
  * Background script for:
@@ -36,6 +37,40 @@ const FETCH_INTERVAL_MINUTES = 2; // Fetch external data every 2 minutes
 const SUPABASE_SYNC_INTERVAL = 10 * 60 * 1000; // Sync to Supabase every 10 minutes
 
 console.log('Background script starting...');
+
+/**
+ * Run one-time migration to clean and deduplicate existing history
+ * This runs once per installation and is tracked via a flag
+ * v2: Added Figma URL normalization (removes name variations for boards/files)
+ */
+async function runHistoryCleanupMigration() {
+  const MIGRATION_FLAG = 'history_cleaned_v2';
+
+  try {
+    // Check if migration has already been run
+    const result = await chrome.storage.local.get(MIGRATION_FLAG);
+
+    if (result[MIGRATION_FLAG]) {
+      console.log('✓ History cleanup migration v2 already completed');
+      return;
+    }
+
+    console.log('→ Running history cleanup migration v2...');
+    const cleanupResult = await cleanAndDeduplicateHistory();
+
+    console.log(`✓ History cleanup complete:`, {
+      originalCount: cleanupResult.originalCount,
+      cleanedCount: cleanupResult.cleanedCount,
+      duplicatesRemoved: cleanupResult.duplicatesRemoved,
+    });
+
+    // Set flag to prevent running again
+    await chrome.storage.local.set({ [MIGRATION_FLAG]: true });
+    console.log('✓ Migration flag set');
+  } catch (error) {
+    console.error('✗ Failed to run history cleanup migration:', error);
+  }
+}
 
 /**
  * Initialize Supabase on startup
@@ -120,48 +155,24 @@ async function fetchAndCacheGitHubPRs() {
 
 /**
  * Fetch Calendar events and cache them
- * Inline implementation to avoid import issues in background worker
+ * Uses automatic token refresh on 401 errors
  */
 async function fetchAndCacheCalendarEvents() {
   try {
-    const token = await getCalendarToken();
-    if (!token) {
-      console.log('Calendar token not configured, skipping');
-      return;
-    }
-
     console.log('Fetching calendar events...');
 
-    // Inline calendar fetching - no imports to avoid window references
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    // Use the new utility with automatic token refresh
+    const events = await fetchCalendarEventsWithRetry();
 
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-      `timeMin=${startOfDay.toISOString()}&` +
-      `timeMax=${endOfDay.toISOString()}&` +
-      `singleEvents=true&` +
-      `orderBy=startTime&` +
-      `maxResults=50`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch calendar events: ${response.status}`);
+    if (events) {
+      await setCalendarEvents(events);
+      console.log(`Calendar events cached successfully (${events.length} events)`);
+    } else {
+      console.log('No calendar events fetched (token not available)');
     }
-
-    const data = await response.json();
-    const events = data.items || [];
-
-    await setCalendarEvents(events);
-    console.log(`Calendar events cached successfully (${events.length} events)`);
   } catch (error) {
     console.error('Failed to fetch calendar events:', error);
+    // Don't throw - allow other data fetching to continue
   }
 }
 
@@ -316,11 +327,11 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
 
     // Check if we should track this URL
     if (shouldTrackUrl(url)) {
-      const historyItem = createHistoryItem(url, tab.title);
+      const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+      const historyItem = await createHistoryItemAsync(url, tab.title);
 
       if (historyItem) {
         // Save to chrome.storage
-        const { saveHistoryItem } = await import('./utils/historyTracker');
         await saveHistoryItem(historyItem);
       }
     }
@@ -336,10 +347,10 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const url = tab.url;
 
       if (shouldTrackUrl(url)) {
-        const historyItem = createHistoryItem(url, tab.title);
+        const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+        const historyItem = await createHistoryItemAsync(url, tab.title);
 
         if (historyItem) {
-          const { saveHistoryItem } = await import('./utils/historyTracker');
           await saveHistoryItem(historyItem);
         }
       }
@@ -380,6 +391,46 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           sendResponse({ success: true });
           break;
 
+        case 'debugInspectHistory': {
+          // Debug: Inspect history for duplicates
+          const { inspectHistory } = await import('./utils/debugHistory');
+          const stats = await inspectHistory();
+          sendResponse({ success: true, data: stats });
+          break;
+        }
+
+        case 'debugForceCleanHistory': {
+          // Debug: Force cleanup of history
+          const { forceCleanHistory } = await import('./utils/debugHistory');
+          const result = await forceCleanHistory();
+          sendResponse({ success: true, data: result });
+          break;
+        }
+
+        case 'debugResetMigration': {
+          // Debug: Reset migration flag
+          const { resetMigrationFlag } = await import('./utils/debugHistory');
+          await resetMigrationFlag();
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'deleteHistoryItem': {
+          // Delete a history item by ID
+          const { deleteHistoryItem } = await import('./utils/historyTracker');
+          await deleteHistoryItem(message.id);
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'deleteHistoryItemByUrl': {
+          // Delete a history item by URL
+          const { deleteHistoryItemByUrl } = await import('./utils/historyTracker');
+          await deleteHistoryItemByUrl(message.url);
+          sendResponse({ success: true });
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }
@@ -400,6 +451,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // Initialize on install/update
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed/updated');
+  await runHistoryCleanupMigration();
   await initializeSupabase();
   await fetchAllExternalData();
 });
@@ -407,6 +459,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Initialize on startup
 chrome.runtime.onStartup.addListener(async () => {
   console.log('Browser started');
+  await runHistoryCleanupMigration();
   await initializeSupabase();
   await fetchAllExternalData();
 });
@@ -432,6 +485,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 
 // Initialize immediately on script load
 (async () => {
+  await runHistoryCleanupMigration();
   await initializeSupabase();
   // Fetch data on startup
   await fetchAllExternalData();

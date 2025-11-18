@@ -1,4 +1,6 @@
 import type { HistoryItem, HistoryItemType } from '@/types';
+import { cleanUrl, isFigmaFileUrl } from './urlCleaner';
+import { getFigmaTitle } from './figmaApi';
 
 /**
  * Configuration for tracking different platforms
@@ -10,16 +12,20 @@ const TRACKED_DOMAINS = {
   'figma.com': 'figma',
   'www.figma.com': 'figma',
   'github.com': 'github', // Will determine repo vs issue from URL
-  'linear.app': 'linear',
 } as const;
 
 const HISTORY_STORAGE_KEY = 'history_items';
 
 /**
- * Extract title from page
+ * Extract title from page (synchronous version for non-Figma URLs)
  */
 function extractTitle(url: string, pageTitle?: string): string {
-  if (pageTitle && pageTitle !== 'undefined') {
+  // Always prefer the browser's page title if available and valid
+  if (pageTitle && pageTitle !== 'undefined' && pageTitle.trim() !== '') {
+    // Clean up Figma page titles by removing " - Figma" or " – Figma" suffix
+    if (url.includes('figma.com')) {
+      return pageTitle.replace(/\s+[-–]\s+Figma\s*$/i, '').trim();
+    }
     return pageTitle;
   }
 
@@ -27,19 +33,19 @@ function extractTitle(url: string, pageTitle?: string): string {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
 
-    // Extract meaningful title from URL
+    // Extract meaningful title from URL as fallback
     if (url.includes('docs.google.com/document')) {
-      return pageTitle || 'Google Doc';
+      return 'Google Doc';
     } else if (url.includes('docs.google.com/spreadsheets')) {
-      return pageTitle || 'Google Sheet';
+      return 'Google Sheet';
     } else if (url.includes('docs.google.com/presentation')) {
-      return pageTitle || 'Google Slides';
+      return 'Google Slides';
     } else if (url.includes('docs.google.com/forms')) {
-      return pageTitle || 'Google Form';
+      return 'Google Form';
     } else if (url.includes('notion.so')) {
       const parts = pathname.split('/').filter(p => p);
       return parts[parts.length - 1]?.replace(/-/g, ' ') || 'Notion Page';
-    } else if (url.includes('figma.com/file')) {
+    } else if (url.includes('figma.com/file') || url.includes('figma.com/design')) {
       const parts = pathname.split('/');
       return parts[3]?.replace(/-/g, ' ') || 'Figma File';
     } else if (url.includes('figma.com/board') || url.includes('figjam')) {
@@ -51,14 +57,44 @@ function extractTitle(url: string, pageTitle?: string): string {
         return `${parts[0]}/${parts[1]}`;
       }
       return 'GitHub';
-    } else if (url.includes('linear.app')) {
-      return 'Linear Issue';
     }
   } catch (e) {
     console.error('Error extracting title:', e);
   }
 
   return url;
+}
+
+/**
+ * Extract enhanced title from page (async version that uses Figma API only as fallback)
+ */
+async function extractTitleAsync(url: string, pageTitle?: string): Promise<string> {
+  // First, try to get title from the browser (just like Notion)
+  const browserTitle = extractTitle(url, pageTitle);
+
+  // For Figma URLs with node IDs, try to enhance with API to get "File - Node" format
+  // Only use API if:
+  // 1. We have a node ID in the URL (user is viewing a specific frame/component)
+  // 2. Browser title doesn't already include node name
+  if (isFigmaFileUrl(url)) {
+    const { extractFigmaNodeId } = await import('./urlCleaner');
+    const nodeId = extractFigmaNodeId(url);
+
+    // Only call API if we have a node ID and the browser title doesn't include " - "
+    // (which would indicate it already has "File - Node" format)
+    if (nodeId && !browserTitle.includes(' - ')) {
+      try {
+        const figmaTitle = await getFigmaTitle(url, browserTitle);
+        return figmaTitle;
+      } catch (e) {
+        console.log('[History Tracker] Figma API unavailable, using browser title:', browserTitle);
+        // Fall back to browser title
+      }
+    }
+  }
+
+  // For all other cases, use the browser title
+  return browserTitle;
 }
 
 /**
@@ -90,8 +126,8 @@ function determineType(url: string): HistoryItemType | null {
       if (pathname.includes('/board/') || url.includes('figjam')) {
         return 'figjam';
       }
-      // Regular Figma files use /file/
-      if (pathname.includes('/file/')) {
+      // Regular Figma files use /file/ or /design/
+      if (pathname.includes('/file/') || pathname.includes('/design/')) {
         return 'figma';
       }
       return null;
@@ -113,6 +149,7 @@ export function shouldTrackUrl(url: string): boolean {
 
     // Check if domain is tracked
     if (!(hostname in TRACKED_DOMAINS)) {
+      console.log('[History Tracker] Domain not tracked:', hostname);
       return false;
     }
 
@@ -124,22 +161,32 @@ export function shouldTrackUrl(url: string): boolean {
     if (url.includes('docs.google.com/forms')) return true;
 
     if (url.includes('notion.so') && !url.includes('/login')) return true;
-    if (url.includes('figma.com/file')) return true;
-    if (url.includes('figma.com/board') || url.includes('figjam')) return true;
+
+    // Figma tracking
+    if (url.includes('figma.com/file') || url.includes('figma.com/design')) {
+      console.log('[History Tracker] Figma file URL detected:', url);
+      return true;
+    }
+    if (url.includes('figma.com/board') || url.includes('figjam')) {
+      console.log('[History Tracker] FigJam board URL detected:', url);
+      return true;
+    }
+
     if (url.includes('github.com')) {
       const type = determineType(url);
       return type === 'github-repo' || type === 'github-issue';
     }
-    if (url.includes('linear.app/') && url.match(/linear\.app\/[^\/]+\/issue/)) return true;
 
+    console.log('[History Tracker] URL not matching any pattern:', url);
     return false;
   } catch (e) {
+    console.error('[History Tracker] Error in shouldTrackUrl:', e);
     return false;
   }
 }
 
 /**
- * Create a history item from URL and title
+ * Create a history item from URL and title (synchronous version)
  */
 export function createHistoryItem(url: string, title?: string): HistoryItem | null {
   if (!shouldTrackUrl(url)) {
@@ -151,13 +198,55 @@ export function createHistoryItem(url: string, title?: string): HistoryItem | nu
     return null;
   }
 
+  // Clean the URL before storing
+  const cleanedUrl = cleanUrl(url);
+
   return {
-    id: `${url}-${Date.now()}`,
+    id: `${cleanedUrl}-${Date.now()}`,
     type,
     title: extractTitle(url, title),
-    url,
+    url: cleanedUrl,
     visitedAt: Date.now(),
   };
+}
+
+/**
+ * Create a history item from URL and title (async version with Figma API support)
+ */
+export async function createHistoryItemAsync(url: string, title?: string): Promise<HistoryItem | null> {
+  console.log('[History Tracker] createHistoryItemAsync called with URL:', url);
+
+  if (!shouldTrackUrl(url)) {
+    console.log('[History Tracker] URL not tracked, skipping');
+    return null;
+  }
+
+  const type = determineType(url);
+  if (!type) {
+    console.log('[History Tracker] Could not determine type for URL:', url);
+    return null;
+  }
+
+  console.log('[History Tracker] URL type determined:', type);
+
+  // Clean the URL before storing
+  const cleanedUrl = cleanUrl(url);
+  console.log('[History Tracker] Cleaned URL:', cleanedUrl);
+
+  // Get enhanced title (uses Figma API for Figma URLs)
+  const enhancedTitle = await extractTitleAsync(url, title);
+  console.log('[History Tracker] Enhanced title:', enhancedTitle);
+
+  const historyItem = {
+    id: `${cleanedUrl}-${Date.now()}`,
+    type,
+    title: enhancedTitle,
+    url: cleanedUrl,
+    visitedAt: Date.now(),
+  };
+
+  console.log('[History Tracker] Created history item:', historyItem);
+  return historyItem;
 }
 
 /**
@@ -181,8 +270,16 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
   try {
     let items = await getHistoryItems();
 
+    // Clean the item URL (should already be clean, but just in case)
+    const cleanedItemUrl = cleanUrl(item.url);
+    item.url = cleanedItemUrl;
+
     // Check if this URL already exists (regardless of when it was visited)
-    const existingIndex = items.findIndex(i => i.url === item.url);
+    // Compare cleaned URLs to handle legacy items with tracking params
+    const existingIndex = items.findIndex(i => {
+      const cleanedExistingUrl = cleanUrl(i.url);
+      return cleanedExistingUrl === cleanedItemUrl;
+    });
 
     if (existingIndex !== -1) {
       // Remove the existing item from its current position
@@ -203,17 +300,38 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
 
 /**
  * Update title for an existing history item
+ * Applies the same cleaning logic as extractTitle
  */
 export async function updateHistoryItemTitle(url: string, newTitle: string): Promise<void> {
   try {
     const items = await getHistoryItems();
 
-    // Find the most recent item with this URL
-    const item = items.find(i => i.url === url);
+    // Clean the URL to match against cleaned items
+    const cleanedUrl = cleanUrl(url);
 
-    if (item && newTitle && newTitle !== 'undefined') {
-      item.title = newTitle;
-      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
+    // Find the most recent item with this URL (compare cleaned URLs)
+    const item = items.find(i => cleanUrl(i.url) === cleanedUrl);
+
+    if (item && newTitle && newTitle !== 'undefined' && newTitle.trim() !== '') {
+      // Apply the same title cleaning logic as extractTitle
+      let cleanedTitle = newTitle;
+
+      // Clean up Figma page titles by removing " - Figma" or " – Figma" suffix
+      if (url.includes('figma.com')) {
+        cleanedTitle = newTitle.replace(/\s+[-–]\s+Figma\s*$/i, '').trim();
+      }
+
+      // Only update if the cleaned title is different and not empty
+      if (cleanedTitle && cleanedTitle !== item.title) {
+        console.log(`[History Tracker] Updating title for ${cleanedUrl}:`, {
+          old: item.title,
+          new: cleanedTitle,
+        });
+        item.title = cleanedTitle;
+        // Also ensure the URL is cleaned
+        item.url = cleanedUrl;
+        await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
+      }
     }
   } catch (e) {
     console.error('Error updating history item title:', e);
@@ -257,6 +375,33 @@ export async function searchHistory(query: string): Promise<HistoryItem[]> {
     item.title.toLowerCase().includes(lowerQuery) ||
     item.url.toLowerCase().includes(lowerQuery)
   ).slice(0, 50);
+}
+
+/**
+ * Delete a single history item by ID
+ */
+export async function deleteHistoryItem(id: string): Promise<void> {
+  try {
+    const items = await getHistoryItems();
+    const filtered = items.filter(item => item.id !== id);
+    await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: filtered });
+  } catch (e) {
+    console.error('Error deleting history item:', e);
+  }
+}
+
+/**
+ * Delete a history item by URL
+ */
+export async function deleteHistoryItemByUrl(url: string): Promise<void> {
+  try {
+    const items = await getHistoryItems();
+    const cleanedUrl = cleanUrl(url);
+    const filtered = items.filter(item => cleanUrl(item.url) !== cleanedUrl);
+    await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: filtered });
+  } catch (e) {
+    console.error('Error deleting history item by URL:', e);
+  }
 }
 
 /**

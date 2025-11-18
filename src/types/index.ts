@@ -69,6 +69,7 @@ export interface Settings {
   theme: 'dark' | 'light';
   linearApiKey: string;
   githubToken: string;
+  figmaApiKey: string;
 }
 
 // Linear types
@@ -158,7 +159,7 @@ export interface GitHubPR {
 }
 
 // History types
-export type HistoryItemType = 'google-docs' | 'notion' | 'figma' | 'figjam' | 'github-repo' | 'github-issue' | 'linear';
+export type HistoryItemType = 'google-docs' | 'notion' | 'figma' | 'figjam' | 'github-repo' | 'github-issue';
 
 export interface HistoryItem {
   id: string;

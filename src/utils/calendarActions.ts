@@ -1,6 +1,8 @@
 /**
  * Fetch today's calendar events from Google Calendar API
  * Background-safe version - does not import store
+ * Note: This function doesn't handle token refresh automatically.
+ * For automatic token refresh, use fetchCalendarEventsWithRetry from calendarTokenRefresh.ts
  */
 export async function fetchTodayEvents(token: string) {
   if (!token) return [];
@@ -25,7 +27,10 @@ export async function fetchTodayEvents(token: string) {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch calendar events');
+      if (response.status === 401) {
+        console.warn('[Calendar Actions] Token expired (401). Please use fetchCalendarEventsWithRetry for automatic refresh.');
+      }
+      throw new Error(`Failed to fetch calendar events: ${response.status}`);
     }
 
     const data = await response.json();
