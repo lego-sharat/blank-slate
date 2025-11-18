@@ -20,6 +20,7 @@ interface ActionItem {
 interface SummaryResult {
   summary: string
   actionItems: ActionItem[]
+  topic: string // AI-generated topic/label for categorization
   satisfactionScore?: number
   satisfactionAnalysis?: string
 }
@@ -149,10 +150,11 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, anthropicApiKey)
 
-        // Update thread with summary, action items, and satisfaction score (if applicable)
+        // Update thread with summary, action items, topic, and satisfaction score (if applicable)
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
+          ai_topic: summaryResult.topic,
           summary_generated_at: new Date().toISOString()
         }
 
@@ -258,6 +260,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
   const responseFormat = isCustomerFacing ? `
 {
   "summary": "Brief summary of the entire conversation",
+  "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -270,6 +273,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 }` : `
 {
   "summary": "Brief summary of the entire conversation",
+  "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -290,7 +294,18 @@ Please analyze this entire email thread and provide:
    - Key points discussed
    - Current status or outcome if applicable
 
-2. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
+2. A topic/label that best categorizes this thread:
+   - bug_report: Customer reporting a bug or error
+   - feature_request: Request for new features or enhancements
+   - billing_question: Questions about pricing, invoices, subscriptions
+   - technical_issue: Technical problems, integrations, setup issues
+   - product_feedback: General feedback, suggestions, opinions
+   - account_issue: Login, access, password, account management
+   - integration_help: Help with API, webhooks, third-party integrations
+   - general_inquiry: General questions, information requests
+   - other: Doesn't fit other categories
+
+3. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
    - Only include actionable items that require someone to do something
    - Include context about who needs to do what
    - Identify any mentioned deadlines or timeframes
@@ -358,6 +373,11 @@ Focus on actionable items, not general statements.`
   // Validate structure
   if (!result.summary || typeof result.summary !== 'string') {
     throw new Error('Invalid summary format from Claude')
+  }
+
+  if (!result.topic || typeof result.topic !== 'string') {
+    console.warn('Missing topic from Claude, defaulting to "other"')
+    result.topic = 'other'
   }
 
   if (!Array.isArray(result.actionItems)) {
