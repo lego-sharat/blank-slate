@@ -341,10 +341,23 @@ async function getLatestHistoryId(accessToken: string): Promise<string | null> {
     headers: { 'Authorization': `Bearer ${accessToken}` }
   })
 
-  if (!response.ok) return null
+  if (!response.ok) {
+    console.error(`[getLatestHistoryId] Failed to fetch profile: ${response.status} ${response.statusText}`)
+    return null
+  }
 
   const data = await response.json()
-  return data.historyId || null
+  console.log(`[getLatestHistoryId] Gmail profile response:`, JSON.stringify(data))
+
+  if (!data.historyId) {
+    console.warn(`[getLatestHistoryId] No historyId in profile response`)
+    return null
+  }
+
+  const historyId = String(data.historyId) // Ensure it's a string
+  console.log(`[getLatestHistoryId] Extracted historyId: ${historyId} (type: ${typeof historyId}, length: ${historyId.length})`)
+
+  return historyId
 }
 
 // Save thread and all its messages to database
