@@ -81,7 +81,6 @@ export default function HistoryView() {
       'figjam': 'FigJam',
       'github-repo': 'GitHub Repo',
       'github-issue': 'GitHub Issue',
-      'linear': 'Linear',
     };
     return labels[type];
   };
@@ -94,7 +93,6 @@ export default function HistoryView() {
       'figjam': '#a259ff',
       'github-repo': '#8abeb7',
       'github-issue': '#cc6666',
-      'linear': '#81a2be',
     };
     return colors[type];
   };
@@ -228,12 +226,6 @@ export default function HistoryView() {
           onClick={() => setActiveFilter('github-issue')}
         >
           GitHub Issues
-        </button>
-        <button
-          class={`history-filter-btn ${activeFilter === 'linear' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('linear')}
-        >
-          Linear
         </button>
       </div>
 

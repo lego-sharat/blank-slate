@@ -12,7 +12,6 @@ const TRACKED_DOMAINS = {
   'figma.com': 'figma',
   'www.figma.com': 'figma',
   'github.com': 'github', // Will determine repo vs issue from URL
-  'linear.app': 'linear',
 } as const;
 
 const HISTORY_STORAGE_KEY = 'history_items';
@@ -58,8 +57,6 @@ function extractTitle(url: string, pageTitle?: string): string {
         return `${parts[0]}/${parts[1]}`;
       }
       return 'GitHub';
-    } else if (url.includes('linear.app')) {
-      return 'Linear Issue';
     }
   } catch (e) {
     console.error('Error extracting title:', e);
@@ -179,7 +176,6 @@ export function shouldTrackUrl(url: string): boolean {
       const type = determineType(url);
       return type === 'github-repo' || type === 'github-issue';
     }
-    if (url.includes('linear.app/') && url.match(/linear\.app\/[^\/]+\/issue/)) return true;
 
     console.log('[History Tracker] URL not matching any pattern:', url);
     return false;
