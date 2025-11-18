@@ -167,13 +167,19 @@ async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: str
   // Update last_history_id
   const newHistoryId = await getLatestHistoryId(accessToken)
   if (newHistoryId) {
-    await supabase
+    const { error: updateError } = await supabase
       .from('oauth_tokens')
       .update({ last_history_id: newHistoryId })
       .eq('user_id', token.user_id)
       .eq('provider', 'gmail')
 
-    console.log(`[User ${token.user_id}] Updated last_history_id to ${newHistoryId}`)
+    if (updateError) {
+      console.error(`[User ${token.user_id}] Failed to update last_history_id:`, updateError)
+    } else {
+      console.log(`[User ${token.user_id}] Updated last_history_id to ${newHistoryId}`)
+    }
+  } else {
+    console.warn(`[User ${token.user_id}] Could not get latest history ID from Gmail`)
   }
 
   // Trigger AI summarization for threads (fire and forget)
