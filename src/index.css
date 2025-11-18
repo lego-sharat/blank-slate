@@ -2806,62 +2806,13 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   margin-top: 6px;
 }
 
-/* Simple sidebar sections (non-collapsible) */
-.sidebar-section-simple {
-  margin: 2px 0;
-}
-
-.sidebar-section-simple .sidebar-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.15s ease;
-  border-radius: 6px;
-  margin: 0 8px;
-}
-
-.sidebar-section-simple .sidebar-section-header:hover {
-  background: var(--hover-bg);
-}
-
-.sidebar-section-simple .sidebar-section-header.active {
-  background: var(--bg-tertiary);
-  border-left: 3px solid var(--accent-primary);
-  padding-left: 11px;
-}
-
-.sidebar-section-simple .sidebar-section-header.active .sidebar-section-icon {
-  color: var(--accent-primary);
-}
-
-.sidebar-section-simple .sidebar-section-header.active .sidebar-section-title {
-  color: var(--accent-primary);
-}
-
-.sidebar-section-icon {
-  color: var(--text-tertiary);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Navigation item styling - unified with section headers */
-.sidebar-nav-item {
-  margin: 2px 0;
-  padding: 10px 14px !important;
-}
-
+/* Unified sidebar item styling */
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  margin: 0 8px;
+  margin: 2px 8px;
   cursor: pointer;
   transition: background 0.15s ease;
   border-radius: 6px;
@@ -2898,6 +2849,30 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-item-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.sidebar-item:hover .sidebar-item-action-btn {
+  opacity: 1;
+}
+
+.sidebar-item-action-btn:hover {
+  background: var(--hover-bg);
+  color: var(--accent-primary);
 }
 
 .sidebar-item-checkbox {
@@ -3935,40 +3910,6 @@ body.light-theme {
   padding: 48px 24px;
   color: var(--text-secondary);
   font-size: 16px;
-}
-
-/* Sidebar Section Actions */
-.sidebar-section-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sidebar-section-add-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  transition: all 0.2s;
-  opacity: 0;
-}
-
-.sidebar-section-header:hover .sidebar-section-add-btn {
-  opacity: 1;
-}
-
-.sidebar-section-add-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent-primary);
-}
-
-.sidebar-section-header.active .sidebar-section-add-btn {
-  color: var(--accent-primary);
 }
 
 /* Profile View */
