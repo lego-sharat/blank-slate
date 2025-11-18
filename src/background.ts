@@ -21,7 +21,6 @@ import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';
-import { fetchAllMailMessages } from './utils/mailApi';
 import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
 import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
 
@@ -180,26 +179,25 @@ async function fetchAndCacheCalendarEvents() {
 }
 
 /**
- * Fetch Mail messages and cache them
- * Note: Requires Gmail OAuth token to be configured
+ * Fetch Mail messages from Supabase and cache in IndexedDB
+ * Replaces old client-side Gmail API fetching
  */
 async function fetchAndCacheMailMessages() {
   try {
-    // Get calendar token (Gmail uses the same OAuth token)
-    const { getCalendarToken } = await import('./utils/storageManager');
-    const token = await getCalendarToken();
+    console.log('Syncing mail from Supabase...');
 
-    if (!token) {
-      console.log('Gmail token not configured, skipping mail fetch');
-      return;
-    }
+    // Import the new Supabase sync utility
+    const { syncMailFromSupabase } = await import('./utils/mailSupabaseSync');
 
-    console.log('Fetching mail messages...');
-    const messages = await fetchAllMailMessages(token);
+    // Fetch from Supabase and cache in IndexedDB
+    const messages = await syncMailFromSupabase();
+
+    // Also save to chrome.storage for backward compatibility
     await setMailMessages(messages);
-    console.log(`Mail messages cached successfully (${messages.all.length} total, ${messages.onboarding.length} onboarding, ${messages.support.length} support)`);
+
+    console.log(`Mail sync complete: ${messages.all.length} total, ${messages.onboarding.length} onboarding, ${messages.support.length} support`);
   } catch (error) {
-    console.error('Failed to fetch mail messages:', error);
+    console.error('Failed to sync mail messages:', error);
     // Don't throw - allow other data fetching to continue
   }
 }
