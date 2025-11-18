@@ -81,10 +81,21 @@ echo ""
 
 # Set encryption key in local database if not already set
 echo "Configuring encryption key for local testing..."
-ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
 
-# Check if encryption key is already set
-KEY_CHECK=$(echo "SELECT current_setting('app.encryption_key', true);" | supabase db execute 2>/dev/null || echo "")
+# Try to read encryption key from .env.local
+if [ -f supabase/.env.local ]; then
+    ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env.local 2>/dev/null | cut -d '=' -f2-)
+fi
+
+# If not found in .env.local, generate a random one
+if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "No ENCRYPTION_KEY found in .env.local, generating random key..."
+    ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+    echo "💡 Tip: Add ENCRYPTION_KEY=$ENCRYPTION_KEY to supabase/.env.local for consistency"
+fi
+
+# Check if encryption key is already set in database
+KEY_CHECK=$(echo "SELECT current_setting('app.encryption_key', true);" | supabase db execute 2>/dev/null | grep -v "current_setting" | grep -v "^-" | grep -v "row" | tr -d ' ' || echo "")
 
 if [ -z "$KEY_CHECK" ] || [ "$KEY_CHECK" = "" ]; then
     echo "Setting encryption key in local database..."
@@ -92,7 +103,7 @@ if [ -z "$KEY_CHECK" ] || [ "$KEY_CHECK" = "" ]; then
     echo "$SQL" | supabase db execute
     echo "✅ Encryption key configured for local testing"
 else
-    echo "✅ Encryption key already configured"
+    echo "✅ Encryption key already configured in database"
 fi
 echo ""
 
