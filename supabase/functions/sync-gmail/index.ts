@@ -44,9 +44,16 @@ serve(async (req) => {
 
     console.log('[Gmail Sync] Starting sync for all users...')
 
+    // Get encryption key from environment
+    const encryptionKey = Deno.env.get('ENCRYPTION_KEY')
+    if (!encryptionKey) {
+      throw new Error('ENCRYPTION_KEY not configured')
+    }
+
     // Get all users with Gmail connected using decryption function
     const { data: tokens, error: tokensError } = await supabase.rpc('get_all_oauth_tokens', {
-      p_provider: 'gmail'
+      p_provider: 'gmail',
+      p_encryption_key: encryptionKey
     })
 
     if (tokensError) throw tokensError
@@ -59,7 +66,7 @@ serve(async (req) => {
     // Process each user
     for (const token of (tokens || [])) {
       try {
-        await syncUserMail(supabase, token)
+        await syncUserMail(supabase, token, encryptionKey)
         successCount++
       } catch (err) {
         console.error(`[Gmail Sync] Failed for user ${token.user_id}:`, err)
@@ -87,14 +94,14 @@ serve(async (req) => {
   }
 })
 
-async function syncUserMail(supabase: any, token: OAuthToken) {
+async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: string) {
   console.log(`[User ${token.user_id}] Starting sync...`)
 
   // Refresh access token if expired
   let accessToken = token.access_token
   if (Date.now() > token.expires_at) {
     console.log(`[User ${token.user_id}] Refreshing access token...`)
-    accessToken = await refreshAccessToken(supabase, token)
+    accessToken = await refreshAccessToken(supabase, token, encryptionKey)
   }
 
   // Fetch messages
@@ -132,7 +139,7 @@ async function syncUserMail(supabase: any, token: OAuthToken) {
   }
 }
 
-async function refreshAccessToken(supabase: any, token: OAuthToken): Promise<string> {
+async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKey: string): Promise<string> {
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -156,7 +163,8 @@ async function refreshAccessToken(supabase: any, token: OAuthToken): Promise<str
     p_user_id: token.user_id,
     p_provider: 'gmail',
     p_access_token: data.access_token,
-    p_expires_at: expiresAt
+    p_expires_at: expiresAt,
+    p_encryption_key: encryptionKey
   })
 
   if (lockError) {

@@ -57,39 +57,26 @@ CREATE TRIGGER update_oauth_tokens_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Function to get encryption key from database settings
--- In production, set this with: ALTER DATABASE postgres SET app.encryption_key TO 'your-secure-key';
-CREATE OR REPLACE FUNCTION get_encryption_key()
-RETURNS TEXT AS $$
-BEGIN
-  RETURN current_setting('app.encryption_key', true);
-EXCEPTION
-  WHEN OTHERS THEN
-    -- Fallback to a default key for development (DO NOT USE IN PRODUCTION)
-    RAISE WARNING 'Using default encryption key - set app.encryption_key in production!';
-    RETURN 'dev_encryption_key_change_in_production';
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Function to encrypt token
-CREATE OR REPLACE FUNCTION encrypt_token(token TEXT)
+-- Function to encrypt token with provided key
+-- Key is passed from Edge Function environment variable (Supabase secret)
+CREATE OR REPLACE FUNCTION encrypt_token(token TEXT, encryption_key TEXT)
 RETURNS BYTEA AS $$
 BEGIN
   IF token IS NULL THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_encrypt(token, get_encryption_key());
+  RETURN pgp_sym_encrypt(token, encryption_key);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to decrypt token
-CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token BYTEA)
+-- Function to decrypt token with provided key
+CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token BYTEA, encryption_key TEXT)
 RETURNS TEXT AS $$
 BEGIN
   IF encrypted_token IS NULL THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_decrypt(encrypted_token, get_encryption_key());
+  RETURN pgp_sym_decrypt(encrypted_token, encryption_key);
 EXCEPTION
   WHEN OTHERS THEN
     RAISE EXCEPTION 'Failed to decrypt token: %', SQLERRM;
@@ -97,12 +84,14 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Helper function to store OAuth tokens with encryption
+-- Encryption key is passed from Edge Function (via Supabase secret)
 CREATE OR REPLACE FUNCTION store_oauth_token(
   p_user_id UUID,
   p_provider TEXT,
   p_refresh_token TEXT,
   p_access_token TEXT,
   p_expires_at BIGINT,
+  p_encryption_key TEXT,
   p_last_history_id TEXT DEFAULT NULL
 )
 RETURNS UUID AS $$
@@ -119,15 +108,15 @@ BEGIN
   ) VALUES (
     p_user_id,
     p_provider,
-    encrypt_token(p_refresh_token),
-    encrypt_token(p_access_token),
+    encrypt_token(p_refresh_token, p_encryption_key),
+    encrypt_token(p_access_token, p_encryption_key),
     p_expires_at,
     p_last_history_id
   )
   ON CONFLICT (user_id, provider)
   DO UPDATE SET
-    refresh_token_encrypted = encrypt_token(p_refresh_token),
-    access_token_encrypted = encrypt_token(p_access_token),
+    refresh_token_encrypted = encrypt_token(p_refresh_token, p_encryption_key),
+    access_token_encrypted = encrypt_token(p_access_token, p_encryption_key),
     expires_at = p_expires_at,
     last_history_id = COALESCE(p_last_history_id, oauth_tokens.last_history_id),
     updated_at = NOW()
@@ -140,7 +129,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Helper function to get OAuth token with decryption
 CREATE OR REPLACE FUNCTION get_oauth_token(
   p_user_id UUID,
-  p_provider TEXT
+  p_provider TEXT,
+  p_encryption_key TEXT
 )
 RETURNS TABLE (
   id UUID,
@@ -159,8 +149,8 @@ BEGIN
     ot.id,
     ot.user_id,
     ot.provider,
-    decrypt_token(ot.refresh_token_encrypted) as refresh_token,
-    decrypt_token(ot.access_token_encrypted) as access_token,
+    decrypt_token(ot.refresh_token_encrypted, p_encryption_key) as refresh_token,
+    decrypt_token(ot.access_token_encrypted, p_encryption_key) as access_token,
     ot.expires_at,
     ot.last_history_id,
     ot.created_at,
@@ -172,7 +162,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Helper function to get all OAuth tokens (for cron job)
-CREATE OR REPLACE FUNCTION get_all_oauth_tokens(p_provider TEXT)
+CREATE OR REPLACE FUNCTION get_all_oauth_tokens(
+  p_provider TEXT,
+  p_encryption_key TEXT
+)
 RETURNS TABLE (
   id UUID,
   user_id UUID,
@@ -190,8 +183,8 @@ BEGIN
     ot.id,
     ot.user_id,
     ot.provider,
-    decrypt_token(ot.refresh_token_encrypted) as refresh_token,
-    decrypt_token(ot.access_token_encrypted) as access_token,
+    decrypt_token(ot.refresh_token_encrypted, p_encryption_key) as refresh_token,
+    decrypt_token(ot.access_token_encrypted, p_encryption_key) as access_token,
     ot.expires_at,
     ot.last_history_id,
     ot.created_at,
@@ -206,13 +199,14 @@ CREATE OR REPLACE FUNCTION update_oauth_access_token(
   p_user_id UUID,
   p_provider TEXT,
   p_access_token TEXT,
-  p_expires_at BIGINT
+  p_expires_at BIGINT,
+  p_encryption_key TEXT
 )
 RETURNS VOID AS $$
 BEGIN
   UPDATE oauth_tokens
   SET
-    access_token_encrypted = encrypt_token(p_access_token),
+    access_token_encrypted = encrypt_token(p_access_token, p_encryption_key),
     expires_at = p_expires_at,
     updated_at = NOW()
   WHERE user_id = p_user_id
@@ -225,7 +219,8 @@ CREATE OR REPLACE FUNCTION refresh_oauth_token_with_lock(
   p_user_id UUID,
   p_provider TEXT,
   p_access_token TEXT,
-  p_expires_at BIGINT
+  p_expires_at BIGINT,
+  p_encryption_key TEXT
 )
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -244,7 +239,7 @@ BEGIN
   END IF;
 
   -- Update token
-  PERFORM update_oauth_access_token(p_user_id, p_provider, p_access_token, p_expires_at);
+  PERFORM update_oauth_access_token(p_user_id, p_provider, p_access_token, p_expires_at, p_encryption_key);
 
   -- Lock is automatically released at transaction end
   RETURN TRUE;
@@ -261,6 +256,6 @@ GRANT EXECUTE ON FUNCTION refresh_oauth_token_with_lock TO authenticated;
 GRANT EXECUTE ON FUNCTION get_all_oauth_tokens TO service_role;
 
 -- Add comment explaining encryption
-COMMENT ON TABLE oauth_tokens IS 'OAuth tokens with pgcrypto encryption. Use store_oauth_token() and get_oauth_token() functions to interact with this table.';
-COMMENT ON COLUMN oauth_tokens.refresh_token_encrypted IS 'Encrypted using pgp_sym_encrypt with app.encryption_key';
-COMMENT ON COLUMN oauth_tokens.access_token_encrypted IS 'Encrypted using pgp_sym_encrypt with app.encryption_key';
+COMMENT ON TABLE oauth_tokens IS 'OAuth tokens with pgcrypto encryption. Use store_oauth_token() and get_oauth_token() functions to interact with this table. Encryption key is provided via Supabase secrets (environment variables).';
+COMMENT ON COLUMN oauth_tokens.refresh_token_encrypted IS 'Encrypted using pgp_sym_encrypt with ENCRYPTION_KEY from Supabase secrets';
+COMMENT ON COLUMN oauth_tokens.access_token_encrypted IS 'Encrypted using pgp_sym_encrypt with ENCRYPTION_KEY from Supabase secrets';

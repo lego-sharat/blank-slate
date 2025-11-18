@@ -126,14 +126,25 @@ serve(async (req) => {
     // Calculate token expiration timestamp
     const expiresAt = Date.now() + (expires_in * 1000)
 
+    // Get encryption key from environment
+    const encryptionKey = Deno.env.get('ENCRYPTION_KEY')
+    if (!encryptionKey) {
+      console.error('[OAuth] ENCRYPTION_KEY not configured')
+      return new Response(
+        generateErrorPage('Server configuration error: Missing encryption key'),
+        { status: 500, headers: { 'Content-Type': 'text/html' } }
+      )
+    }
+
     // Store tokens using encrypted storage function
-    // Tokens are encrypted using pgcrypto with app.encryption_key
+    // Tokens are encrypted using pgcrypto with ENCRYPTION_KEY from Supabase secrets
     const { error: dbError } = await supabase.rpc('store_oauth_token', {
       p_user_id: stateData.userId,
       p_provider: 'gmail',
       p_refresh_token: refresh_token,
       p_access_token: access_token,
       p_expires_at: expiresAt,
+      p_encryption_key: encryptionKey,
     })
 
     if (dbError) {

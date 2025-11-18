@@ -100,26 +100,15 @@ echo ""
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4: Configure Database Settings"
+echo "Step 4: Configure Database Settings (pg_cron)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "These settings are required for:"
-echo "  • Calling Edge Functions from pg_cron"
-echo "  • Encrypting OAuth tokens in the database"
+echo "Setting up database configuration for calling Edge Functions from pg_cron..."
 echo ""
 
 # Read settings from .env file
 SUPABASE_URL=$(grep -E '^SUPABASE_URL=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 SERVICE_ROLE_KEY=$(grep -E '^SUPABASE_SERVICE_ROLE_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
-ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
-
-# Generate encryption key if not provided
-if [ -z "$ENCRYPTION_KEY" ]; then
-    echo "Generating encryption key for OAuth tokens..."
-    ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
-else
-    echo "Using encryption key from .env file..."
-fi
 
 if [ -z "$SUPABASE_URL" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
     echo "❌ Missing Supabase URL or Service Role Key in supabase/.env"
@@ -133,7 +122,6 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
     echo "Alternatively, you can set them manually in the SQL editor:"
     echo "  ALTER DATABASE postgres SET app.service_role_key TO 'your-service-role-key';"
     echo "  ALTER DATABASE postgres SET app.supabase_url TO 'https://your-project.supabase.co';"
-    echo "  ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';"
 else
     echo ""
     echo "Setting database configuration..."
@@ -142,7 +130,6 @@ else
     SQL_CONFIG="
     ALTER DATABASE postgres SET app.service_role_key TO '$SERVICE_ROLE_KEY';
     ALTER DATABASE postgres SET app.supabase_url TO '$SUPABASE_URL';
-    ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';
     "
 
     # Execute SQL
@@ -151,11 +138,6 @@ else
     echo "✅ Database settings configured"
     echo "   • Service role key: Set"
     echo "   • Supabase URL: $SUPABASE_URL"
-    echo "   • Encryption key: Generated and set"
-    echo ""
-    echo "⚠️  IMPORTANT: Save your encryption key securely!"
-    echo "   Encryption key: $ENCRYPTION_KEY"
-    echo "   You'll need this to decrypt tokens if you migrate databases."
 fi
 
 echo ""
