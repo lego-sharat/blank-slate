@@ -7,7 +7,6 @@ import {
   setLinearIssues,
   setGitHubPRs,
   setCalendarEvents,
-  setMailMessages,
   setLastSync,
   getLastSync,
   getLinearIssues,
@@ -191,9 +190,6 @@ async function fetchAndCacheMailMessages() {
 
     // Fetch from Supabase and cache in IndexedDB
     const messages = await syncMailFromSupabase();
-
-    // Also save to chrome.storage for backward compatibility
-    await setMailMessages(messages);
 
     console.log(`Mail sync complete: ${messages.all.length} total, ${messages.onboarding.length} onboarding, ${messages.support.length} support`);
   } catch (error) {

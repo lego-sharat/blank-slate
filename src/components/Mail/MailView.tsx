@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
-import { mailMessages, settings } from '@/store/store';
+import { mailMessages } from '@/store/store';
 import type { MailMessage } from '@/types';
 import {
   getSummaryFromCache,
   getActionItemsFromCache,
-  type MailSummaryDB,
   type MailActionItemDB,
 } from '@/utils/mailIndexedDB';
 import {
@@ -13,11 +12,6 @@ import {
   completeActionItemInSupabase,
   checkGmailConnection,
 } from '@/utils/mailSupabaseSync';
-
-interface MailWithDetails extends MailMessage {
-  summary?: string;
-  actionItems?: MailActionItemDB[];
-}
 
 export default function MailView() {
   const [filter, setFilter] = useState<'all' | 'onboarding' | 'support'>('all');

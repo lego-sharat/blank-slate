@@ -258,7 +258,7 @@ export async function getUncompletedActionItems(): Promise<MailActionItemDB[]> {
   const index = store.index('is_completed')
 
   return new Promise((resolve, reject) => {
-    const request = index.getAll(false) // Get where is_completed = false
+    const request = index.getAll(IDBKeyRange.only(false)) // Get where is_completed = false
     request.onsuccess = () => {
       const items = request.result || []
       // Sort by due date (nulls last)
