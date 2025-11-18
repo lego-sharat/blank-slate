@@ -81,6 +81,7 @@ export default function HistoryView() {
       'figjam': 'FigJam',
       'github-repo': 'GitHub Repo',
       'github-issue': 'GitHub Issue',
+      'github-discussion': 'GitHub Discussion',
     };
     return labels[type];
   };
@@ -93,6 +94,7 @@ export default function HistoryView() {
       'figjam': '#a259ff',
       'github-repo': '#8abeb7',
       'github-issue': '#cc6666',
+      'github-discussion': '#b294bb',
     };
     return colors[type];
   };
@@ -226,6 +228,12 @@ export default function HistoryView() {
           onClick={() => setActiveFilter('github-issue')}
         >
           GitHub Issues
+        </button>
+        <button
+          class={`history-filter-btn ${activeFilter === 'github-discussion' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('github-discussion')}
+        >
+          GitHub Discussions
         </button>
       </div>
 
