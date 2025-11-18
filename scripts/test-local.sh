@@ -64,18 +64,43 @@ if [ ! -d "supabase/functions/$FUNCTION_NAME" ]; then
 fi
 
 echo ""
-echo "🚀 Starting local Edge Function: $FUNCTION_NAME"
-echo "   Serving at: http://localhost:54321/functions/v1/$FUNCTION_NAME"
-echo ""
-echo "Press Ctrl+C to stop"
+echo "🚀 Preparing local environment..."
 echo ""
 
 # Start local Supabase if not running
 if ! curl -s http://localhost:54321 > /dev/null 2>&1; then
     echo "Starting local Supabase..."
-    supabase start &
-    sleep 5
+    supabase start
+    echo ""
 fi
+
+# Apply migrations if needed
+echo "Applying database migrations..."
+supabase db push 2>/dev/null || echo "Migrations already applied"
+echo ""
+
+# Set encryption key in local database if not already set
+echo "Configuring encryption key for local testing..."
+ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+
+# Check if encryption key is already set
+KEY_CHECK=$(echo "SELECT current_setting('app.encryption_key', true);" | supabase db execute 2>/dev/null || echo "")
+
+if [ -z "$KEY_CHECK" ] || [ "$KEY_CHECK" = "" ]; then
+    echo "Setting encryption key in local database..."
+    SQL="ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';"
+    echo "$SQL" | supabase db execute
+    echo "✅ Encryption key configured for local testing"
+else
+    echo "✅ Encryption key already configured"
+fi
+echo ""
+
+echo "🚀 Starting local Edge Function: $FUNCTION_NAME"
+echo "   Serving at: http://localhost:54321/functions/v1/$FUNCTION_NAME"
+echo ""
+echo "Press Ctrl+C to stop"
+echo ""
 
 # Serve the function
 supabase functions serve "$FUNCTION_NAME" --env-file ./supabase/.env.local --debug
