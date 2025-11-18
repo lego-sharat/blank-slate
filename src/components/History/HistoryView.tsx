@@ -121,16 +121,25 @@ export default function HistoryView() {
     }
   };
 
-  const handleDeleteItem = async (e: Event, itemId: string) => {
+  const handleDeleteItem = async (e: MouseEvent, itemId: string) => {
     // Prevent the item click event from firing
     e.stopPropagation();
+    e.preventDefault();
 
-    // Delete the item
-    await deleteHistoryItem(itemId);
+    console.log('[HistoryView] Deleting item:', itemId);
 
-    // Refresh the history data
-    const updatedItems = await getHistoryItems();
-    history.value = updatedItems;
+    try {
+      // Delete the item
+      await deleteHistoryItem(itemId);
+      console.log('[HistoryView] Item deleted successfully');
+
+      // Refresh the history data
+      const updatedItems = await getHistoryItems();
+      console.log('[HistoryView] Updated history items:', updatedItems.length);
+      history.value = updatedItems;
+    } catch (error) {
+      console.error('[HistoryView] Error deleting item:', error);
+    }
   };
 
   const renderHistoryItems = (items: HistoryItem[], showBadges: boolean) => {

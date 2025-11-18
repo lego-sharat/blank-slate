@@ -4883,9 +4883,12 @@ body.light-theme {
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  opacity: 0;
+  opacity: 0.6;
   transition: all 0.2s ease;
   border-radius: 4px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 
 .history-item:hover .history-item-delete-btn {
