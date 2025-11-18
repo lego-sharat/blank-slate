@@ -37,13 +37,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Schedule the sync job (runs every 2 minutes)
 -- Uncomment after deploying the Edge Function and setting up the service role key:
-/*
-SELECT cron.schedule(
-  'sync-gmail-all-users',
-  '*/2 * * * *',
-  $$SELECT trigger_gmail_sync();$$
-);
-*/
+-- SELECT cron.schedule(
+--   'sync-gmail-all-users',
+--   '*/2 * * * *',
+--   $$SELECT trigger_gmail_sync();$$
+-- );
 
 -- View scheduled jobs
 CREATE OR REPLACE FUNCTION list_cron_jobs()
