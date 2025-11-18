@@ -106,7 +106,7 @@ COMMENT ON TABLE mail_threads IS 'Email threads with AI-generated summaries and 
 COMMENT ON TABLE mail_messages IS 'Individual email messages within threads';
 
 COMMENT ON COLUMN mail_threads.gmail_labels IS 'Gmail label IDs from the email (e.g., INBOX, UNREAD, SENT, DTC, CATEGORY_PROMOTIONS)';
-COMMENT ON COLUMN mail_threads.ai_labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, high-priority, needs-response, etc.';
+COMMENT ON COLUMN mail_threads.ai_labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, hiring, team-update, cold-email, high-priority, needs-response, escalated, resolved, integration-related, billing, technical, design';
 COMMENT ON COLUMN mail_threads.ai_topic IS 'AI-generated topic/label for thread classification (e.g., bug_report, feature_request, billing_question, integration_request)';
 COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted integration/service name mentioned in thread (e.g., Yotpo Reviews, Klaviyo, Recharge). Free-form text, not limited to predefined list.';
 COMMENT ON COLUMN mail_threads.action_items IS 'AI-extracted action items that require action from the user (recipient), stored as JSON array';

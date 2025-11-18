@@ -375,6 +375,7 @@ Please analyze this entire email thread and provide:
    - "product-query": General product questions
    - "hiring": Job applications, recruitment, candidates
    - "team-update": Team announcements, HR updates, organizational changes
+   - "cold-email": Unsolicited sales outreach from external SaaS companies, agencies, or vendors trying to sell products/services (e.g., marketing agencies, development shops, lead generation services, AI tools, etc.)
 
    Priority/Status Labels:
    - "high-priority": Urgent or critical issues
@@ -389,6 +390,16 @@ Please analyze this entire email thread and provide:
    - "design": Design/UI/UX related
 
    Use 1-4 most relevant labels. Always include at least one email type label.
+
+   IMPORTANT - Detecting Cold Emails:
+   Apply "cold-email" label if the email matches these characteristics:
+   - Unsolicited outreach from companies/agencies you don't have a relationship with
+   - Offering services like: web development, app development, marketing, SEO, lead generation, staff augmentation, design services, AI/ML solutions, data analytics, etc.
+   - Generic templates with phrases like: "I came across your company...", "We help companies like yours...", "We specialize in...", "I'd love to schedule a quick call..."
+   - Sender is from a marketing/sales agency or SaaS vendor
+   - No prior conversation history or existing relationship
+   - Typically asking for a call/meeting to pitch their services
+   - NOT from: actual customers, partners, investors, or people replying to your outreach
 
 5. Action items for the user (${userEmail})
    - ONLY extract action items that the USER needs to do (not what others need to do)
