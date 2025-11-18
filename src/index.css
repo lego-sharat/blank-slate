@@ -3154,54 +3154,64 @@ body.light-theme {
   color: var(--text-tertiary);
 }
 
+/* Enhanced Markdown Preview with GitHub-flavored Markdown Support */
 .thought-preview {
   min-height: 300px;
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-primary);
+  word-wrap: break-word;
 }
 
+/* Headings */
 .thought-preview h1,
 .thought-preview h2,
 .thought-preview h3,
-.thought-preview h4 {
+.thought-preview h4,
+.thought-preview h5,
+.thought-preview h6 {
   margin-top: 24px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--text-primary);
 }
 
+.thought-preview h1 {
+  font-size: 2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.thought-preview h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.thought-preview h3 {
+  font-size: 1.25em;
+}
+
+.thought-preview h4 {
+  font-size: 1em;
+}
+
+.thought-preview h5 {
+  font-size: 0.875em;
+}
+
+.thought-preview h6 {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+/* Paragraphs */
 .thought-preview p {
   margin: 12px 0;
 }
 
-.thought-preview code {
-  background: var(--bg-secondary);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-}
-
-.thought-preview pre {
-  background: var(--bg-secondary);
-  padding: 16px;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 16px 0;
-}
-
-.thought-preview pre code {
-  background: transparent;
-  padding: 0;
-}
-
-.thought-preview ul,
-.thought-preview ol {
-  margin: 12px 0;
-  padding-left: 24px;
-}
-
+/* Links */
 .thought-preview a {
   color: var(--accent-primary);
   text-decoration: none;
@@ -3209,6 +3219,141 @@ body.light-theme {
 
 .thought-preview a:hover {
   text-decoration: underline;
+}
+
+/* Inline code */
+.thought-preview code:not(pre code) {
+  background: var(--bg-secondary);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 85%;
+}
+
+/* Code blocks */
+.thought-preview pre {
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 16px 0;
+  line-height: 1.45;
+}
+
+.thought-preview pre code {
+  background: transparent;
+  padding: 0;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 85%;
+  color: var(--text-primary);
+  display: block;
+}
+
+/* Lists */
+.thought-preview ul,
+.thought-preview ol {
+  margin: 12px 0;
+  padding-left: 2em;
+}
+
+.thought-preview li {
+  margin: 0.25em 0;
+}
+
+.thought-preview li > p {
+  margin: 0;
+}
+
+/* Task lists (GitHub-style checkboxes) */
+.thought-preview .task-list-item {
+  list-style: none;
+  margin-left: -1.5em;
+}
+
+.thought-preview .task-list-item-checkbox {
+  margin-right: 0.5em;
+  vertical-align: middle;
+}
+
+/* Blockquotes */
+.thought-preview blockquote {
+  margin: 12px 0;
+  padding: 0 1em;
+  color: var(--text-secondary);
+  border-left: 4px solid var(--border-subtle);
+}
+
+.thought-preview blockquote > :first-child {
+  margin-top: 0;
+}
+
+.thought-preview blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Tables */
+.thought-preview table {
+  border-collapse: collapse;
+  margin: 16px 0;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.thought-preview table th,
+.thought-preview table td {
+  padding: 6px 13px;
+  border: 1px solid var(--border-subtle);
+}
+
+.thought-preview table th {
+  font-weight: 600;
+  background: var(--bg-secondary);
+}
+
+.thought-preview table tr {
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.thought-preview table tr:nth-child(2n) {
+  background: var(--bg-secondary);
+}
+
+/* Horizontal rules */
+.thought-preview hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--border-subtle);
+  border: 0;
+}
+
+/* Text formatting */
+.thought-preview strong {
+  font-weight: 600;
+}
+
+.thought-preview em {
+  font-style: italic;
+}
+
+.thought-preview del {
+  text-decoration: line-through;
+}
+
+/* Images */
+.thought-preview img {
+  max-width: 100%;
+  height: auto;
+  margin: 12px 0;
+  border-radius: 4px;
+}
+
+/* Line breaks */
+.thought-preview br {
+  line-height: 1.7;
 }
 
 /* ===================================
