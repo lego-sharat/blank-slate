@@ -2742,11 +2742,12 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-section-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 0 8px;
   cursor: pointer;
   user-select: none;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: background 0.15s ease;
 }
 
@@ -2757,6 +2758,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-section-header.active {
   background: var(--bg-tertiary);
   border-left: 3px solid var(--accent-primary);
+  padding-left: 11px;
 }
 
 .sidebar-section-header.active .sidebar-section-icon {
@@ -2769,7 +2771,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-section-chevron {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   transition: transform 0.2s ease;
   flex-shrink: 0;
   display: flex;
@@ -2784,7 +2786,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-section-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex: 1;
@@ -2806,44 +2808,52 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 
 /* Simple sidebar sections (non-collapsible) */
 .sidebar-section-simple {
-  border-bottom: 1px solid var(--border-subtle);
+  margin: 2px 0;
 }
 
 .sidebar-section-simple .sidebar-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   padding: 10px 14px;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease;
+  border-radius: 6px;
+  margin: 0 8px;
 }
 
 .sidebar-section-simple .sidebar-section-header:hover {
   background: var(--hover-bg);
 }
 
+.sidebar-section-simple .sidebar-section-header.active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 11px;
+}
+
+.sidebar-section-simple .sidebar-section-header.active .sidebar-section-icon {
+  color: var(--accent-primary);
+}
+
+.sidebar-section-simple .sidebar-section-header.active .sidebar-section-title {
+  color: var(--accent-primary);
+}
+
 .sidebar-section-icon {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Navigation item styling (for Glance and Today) */
+/* Navigation item styling - unified with section headers */
 .sidebar-nav-item {
-  border-bottom: 1px solid var(--border-subtle);
+  margin: 2px 0;
   padding: 10px 14px !important;
-}
-
-.sidebar-nav-item .sidebar-item-icon {
-  color: var(--text-tertiary);
-}
-
-.sidebar-nav-item .linear-icon {
-  color: #81a2be;
 }
 
 .sidebar-item {
@@ -2851,8 +2861,10 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
+  margin: 0 8px;
   cursor: pointer;
   transition: background 0.15s ease;
+  border-radius: 6px;
 }
 
 .sidebar-item:hover {
@@ -2862,6 +2874,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 .sidebar-item.active {
   background: var(--bg-tertiary);
   border-left: 3px solid var(--accent-primary);
+  padding-left: 11px;
 }
 
 .sidebar-item.active .sidebar-item-icon {
@@ -2879,7 +2892,7 @@ body:has(#plannerView:not(.hidden)) .view-body::-webkit-scrollbar-thumb:hover {
 }
 
 .sidebar-item-label {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-primary);
   flex: 1;
   white-space: nowrap;
