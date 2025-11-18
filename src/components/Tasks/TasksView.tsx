@@ -72,7 +72,13 @@ export default function TasksView() {
     e.preventDefault(); // Allow drop
     if (draggedIndex.value !== null && draggedIndex.value !== index) {
       dragOverIndex.value = index;
+    } else if (draggedIndex.value === index) {
+      dragOverIndex.value = null;
     }
+  };
+
+  const handleDragLeave = () => {
+    dragOverIndex.value = null;
   };
 
   const handleDrop = (e: DragEvent, dropIndex: number) => {
@@ -163,6 +169,7 @@ export default function TasksView() {
               draggable={!editingId.value}
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
             >
