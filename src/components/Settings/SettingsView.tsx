@@ -89,6 +89,8 @@ export default function SettingsView() {
     setGmailConnecting(true);
     try {
       const result = await initiateGmailOAuth();
+      console.log('[Gmail OAuth] Result:', result);
+      console.log('[Gmail OAuth] Redirect URI:', result.redirectUri);
       if (result.success && result.oauthUrl) {
         // Open OAuth URL in new tab
         window.open(result.oauthUrl, '_blank');

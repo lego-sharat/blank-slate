@@ -55,6 +55,10 @@ serve(async (req) => {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
     const redirectUri = `${supabaseUrl}/functions/v1/gmail-oauth-callback`
 
+    console.log('[OAuth Init] Client ID:', clientId)
+    console.log('[OAuth Init] Redirect URI:', redirectUri)
+    console.log('[OAuth Init] Supabase URL:', supabaseUrl)
+
     if (!clientId) {
       return new Response(
         JSON.stringify({ error: 'Google OAuth not configured' }),
@@ -82,10 +86,13 @@ serve(async (req) => {
 
     const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 
+    console.log('[OAuth Init] Generated OAuth URL')
+
     return new Response(
       JSON.stringify({
         success: true,
         oauthUrl,
+        redirectUri, // Include for debugging
         message: 'Open this URL to authorize Gmail access',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
