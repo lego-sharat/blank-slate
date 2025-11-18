@@ -1,54 +1,71 @@
-// Simple lightweight markdown parser for basic formatting
-const marked = {
-  parse: function(markdown) {
-    if (!markdown) return '';
+// Enhanced markdown parser with GitHub-flavored markdown (GFM) support
+import { marked } from 'marked';
+import hljs from 'highlight.js';
 
-    let html = markdown;
-
-    // Escape HTML
-    html = html.replace(/&/g, '&amp;')
-               .replace(/</g, '&lt;')
-               .replace(/>/g, '&gt;');
-
-    // Headers
-    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-
-    // Bold
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-
-    // Code blocks
-    html = html.replace(/```(.+?)```/gs, '<pre><code>$1</code></pre>');
-
-    // Inline code
-    html = html.replace(/`(.+?)`/g, '<code>$1</code>');
-
-    // Links
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>');
-
-    // Unordered lists
-    html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
-    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-    // Ordered lists
-    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-    // Line breaks and paragraphs
-    html = html.split('\n\n').map(para => {
-      // Don't wrap if it's already a block element
-      if (para.match(/^<(h[1-6]|ul|ol|pre|li)/)) {
-        return para;
+// Configure marked with GFM support
+marked.setOptions({
+  gfm: true, // Enable GitHub Flavored Markdown
+  breaks: true, // Convert \n to <br> (GitHub style)
+  headerIds: true, // Add IDs to headers
+  mangle: false, // Don't escape email addresses
+  sanitize: false, // We'll handle sanitization separately if needed
+  smartLists: true, // Use smarter list behavior
+  smartypants: false, // Don't use smart typography
+  xhtml: false, // Don't use XHTML-style tags
+  highlight: function(code, lang) {
+    // Syntax highlighting for code blocks
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+      } catch (err) {
+        console.error('Highlight.js error:', err);
       }
-      return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
-    }).join('\n');
+    }
+    // Auto-detect language if not specified
+    try {
+      return hljs.highlightAuto(code).value;
+    } catch (err) {
+      console.error('Highlight.js auto-detect error:', err);
+    }
+    return code; // Return plain code if highlighting fails
+  },
+  langPrefix: 'hljs language-' // CSS class prefix for code blocks
+});
 
-    return html;
-  }
+// Custom renderer for links to open in new tab
+const renderer = new marked.Renderer();
+const originalLinkRenderer = renderer.link.bind(renderer);
+renderer.link = function(href, title, text) {
+  const html = originalLinkRenderer(href, title, text);
+  return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
 };
+
+// Note: We don't need a custom listitem renderer because marked's GFM support
+// already handles task lists natively when gfm: true is set
+
+marked.use({ renderer });
+
+// Preprocess markdown to handle non-standard task list syntax
+function preprocessMarkdown(markdown) {
+  if (!markdown) return '';
+
+  // Convert lines starting with [] or [x] or [.] (without dash) to proper GFM task lists
+  let processed = markdown.replace(/^(\s*)\[( |x|X|\.)\]\s+(.+)$/gm, (match, indent, check, text) => {
+    // Convert [.] or any non-space/x to checked
+    const isChecked = check !== ' ';
+    const checkSymbol = isChecked ? 'x' : ' ';
+    return `${indent}- [${checkSymbol}] ${text}`;
+  });
+
+  return processed;
+}
+
+// Wrap marked.parse to include preprocessing
+const originalParse = marked.parse.bind(marked);
+marked.parse = function(src, options) {
+  const preprocessed = preprocessMarkdown(src);
+  return originalParse(preprocessed, options);
+};
+
+// Export the configured marked instance
+window.marked = marked;

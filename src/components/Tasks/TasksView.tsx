@@ -1,6 +1,6 @@
 import { useSignal, useComputed } from '@preact/signals';
 import { todos } from '@/store/store';
-import { addTodo, toggleTodo, deleteTodo, updateTodoText } from '@/utils/todoActions';
+import { addTodo, toggleTodo, deleteTodo, updateTodoText, reorderTodos } from '@/utils/todoActions';
 import type { Todo } from '@/types';
 
 type FilterType = 'all' | 'active' | 'completed';
@@ -10,6 +10,8 @@ export default function TasksView() {
   const filter = useSignal<FilterType>('all');
   const editingId = useSignal<number | null>(null);
   const editText = useSignal('');
+  const draggedIndex = useSignal<number | null>(null);
+  const dragOverIndex = useSignal<number | null>(null);
 
   const filteredTodos = useComputed(() => {
     const allTodos = todos.value;
@@ -60,6 +62,40 @@ export default function TasksView() {
     } else if (e.key === 'Escape') {
       handleCancelEdit();
     }
+  };
+
+  const handleDragStart = (index: number) => {
+    draggedIndex.value = index;
+  };
+
+  const handleDragOver = (e: DragEvent, index: number) => {
+    e.preventDefault(); // Allow drop
+    if (draggedIndex.value !== null) {
+      if (draggedIndex.value !== index) {
+        dragOverIndex.value = index;
+      } else {
+        dragOverIndex.value = null;
+      }
+    }
+  };
+
+  const handleDrop = (e: DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex.value !== null && draggedIndex.value !== dropIndex) {
+      // Find actual indices in the full todos array
+      const draggedTodo = filteredTodos.value[draggedIndex.value];
+      const dropTodo = filteredTodos.value[dropIndex];
+      const fromIndex = todos.value.findIndex(t => t.id === draggedTodo.id);
+      const toIndex = todos.value.findIndex(t => t.id === dropTodo.id);
+      reorderTodos(fromIndex, toIndex);
+    }
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
+  };
+
+  const handleDragEnd = () => {
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   const hasNoTasks = todos.value.length === 0;
@@ -124,8 +160,26 @@ export default function TasksView() {
             {filter.value === 'all' && hasNoTasks && 'No tasks yet'}
           </div>
         ) : (
-          filteredTodos.value.map(todo => (
-            <div key={todo.id} class={`task-item ${todo.completed ? 'completed' : ''}`}>
+          filteredTodos.value.map((todo, index) => (
+            <div
+              key={todo.id}
+              class={`task-item ${todo.completed ? 'completed' : ''} ${draggedIndex.value === index ? 'dragging' : ''} ${dragOverIndex.value === index && draggedIndex.value !== index ? 'drop-target' : ''}`}
+              draggable={!editingId.value}
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+            >
+              <div
+                class="task-drag-handle"
+                title="Drag to reorder"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="8" x2="20" y2="8"/>
+                  <line x1="4" y1="16" x2="20" y2="16"/>
+                </svg>
+              </div>
+
               <label class="task-checkbox-wrapper">
                 <input
                   type="checkbox"

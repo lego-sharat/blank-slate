@@ -1,37 +1,39 @@
-import { useState, useEffect, useMemo } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
+import { useSignal, useComputed } from '@preact/signals';
 import type { HistoryItem, HistoryItemType } from '@/types';
 import { history } from '@/store/store';
+import { deleteHistoryItem, getHistoryItems } from '@/utils/historyTracker';
 
 export default function HistoryView() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | HistoryItemType>('all');
+  const searchQuery = useSignal('');
+  const activeFilter = useSignal<'all' | HistoryItemType>('all');
   const [openTabs, setOpenTabs] = useState<Map<string, number>>(new Map());
 
   // Filtered items based on activeFilter
-  const filteredItems = useMemo(() => {
+  const filteredItems = useComputed(() => {
     const allItems = history.value;
 
-    if (activeFilter === 'all') {
+    if (activeFilter.value === 'all') {
       return allItems.slice(0, 50);
     } else {
       return allItems
-        .filter(item => item.type === activeFilter)
+        .filter(item => item.type === activeFilter.value)
         .slice(0, 10);
     }
-  }, [history, activeFilter]);
+  });
 
   // Search results
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) {
+  const searchResults = useComputed(() => {
+    if (!searchQuery.value.trim()) {
       return [];
     }
 
-    const lowerQuery = searchQuery.toLowerCase();
+    const lowerQuery = searchQuery.value.toLowerCase();
     return history.value.filter(item =>
       item.title.toLowerCase().includes(lowerQuery) ||
       item.url.toLowerCase().includes(lowerQuery)
     ).slice(0, 50);
-  }, [history, searchQuery]);
+  });
 
   // Check open tabs on mount and periodically
   useEffect(() => {
@@ -81,6 +83,7 @@ export default function HistoryView() {
       'figjam': 'FigJam',
       'github-repo': 'GitHub Repo',
       'github-issue': 'GitHub Issue',
+      'github-discussion': 'GitHub Discussion',
     };
     return labels[type];
   };
@@ -93,6 +96,7 @@ export default function HistoryView() {
       'figjam': '#a259ff',
       'github-repo': '#8abeb7',
       'github-issue': '#cc6666',
+      'github-discussion': '#b294bb',
     };
     return colors[type];
   };
@@ -115,6 +119,27 @@ export default function HistoryView() {
     } else {
       // Tab not open, navigate to URL
       window.location.href = url;
+    }
+  };
+
+  const handleDeleteItem = async (e: MouseEvent, itemId: string) => {
+    // Prevent the item click event from firing
+    e.stopPropagation();
+    e.preventDefault();
+
+    console.log('[HistoryView] Deleting item:', itemId);
+
+    try {
+      // Delete the item
+      await deleteHistoryItem(itemId);
+      console.log('[HistoryView] Item deleted successfully');
+
+      // Refresh the history data
+      const updatedItems = await getHistoryItems();
+      console.log('[HistoryView] Updated history items:', updatedItems.length);
+      history.value = updatedItems;
+    } catch (error) {
+      console.error('[HistoryView] Error deleting item:', error);
     }
   };
 
@@ -153,7 +178,18 @@ export default function HistoryView() {
                     </span>
                   )}
                 </div>
-                <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+                <div class="history-item-actions">
+                  <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+                  <button
+                    class="history-item-delete-btn"
+                    onClick={(e) => handleDeleteItem(e, item.id)}
+                    title="Delete from history"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor">
+                      <path d="M2 4h10M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1m1 0v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h6z" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div class="history-item-title">{item.title}</div>
@@ -178,83 +214,89 @@ export default function HistoryView() {
           type="text"
           class="history-search-input"
           placeholder="Search history..."
-          value={searchQuery}
-          onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+          value={searchQuery.value}
+          onInput={(e) => searchQuery.value = (e.target as HTMLInputElement).value}
         />
       </div>
 
       {/* Filter Tabs */}
       <div class="history-filters">
         <button
-          class={`history-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('all')}
+          class={`history-filter-btn ${activeFilter.value === 'all' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'all'}
         >
           All
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'google-docs' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('google-docs')}
+          class={`history-filter-btn ${activeFilter.value === 'google-docs' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'google-docs'}
         >
           Google Docs
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'notion' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('notion')}
+          class={`history-filter-btn ${activeFilter.value === 'notion' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'notion'}
         >
           Notion
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'figma' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('figma')}
+          class={`history-filter-btn ${activeFilter.value === 'figma' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'figma'}
         >
           Figma
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'figjam' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('figjam')}
+          class={`history-filter-btn ${activeFilter.value === 'figjam' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'figjam'}
         >
           FigJam
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'github-repo' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('github-repo')}
+          class={`history-filter-btn ${activeFilter.value === 'github-repo' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'github-repo'}
         >
           GitHub Repos
         </button>
         <button
-          class={`history-filter-btn ${activeFilter === 'github-issue' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('github-issue')}
+          class={`history-filter-btn ${activeFilter.value === 'github-issue' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'github-issue'}
         >
           GitHub Issues
+        </button>
+        <button
+          class={`history-filter-btn ${activeFilter.value === 'github-discussion' ? 'active' : ''}`}
+          onClick={() => activeFilter.value = 'github-discussion'}
+        >
+          GitHub Discussions
         </button>
       </div>
 
       {/* Search Results */}
-      {searchQuery.trim() && (
+      {searchQuery.value.trim() && (
         <div class="history-content">
           <div class="history-section">
             <div class="history-section-header">
               <h3 class="history-section-title">Search Results</h3>
-              <span class="history-section-count">{searchResults.length}</span>
+              <span class="history-section-count">{searchResults.value.length}</span>
             </div>
 
-            {renderHistoryItems(searchResults, true)}
+            {renderHistoryItems(searchResults.value, true)}
           </div>
         </div>
       )}
 
       {/* History Items */}
-      {!searchQuery.trim() && (
+      {!searchQuery.value.trim() && (
         <div class="history-content">
           <div class="history-section">
-            {activeFilter !== 'all' && (
+            {activeFilter.value !== 'all' && (
               <div class="history-section-header">
-                <h3 class="history-section-title">{getTypeLabel(activeFilter)}</h3>
-                <span class="history-section-count">{filteredItems.length}</span>
+                <h3 class="history-section-title">{getTypeLabel(activeFilter.value)}</h3>
+                <span class="history-section-count">{filteredItems.value.length}</span>
               </div>
             )}
 
-            {renderHistoryItems(filteredItems, activeFilter === 'all')}
+            {renderHistoryItems(filteredItems.value, activeFilter.value === 'all')}
           </div>
         </div>
       )}

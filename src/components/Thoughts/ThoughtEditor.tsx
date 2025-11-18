@@ -9,11 +9,10 @@ export default function ThoughtEditor() {
 
   useEffect(() => {
     if (thought) {
+      // Reset preview mode when switching thoughts
+      isPreviewMode.value = false;
       autoResizeTitle();
       autoResizeContent();
-      if (isPreviewMode.value) {
-        updatePreview();
-      }
     }
   }, [thought?.id]);
 

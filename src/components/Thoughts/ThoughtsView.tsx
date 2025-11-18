@@ -1,7 +1,11 @@
+import { useSignal } from '@preact/signals';
 import { thoughts } from '@/store/store';
-import { createThought, openThought, deleteThought } from '@/utils/thoughtActions';
+import { createThought, openThought, deleteThought, reorderThoughts } from '@/utils/thoughtActions';
 
 export default function ThoughtsView() {
+  const draggedIndex = useSignal<number | null>(null);
+  const dragOverIndex = useSignal<number | null>(null);
+
   const handleAddThought = () => {
     createThought();
   };
@@ -15,6 +19,35 @@ export default function ThoughtsView() {
     if (confirm('Delete this thought?')) {
       deleteThought(id);
     }
+  };
+
+  const handleDragStart = (index: number) => {
+    draggedIndex.value = index;
+  };
+
+  const handleDragOver = (e: DragEvent, index: number) => {
+    e.preventDefault(); // Allow drop
+    if (draggedIndex.value !== null) {
+      if (draggedIndex.value !== index) {
+        dragOverIndex.value = index;
+      } else {
+        dragOverIndex.value = null;
+      }
+    }
+  };
+
+  const handleDrop = (e: DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex.value !== null && draggedIndex.value !== dropIndex) {
+      reorderThoughts(draggedIndex.value, dropIndex);
+    }
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
+  };
+
+  const handleDragEnd = () => {
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
   };
 
   return (
@@ -39,13 +72,24 @@ export default function ThoughtsView() {
         </div>
 
         {/* Thought Cards */}
-        {thoughts.value.map(thought => (
+        {thoughts.value.map((thought, index) => (
           <div
             key={thought.id}
-            class="thought-card"
+            class={`thought-card ${draggedIndex.value === index ? 'dragging' : ''} ${dragOverIndex.value === index && draggedIndex.value !== index ? 'drop-target' : ''}`}
             onClick={() => handleOpenThought(thought.id)}
+            draggable={true}
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
           >
             <div class="thought-card-header">
+              <div class="thought-card-drag-handle" title="Drag to reorder">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="8" x2="20" y2="8"/>
+                  <line x1="4" y1="16" x2="20" y2="16"/>
+                </svg>
+              </div>
               <h3 class="thought-card-title">{thought.title || 'Untitled'}</h3>
               <button
                 class="thought-card-delete"

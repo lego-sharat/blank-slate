@@ -60,6 +60,14 @@ export const openThought = (id: number) => {
   currentView.value = 'thought';
 };
 
+export const reorderThoughts = (fromIndex: number, toIndex: number) => {
+  const newThoughts = [...thoughts.value];
+  const [removed] = newThoughts.splice(fromIndex, 1);
+  newThoughts.splice(toIndex, 0, removed);
+  thoughts.value = newThoughts;
+  saveThoughts();
+};
+
 // Legacy aliases for backwards compatibility
 export const createNote = createThought;
 export const deleteNote = deleteThought;

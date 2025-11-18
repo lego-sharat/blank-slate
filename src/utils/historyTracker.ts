@@ -112,8 +112,16 @@ function determineType(url: string): HistoryItemType | null {
 
     // Special handling for GitHub
     if (baseType === 'github') {
+      // Don't track GitHub app links
+      if (pathname.includes('/apps/')) {
+        return null;
+      }
+
+      // Check for issues, discussions, and repos
       if (pathname.includes('/issues/')) {
         return 'github-issue';
+      } else if (pathname.includes('/discussions/')) {
+        return 'github-discussion';
       } else if (pathname.match(/^\/[^\/]+\/[^\/]+\/?$/)) {
         return 'github-repo';
       }
@@ -174,7 +182,7 @@ export function shouldTrackUrl(url: string): boolean {
 
     if (url.includes('github.com')) {
       const type = determineType(url);
-      return type === 'github-repo' || type === 'github-issue';
+      return type === 'github-repo' || type === 'github-issue' || type === 'github-discussion';
     }
 
     console.log('[History Tracker] URL not matching any pattern:', url);

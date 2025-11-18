@@ -159,7 +159,7 @@ export interface GitHubPR {
 }
 
 // History types
-export type HistoryItemType = 'google-docs' | 'notion' | 'figma' | 'figjam' | 'github-repo' | 'github-issue';
+export type HistoryItemType = 'google-docs' | 'notion' | 'figma' | 'figjam' | 'github-repo' | 'github-issue' | 'github-discussion';
 
 export interface HistoryItem {
   id: string;
