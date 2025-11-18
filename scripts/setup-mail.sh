@@ -25,15 +25,46 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# Check if linked to a project
-if [ ! -f .supabase/config.toml ]; then
-    echo "⚠️  Not linked to a Supabase project."
+# Check if .env file exists
+if [ ! -f supabase/.env ]; then
+    echo "❌ supabase/.env not found."
     echo ""
-    echo "First, link to your Supabase project:"
-    echo "  1. Get your project ref from Supabase dashboard (Settings → General)"
-    echo "  2. Run: supabase link --project-ref YOUR_PROJECT_REF"
+    echo "Please create supabase/.env from supabase/.env.example and add your credentials:"
+    echo "  cp supabase/.env.example supabase/.env"
+    echo ""
+    echo "Required variables:"
+    echo "  • SUPABASE_PROJECT_REF"
+    echo "  • GOOGLE_CLIENT_ID"
+    echo "  • GOOGLE_CLIENT_SECRET"
+    echo "  • ANTHROPIC_API_KEY"
+    echo "  • SUPABASE_URL (for production)"
+    echo "  • SUPABASE_SERVICE_ROLE_KEY (for production)"
     echo ""
     exit 1
+fi
+
+# Read SUPABASE_PROJECT_REF from .env
+SUPABASE_PROJECT_REF=$(grep -E '^SUPABASE_PROJECT_REF=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+
+if [ -z "$SUPABASE_PROJECT_REF" ]; then
+    echo "❌ SUPABASE_PROJECT_REF not found in supabase/.env"
+    echo ""
+    echo "Please add your project ref to supabase/.env:"
+    echo "  SUPABASE_PROJECT_REF=your-project-ref-here"
+    echo ""
+    echo "You can find your project ref in Supabase Dashboard → Settings → General"
+    echo ""
+    exit 1
+fi
+
+# Check if linked to a project, if not link automatically
+if [ ! -f .supabase/config.toml ]; then
+    echo "🔗 Linking to Supabase project: $SUPABASE_PROJECT_REF"
+    echo ""
+    supabase link --project-ref "$SUPABASE_PROJECT_REF"
+    echo ""
+    echo "✅ Project linked successfully"
+    echo ""
 fi
 
 echo "This script will set up the complete mail system."
@@ -81,22 +112,32 @@ echo "  • Calling Edge Functions from pg_cron"
 echo "  • Encrypting OAuth tokens in the database"
 echo ""
 
-read -p "Enter your Supabase URL (https://xxx.supabase.co): " SUPABASE_URL
-read -sp "Enter your Service Role Key (from Settings → API): " SERVICE_ROLE_KEY
-echo
-echo ""
+# Read settings from .env file
+SUPABASE_URL=$(grep -E '^SUPABASE_URL=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+SERVICE_ROLE_KEY=$(grep -E '^SUPABASE_SERVICE_ROLE_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 
-# Generate a secure encryption key
-echo "Generating encryption key for OAuth tokens..."
-ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+# Generate encryption key if not provided
+if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "Generating encryption key for OAuth tokens..."
+    ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+else
+    echo "Using encryption key from .env file..."
+fi
 
 if [ -z "$SUPABASE_URL" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
-    echo "❌ Missing Supabase URL or Service Role Key"
-    echo "⚠️  You'll need to set these manually in the SQL editor:"
+    echo "❌ Missing Supabase URL or Service Role Key in supabase/.env"
     echo ""
-    echo "ALTER DATABASE postgres SET app.service_role_key TO 'your-service-role-key';"
-    echo "ALTER DATABASE postgres SET app.supabase_url TO 'https://your-project.supabase.co';"
-    echo "ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';"
+    echo "Please add these to your supabase/.env file:"
+    echo "  SUPABASE_URL=https://your-project-ref.supabase.co"
+    echo "  SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here"
+    echo ""
+    echo "Get these from: Supabase Dashboard → Settings → API"
+    echo ""
+    echo "Alternatively, you can set them manually in the SQL editor:"
+    echo "  ALTER DATABASE postgres SET app.service_role_key TO 'your-service-role-key';"
+    echo "  ALTER DATABASE postgres SET app.supabase_url TO 'https://your-project.supabase.co';"
+    echo "  ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';"
 else
     echo ""
     echo "Setting database configuration..."
