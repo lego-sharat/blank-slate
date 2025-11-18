@@ -304,6 +304,7 @@ export async function saveHistoryItem(item: HistoryItem): Promise<void> {
 
 /**
  * Update title for an existing history item
+ * Applies the same cleaning logic as extractTitle
  */
 export async function updateHistoryItemTitle(url: string, newTitle: string): Promise<void> {
   try {
@@ -315,11 +316,26 @@ export async function updateHistoryItemTitle(url: string, newTitle: string): Pro
     // Find the most recent item with this URL (compare cleaned URLs)
     const item = items.find(i => cleanUrl(i.url) === cleanedUrl);
 
-    if (item && newTitle && newTitle !== 'undefined') {
-      item.title = newTitle;
-      // Also ensure the URL is cleaned
-      item.url = cleanedUrl;
-      await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
+    if (item && newTitle && newTitle !== 'undefined' && newTitle.trim() !== '') {
+      // Apply the same title cleaning logic as extractTitle
+      let cleanedTitle = newTitle;
+
+      // Clean up Figma page titles by removing " - Figma" or " – Figma" suffix
+      if (url.includes('figma.com')) {
+        cleanedTitle = newTitle.replace(/\s+[-–]\s+Figma\s*$/i, '').trim();
+      }
+
+      // Only update if the cleaned title is different and not empty
+      if (cleanedTitle && cleanedTitle !== item.title) {
+        console.log(`[History Tracker] Updating title for ${cleanedUrl}:`, {
+          old: item.title,
+          new: cleanedTitle,
+        });
+        item.title = cleanedTitle;
+        // Also ensure the URL is cleaned
+        item.url = cleanedUrl;
+        await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: items });
+      }
     }
   } catch (e) {
     console.error('Error updating history item title:', e);
