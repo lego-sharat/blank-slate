@@ -76,12 +76,19 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 4: Configure Database Settings"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "These settings allow the database to call Edge Functions via pg_cron."
+echo "These settings are required for:"
+echo "  • Calling Edge Functions from pg_cron"
+echo "  • Encrypting OAuth tokens in the database"
 echo ""
 
 read -p "Enter your Supabase URL (https://xxx.supabase.co): " SUPABASE_URL
 read -sp "Enter your Service Role Key (from Settings → API): " SERVICE_ROLE_KEY
 echo
+echo ""
+
+# Generate a secure encryption key
+echo "Generating encryption key for OAuth tokens..."
+ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
 
 if [ -z "$SUPABASE_URL" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
     echo "❌ Missing Supabase URL or Service Role Key"
@@ -89,6 +96,7 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
     echo ""
     echo "ALTER DATABASE postgres SET app.service_role_key TO 'your-service-role-key';"
     echo "ALTER DATABASE postgres SET app.supabase_url TO 'https://your-project.supabase.co';"
+    echo "ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';"
 else
     echo ""
     echo "Setting database configuration..."
@@ -97,12 +105,20 @@ else
     SQL_CONFIG="
     ALTER DATABASE postgres SET app.service_role_key TO '$SERVICE_ROLE_KEY';
     ALTER DATABASE postgres SET app.supabase_url TO '$SUPABASE_URL';
+    ALTER DATABASE postgres SET app.encryption_key TO '$ENCRYPTION_KEY';
     "
 
     # Execute SQL
     echo "$SQL_CONFIG" | supabase db execute
 
     echo "✅ Database settings configured"
+    echo "   • Service role key: Set"
+    echo "   • Supabase URL: $SUPABASE_URL"
+    echo "   • Encryption key: Generated and set"
+    echo ""
+    echo "⚠️  IMPORTANT: Save your encryption key securely!"
+    echo "   Encryption key: $ENCRYPTION_KEY"
+    echo "   You'll need this to decrypt tokens if you migrate databases."
 fi
 
 echo ""

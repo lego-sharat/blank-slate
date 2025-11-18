@@ -126,26 +126,15 @@ serve(async (req) => {
     // Calculate token expiration timestamp
     const expiresAt = Date.now() + (expires_in * 1000)
 
-    // TODO: Encrypt tokens before storing
-    // For production, use pgcrypto or application-level encryption
-    // Current implementation stores tokens as plaintext (protected by RLS)
-
-    // Store tokens in database
-    const { error: dbError } = await supabase
-      .from('oauth_tokens')
-      .upsert(
-        {
-          user_id: stateData.userId,
-          provider: 'gmail',
-          refresh_token: refresh_token,
-          access_token: access_token,
-          expires_at: expiresAt,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id,provider',
-        }
-      )
+    // Store tokens using encrypted storage function
+    // Tokens are encrypted using pgcrypto with app.encryption_key
+    const { error: dbError } = await supabase.rpc('store_oauth_token', {
+      p_user_id: stateData.userId,
+      p_provider: 'gmail',
+      p_refresh_token: refresh_token,
+      p_access_token: access_token,
+      p_expires_at: expiresAt,
+    })
 
     if (dbError) {
       console.error('[OAuth] Database error:', dbError)
@@ -155,7 +144,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`[OAuth] Tokens stored successfully for user ${stateData.userId}`)
+    console.log(`[OAuth] Encrypted tokens stored successfully for user ${stateData.userId}`)
 
     // Return success page
     return new Response(

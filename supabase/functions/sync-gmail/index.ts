@@ -14,29 +14,40 @@ interface OAuthToken {
 
 serve(async (req) => {
   try {
-    // Verify service role access
-    const authHeader = req.headers.get('Authorization')
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Initialize Supabase with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, serviceKey)
 
-    if (!authHeader || !authHeader.includes(serviceKey!)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Verify service role access by checking JWT
+    const authHeader = req.headers.get('Authorization')
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized - No authorization header' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       })
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      serviceKey!
-    )
+    // Verify the token is valid by checking user
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    // Only allow service role (cron job) to call this
+    // Regular users should not be able to trigger sync for all users
+    if (authError || token !== serviceKey) {
+      return new Response(JSON.stringify({ error: 'Unauthorized - Service role required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
     console.log('[Gmail Sync] Starting sync for all users...')
 
-    // Get all users with Gmail connected
-    const { data: tokens, error: tokensError } = await supabase
-      .from('oauth_tokens')
-      .select('*')
-      .eq('provider', 'gmail')
+    // Get all users with Gmail connected using decryption function
+    const { data: tokens, error: tokensError } = await supabase.rpc('get_all_oauth_tokens', {
+      p_provider: 'gmail'
+    })
 
     if (tokensError) throw tokensError
 
@@ -138,16 +149,24 @@ async function refreshAccessToken(supabase: any, token: OAuthToken): Promise<str
   }
 
   const data = await response.json()
+  const expiresAt = Date.now() + (data.expires_in * 1000)
 
-  // Update token in database
-  await supabase
-    .from('oauth_tokens')
-    .update({
-      access_token: data.access_token,
-      expires_at: Date.now() + (data.expires_in * 1000)
-    })
-    .eq('user_id', token.user_id)
-    .eq('provider', 'gmail')
+  // Update token in database with advisory lock to prevent race conditions
+  const { data: lockResult, error: lockError } = await supabase.rpc('refresh_oauth_token_with_lock', {
+    p_user_id: token.user_id,
+    p_provider: 'gmail',
+    p_access_token: data.access_token,
+    p_expires_at: expiresAt
+  })
+
+  if (lockError) {
+    console.error(`[Token Refresh] Error updating token:`, lockError)
+    throw lockError
+  }
+
+  if (!lockResult) {
+    console.log(`[Token Refresh] Refresh already in progress for user ${token.user_id}, skipped`)
+  }
 
   return data.access_token
 }

@@ -30,6 +30,12 @@ Run the migrations in order:
 supabase/migrations/20250118000001_create_mail_tables.sql
 supabase/migrations/20250118000002_create_oauth_tokens.sql
 supabase/migrations/20250118000003_setup_mail_sync_cron.sql
+supabase/migrations/20250118000004_encrypt_oauth_tokens.sql
+```
+
+**Or use the Supabase CLI:**
+```bash
+./scripts/deploy-migrations.sh
 ```
 
 ### 2. Set Environment Variables
@@ -42,14 +48,34 @@ GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
-### 3. Store Service Role Key
+### 3. Configure Database Settings
 
 In Supabase SQL editor, run:
 
 ```sql
+-- Required for pg_cron to call Edge Functions
 ALTER DATABASE postgres SET app.service_role_key TO 'your-service-role-key-from-settings';
 ALTER DATABASE postgres SET app.supabase_url TO 'https://your-project.supabase.co';
+
+-- Required for OAuth token encryption (generate a secure random key)
+-- IMPORTANT: Save this key securely! You'll need it to decrypt tokens.
+ALTER DATABASE postgres SET app.encryption_key TO 'your-secure-encryption-key-here';
 ```
+
+**Generate a secure encryption key:**
+```bash
+# On Linux/Mac:
+openssl rand -base64 32
+
+# Or:
+head -c 32 /dev/urandom | base64
+```
+
+**⚠️ Security Note:**
+- Store the encryption key securely (password manager, secrets vault)
+- Never commit the encryption key to git
+- You'll need this key to decrypt tokens if you migrate databases
+- If you lose the key, users will need to re-authorize their Gmail accounts
 
 ### 4. Deploy Edge Functions
 
