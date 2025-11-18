@@ -21,6 +21,7 @@ interface SummaryResult {
   summary: string
   actionItems: ActionItem[]
   topic: string // AI-generated topic/label for categorization
+  integrationName?: string // Third-party integration/service mentioned
   satisfactionScore?: number
   satisfactionAnalysis?: string
 }
@@ -150,12 +151,17 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, anthropicApiKey)
 
-        // Update thread with summary, action items, topic, and satisfaction score (if applicable)
+        // Update thread with summary, action items, topic, integration, and satisfaction score (if applicable)
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
           ai_topic: summaryResult.topic,
           summary_generated_at: new Date().toISOString()
+        }
+
+        // Add integration name if detected
+        if (summaryResult.integrationName) {
+          updateData.integration_name = summaryResult.integrationName.toLowerCase()
         }
 
         // Add satisfaction score for onboarding/support threads
@@ -261,6 +267,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 {
   "summary": "Brief summary of the entire conversation",
   "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
+  "integrationName": "slack | github | stripe | zapier | salesforce | jira | hubspot | mailchimp | shopify | quickbooks | zoom | google-workspace | microsoft-teams | aws | azure | twilio | sendgrid | intercom | segment | amplitude | mixpanel | datadog | sentry | linear | notion | asana | trello | monday | airtable | figma | webhook | api | other-integration-name | null",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -274,6 +281,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 {
   "summary": "Brief summary of the entire conversation",
   "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
+  "integrationName": "slack | github | stripe | zapier | salesforce | jira | hubspot | mailchimp | shopify | quickbooks | zoom | google-workspace | microsoft-teams | aws | azure | twilio | sendgrid | intercom | segment | amplitude | mixpanel | datadog | sentry | linear | notion | asana | trello | monday | airtable | figma | webhook | api | other-integration-name | null",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -305,7 +313,16 @@ Please analyze this entire email thread and provide:
    - general_inquiry: General questions, information requests
    - other: Doesn't fit other categories
 
-3. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
+3. Integration/Third-party service (if applicable):
+   - Look for mentions of specific third-party services, platforms, or integrations
+   - Examples: Slack, GitHub, Stripe, Zapier, Salesforce, Jira, etc.
+   - Use lowercase, hyphenated format: "google-workspace", "microsoft-teams"
+   - Common integrations: slack, github, stripe, zapier, salesforce, jira, hubspot, mailchimp, shopify, quickbooks, zoom, google-workspace, microsoft-teams, aws, azure, twilio, sendgrid, intercom, segment, amplitude, mixpanel, datadog, sentry, linear, notion, asana, trello, monday, airtable, figma
+   - For API/webhook discussions without specific service: use "api" or "webhook"
+   - If no integration mentioned: use null
+   - If integration not in common list: use the service name in lowercase-hyphenated format
+
+4. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
    - Only include actionable items that require someone to do something
    - Include context about who needs to do what
    - Identify any mentioned deadlines or timeframes
@@ -316,6 +333,7 @@ Use this exact structure:
 ${responseFormat}
 
 If there are no action items, return an empty array.
+For integrationName: Use null if no integration is mentioned, otherwise use lowercase-hyphenated service name.
 Focus on actionable items, not general statements.`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -378,6 +396,17 @@ Focus on actionable items, not general statements.`
   if (!result.topic || typeof result.topic !== 'string') {
     console.warn('Missing topic from Claude, defaulting to "other"')
     result.topic = 'other'
+  }
+
+  // Validate and normalize integration name
+  if (result.integrationName !== undefined && result.integrationName !== null) {
+    if (typeof result.integrationName !== 'string' || result.integrationName.trim() === '') {
+      console.warn('Invalid integration name from Claude, ignoring')
+      delete result.integrationName
+    } else {
+      // Normalize to lowercase
+      result.integrationName = result.integrationName.toLowerCase().trim()
+    }
   }
 
   if (!Array.isArray(result.actionItems)) {
