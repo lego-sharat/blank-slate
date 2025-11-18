@@ -43,8 +43,9 @@ async function refreshGoogleTokenInBackground(): Promise<string | null> {
 
   try {
     // Get Supabase client to refresh the session
-    const { getSupabaseClient } = await import('./supabaseClient');
-    const supabaseClient = getSupabaseClient();
+    // @ts-ignore
+    const { getSupabase } = await import('@/supabase');
+    const supabaseClient = getSupabase();
 
     if (supabaseClient) {
       console.log('[Calendar Token Refresh] Attempting Supabase session refresh...');

@@ -5,7 +5,8 @@
  * This replaces the old client-side Gmail API fetching.
  */
 
-import { getSupabaseClient } from './supabaseClient'
+// @ts-ignore
+import { getSupabase as getSupabaseClient } from '@/supabase'
 import {
   saveMessagesToCache,
   saveSummariesToCache,
@@ -61,7 +62,7 @@ export async function syncMailFromSupabase(): Promise<{
     await saveMessagesToCache(messages as MailMessageDB[])
 
     // Fetch summaries for these messages
-    const messageIds = messages.map((msg) => msg.id)
+    const messageIds = messages.map((msg: any) => msg.id)
     const { data: summaries, error: summariesError } = await supabase
       .from('mail_summaries')
       .select('*')

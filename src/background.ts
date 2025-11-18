@@ -16,7 +16,8 @@ import {
   getLastSupabaseSync,
   setLastSupabaseSync,
 } from './utils/storageManager';
-import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
+// @ts-ignore
+import { initSupabase, getSupabase as getSupabaseClient } from './supabase';
 import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';

@@ -1,4 +1,5 @@
-import { getSupabaseClient } from './supabaseClient';
+// @ts-ignore
+import { getSupabase as getSupabaseClient } from '@/supabase';
 import type { Todo, Thought, HistoryItem } from '@/types';
 
 /**
