@@ -3422,8 +3422,17 @@ body.light-theme {
   padding: 12px;
   background: var(--bg-secondary);
   border-radius: 6px;
-  transition: background 0.2s;
+  transition: background 0.2s, opacity 0.2s;
   position: relative;
+  cursor: grab;
+}
+
+.task-item:active {
+  cursor: grabbing;
+}
+
+.task-item.dragging {
+  opacity: 0.5;
 }
 
 .task-item:hover {
@@ -3432,6 +3441,25 @@ body.light-theme {
 
 .task-item:hover .task-delete-btn {
   opacity: 1;
+}
+
+.task-item:hover .task-drag-handle {
+  opacity: 1;
+}
+
+.task-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
 }
 
 /* Custom Checkbox */
@@ -3570,17 +3598,29 @@ body.light-theme {
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 16px;
-  cursor: pointer;
+  cursor: grab;
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
   min-height: 200px;
 }
 
+.thought-card:active {
+  cursor: grabbing;
+}
+
+.thought-card.dragging {
+  opacity: 0.5;
+}
+
 .thought-card:hover {
   background: var(--bg-tertiary);
   border-color: var(--border-emphasis);
   transform: translateY(-2px);
+}
+
+.thought-card:hover .thought-card-drag-handle {
+  opacity: 1;
 }
 
 /* Add Note Card */
@@ -3628,6 +3668,21 @@ body.light-theme {
   align-items: flex-start;
   margin-bottom: 12px;
   gap: 8px;
+}
+
+.thought-card-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.thought-card-drag-handle:active {
+  cursor: grabbing;
 }
 
 .thought-card-title {
