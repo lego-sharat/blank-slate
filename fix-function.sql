@@ -1,4 +1,15 @@
--- Manually update the store_oauth_token function to accept encryption_key
+-- First create the encrypt_token helper function
+CREATE OR REPLACE FUNCTION encrypt_token(token TEXT, encryption_key TEXT)
+RETURNS BYTEA AS $$
+BEGIN
+  IF token IS NULL THEN
+    RETURN NULL;
+  END IF;
+  RETURN pgp_sym_encrypt(token, encryption_key);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Then update store_oauth_token to use it
 CREATE OR REPLACE FUNCTION store_oauth_token(
   p_user_id UUID,
   p_provider TEXT,
@@ -22,15 +33,15 @@ BEGIN
   ) VALUES (
     p_user_id,
     p_provider,
-    pgp_sym_encrypt(p_refresh_token, p_encryption_key),
-    pgp_sym_encrypt(p_access_token, p_encryption_key),
+    encrypt_token(p_refresh_token, p_encryption_key),
+    encrypt_token(p_access_token, p_encryption_key),
     p_expires_at,
     p_last_history_id
   )
   ON CONFLICT (user_id, provider)
   DO UPDATE SET
-    refresh_token_encrypted = pgp_sym_encrypt(p_refresh_token, p_encryption_key),
-    access_token_encrypted = pgp_sym_encrypt(p_access_token, p_encryption_key),
+    refresh_token_encrypted = encrypt_token(p_refresh_token, p_encryption_key),
+    access_token_encrypted = encrypt_token(p_access_token, p_encryption_key),
     expires_at = p_expires_at,
     last_history_id = COALESCE(p_last_history_id, oauth_tokens.last_history_id),
     updated_at = NOW()
