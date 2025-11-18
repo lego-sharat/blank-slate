@@ -6,7 +6,6 @@ import {
   getSettings,
   setLinearIssues,
   setGitHubPRs,
-  getCalendarToken,
   setCalendarEvents,
   setLastSync,
   getLastSync,
@@ -21,6 +20,7 @@ import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';
 import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
+import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
 
 /**
  * Background script for:
@@ -154,48 +154,24 @@ async function fetchAndCacheGitHubPRs() {
 
 /**
  * Fetch Calendar events and cache them
- * Inline implementation to avoid import issues in background worker
+ * Uses automatic token refresh on 401 errors
  */
 async function fetchAndCacheCalendarEvents() {
   try {
-    const token = await getCalendarToken();
-    if (!token) {
-      console.log('Calendar token not configured, skipping');
-      return;
-    }
-
     console.log('Fetching calendar events...');
 
-    // Inline calendar fetching - no imports to avoid window references
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    // Use the new utility with automatic token refresh
+    const events = await fetchCalendarEventsWithRetry();
 
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-      `timeMin=${startOfDay.toISOString()}&` +
-      `timeMax=${endOfDay.toISOString()}&` +
-      `singleEvents=true&` +
-      `orderBy=startTime&` +
-      `maxResults=50`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch calendar events: ${response.status}`);
+    if (events) {
+      await setCalendarEvents(events);
+      console.log(`Calendar events cached successfully (${events.length} events)`);
+    } else {
+      console.log('No calendar events fetched (token not available)');
     }
-
-    const data = await response.json();
-    const events = data.items || [];
-
-    await setCalendarEvents(events);
-    console.log(`Calendar events cached successfully (${events.length} events)`);
   } catch (error) {
     console.error('Failed to fetch calendar events:', error);
+    // Don't throw - allow other data fetching to continue
   }
 }
 
