@@ -268,7 +268,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
   const responseFormat = isCustomerFacing ? `
 {
   "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
   "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
   "labels": ["customer-support", "high-priority"],
   "actionItems": [
@@ -283,7 +283,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 }` : `
 {
   "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
   "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
   "labels": ["customer-support", "high-priority"],
   "actionItems": [
@@ -316,6 +316,7 @@ Please analyze this entire email thread and provide:
    - billing_question: Questions about pricing, plans, subscriptions, payments, upgrades
    - technical_issue: Technical problems, setup issues, deployment, catalog sync, deeplink setup, push notification setup
    - onboarding_help: Help getting started, initial setup, tutorials, first-time configuration
+   - hiring_team: Hiring, recruitment, job applications, team updates, HR matters
    - general_inquiry: General questions, information requests, how-to questions
    - other: Doesn't fit other categories
 
@@ -350,6 +351,8 @@ Please analyze this entire email thread and provide:
    - "team-internal": Internal team communication
    - "investor": Investor-related communication
    - "product-query": General product questions
+   - "hiring": Job applications, recruitment, candidates
+   - "team-update": Team announcements, HR updates, organizational changes
 
    Priority/Status Labels:
    - "high-priority": Urgent or critical issues
