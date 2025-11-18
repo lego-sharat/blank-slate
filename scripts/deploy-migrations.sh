@@ -18,12 +18,8 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# Check if linked to a project
-if [ ! -f .supabase/config.toml ]; then
-    echo "⚠️  Not linked to a Supabase project."
-    echo "   Run: supabase link --project-ref YOUR_PROJECT_REF"
-    exit 1
-fi
+# Check if linked to a project (supabase commands will fail with clear error if not linked)
+# Removed redundant check - let supabase CLI handle it
 
 echo "📋 Found migrations:"
 ls -1 supabase/migrations/*.sql

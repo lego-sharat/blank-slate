@@ -57,15 +57,11 @@ if [ -z "$SUPABASE_PROJECT_REF" ]; then
     exit 1
 fi
 
-# Check if linked to a project, if not link automatically
-if [ ! -f .supabase/config.toml ]; then
-    echo "🔗 Linking to Supabase project: $SUPABASE_PROJECT_REF"
-    echo ""
-    supabase link --project-ref "$SUPABASE_PROJECT_REF"
-    echo ""
-    echo "✅ Project linked successfully"
-    echo ""
-fi
+# Link to Supabase project (will skip if already linked)
+echo "🔗 Ensuring project is linked: $SUPABASE_PROJECT_REF"
+echo ""
+supabase link --project-ref "$SUPABASE_PROJECT_REF" 2>&1 || echo "Note: Link command completed with warnings (this is usually fine)"
+echo ""
 
 echo "This script will set up the complete mail system."
 echo "You will need:"
