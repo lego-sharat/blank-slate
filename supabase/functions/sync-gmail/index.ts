@@ -263,12 +263,14 @@ async function fetchChangedThreads(accessToken: string, lastHistoryId: string): 
   })
 
   if (!response.ok) {
-    // If history ID is too old, fall back to recent threads
-    if (response.status === 404) {
-      console.log('[History API] History ID expired, falling back to recent threads')
+    // If history ID is invalid or too old, fall back to recent threads
+    if (response.status === 404 || response.status === 400) {
+      console.log(`[History API] Invalid or expired history ID (${response.status}): ${lastHistoryId}, falling back to recent threads`)
       return await fetchRecentThreads(accessToken)
     }
-    throw new Error(`Gmail History API error: ${response.statusText}`)
+
+    const errorText = await response.text()
+    throw new Error(`Gmail History API error: ${response.status} ${response.statusText} - ${errorText}`)
   }
 
   const data = await response.json()
