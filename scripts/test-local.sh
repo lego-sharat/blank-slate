@@ -19,10 +19,10 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# Create .env.local if it doesn't exist
-if [ ! -f supabase/.env.local ]; then
-    echo "📝 Creating supabase/.env.local..."
-    cat > supabase/.env.local <<EOF
+# Create .env if it doesn't exist
+if [ ! -f supabase/.env ]; then
+    echo "📝 Creating supabase/.env..."
+    cat > supabase/.env <<EOF
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
@@ -35,7 +35,7 @@ ANTHROPIC_API_KEY=your-anthropic-api-key
 # SUPABASE_ANON_KEY=...
 # SUPABASE_SERVICE_ROLE_KEY=...
 EOF
-    echo "⚠️  Please edit supabase/.env.local and add your API keys"
+    echo "⚠️  Please edit supabase/.env and add your API keys"
     echo "   Then run this script again."
     exit 1
 fi
@@ -82,16 +82,16 @@ echo ""
 # Set encryption key in local database if not already set
 echo "Configuring encryption key for local testing..."
 
-# Try to read encryption key from .env.local
-if [ -f supabase/.env.local ]; then
-    ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env.local 2>/dev/null | cut -d '=' -f2-)
+# Try to read encryption key from .env
+if [ -f supabase/.env ]; then
+    ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 fi
 
-# If not found in .env.local, generate a random one
+# If not found in .env, generate a random one
 if [ -z "$ENCRYPTION_KEY" ]; then
-    echo "No ENCRYPTION_KEY found in .env.local, generating random key..."
+    echo "No ENCRYPTION_KEY found in .env, generating random key..."
     ENCRYPTION_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
-    echo "💡 Tip: Add ENCRYPTION_KEY=$ENCRYPTION_KEY to supabase/.env.local for consistency"
+    echo "💡 Tip: Add ENCRYPTION_KEY=$ENCRYPTION_KEY to supabase/.env for consistency"
 fi
 
 # Check if encryption key is already set in database
@@ -114,4 +114,4 @@ echo "Press Ctrl+C to stop"
 echo ""
 
 # Serve the function
-supabase functions serve "$FUNCTION_NAME" --env-file ./supabase/.env.local --debug
+supabase functions serve "$FUNCTION_NAME" --env-file ./supabase/.env --debug

@@ -101,7 +101,7 @@ http://localhost:54321/functions/v1/sync-gmail
 ```
 
 **First time setup:**
-1. The script creates `supabase/.env.local`
+1. The script creates `supabase/.env`
 2. Edit it and add your API keys
 3. Run the script again
 
@@ -245,12 +245,12 @@ supabase/
 │   ├── gmail-oauth-callback/
 │   ├── sync-gmail/
 │   └── process-mail-summary/
-└── .env.local                # Local development secrets (gitignored)
+└── .env                      # Local development secrets (gitignored)
 ```
 
 ## Security Notes
 
-- **Never commit** `.env.local` - it's in `.gitignore`
+- **Never commit** `.env` - it's in `.gitignore`
 - **Service role key** has full database access - keep it secret
 - **Secrets** are encrypted in Supabase - use `supabase secrets` commands
 - **OAuth tokens** are encrypted in the database using pgcrypto
