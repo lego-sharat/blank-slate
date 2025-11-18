@@ -330,15 +330,29 @@ Focus on actionable items, not general statements.`
   const content = data.content[0].text
 
   // Parse JSON from Claude's response
-  // Claude sometimes wraps JSON in markdown code blocks, so we need to handle that
+  // Claude sometimes wraps JSON in markdown code blocks or adds extra text
   let jsonContent = content.trim()
-  if (jsonContent.startsWith('```json')) {
-    jsonContent = jsonContent.replace(/^```json\n/, '').replace(/\n```$/, '')
-  } else if (jsonContent.startsWith('```')) {
-    jsonContent = jsonContent.replace(/^```\n/, '').replace(/\n```$/, '')
+
+  // Try to extract JSON from markdown code blocks
+  const codeBlockMatch = jsonContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+  if (codeBlockMatch) {
+    jsonContent = codeBlockMatch[1].trim()
+  } else {
+    // Try to find JSON object by looking for { ... }
+    const jsonMatch = jsonContent.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      jsonContent = jsonMatch[0]
+    }
   }
 
-  const result: SummaryResult = JSON.parse(jsonContent)
+  let result: SummaryResult
+  try {
+    result = JSON.parse(jsonContent)
+  } catch (error) {
+    console.error('[AI Summary] Failed to parse JSON. Raw response:', content)
+    console.error('[AI Summary] Extracted content:', jsonContent)
+    throw new Error(`Failed to parse AI response: ${error.message}`)
+  }
 
   // Validate structure
   if (!result.summary || typeof result.summary !== 'string') {
