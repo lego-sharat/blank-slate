@@ -54,5 +54,27 @@ renderer.listitem = function(text, task, checked) {
 
 marked.use({ renderer });
 
+// Preprocess markdown to handle non-standard task list syntax
+function preprocessMarkdown(markdown) {
+  if (!markdown) return '';
+
+  // Convert lines starting with [] or [x] or [.] (without dash) to proper GFM task lists
+  let processed = markdown.replace(/^(\s*)\[( |x|X|\.)\]\s+(.+)$/gm, (match, indent, check, text) => {
+    // Convert [.] or any non-space/x to checked
+    const isChecked = check !== ' ';
+    const checkSymbol = isChecked ? 'x' : ' ';
+    return `${indent}- [${checkSymbol}] ${text}`;
+  });
+
+  return processed;
+}
+
+// Wrap marked.parse to include preprocessing
+const originalParse = marked.parse.bind(marked);
+marked.parse = function(src, options) {
+  const preprocessed = preprocessMarkdown(src);
+  return originalParse(preprocessed, options);
+};
+
 // Export the configured marked instance
 window.marked = marked;
