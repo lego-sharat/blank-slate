@@ -41,20 +41,21 @@ console.log('Background script starting...');
 /**
  * Run one-time migration to clean and deduplicate existing history
  * This runs once per installation and is tracked via a flag
+ * v2: Added Figma URL normalization (removes name variations for boards/files)
  */
 async function runHistoryCleanupMigration() {
-  const MIGRATION_FLAG = 'history_cleaned_v1';
+  const MIGRATION_FLAG = 'history_cleaned_v2';
 
   try {
     // Check if migration has already been run
     const result = await chrome.storage.local.get(MIGRATION_FLAG);
 
     if (result[MIGRATION_FLAG]) {
-      console.log('✓ History cleanup migration already completed');
+      console.log('✓ History cleanup migration v2 already completed');
       return;
     }
 
-    console.log('→ Running history cleanup migration...');
+    console.log('→ Running history cleanup migration v2...');
     const cleanupResult = await cleanAndDeduplicateHistory();
 
     console.log(`✓ History cleanup complete:`, {

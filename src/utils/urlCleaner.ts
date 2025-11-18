@@ -63,6 +63,7 @@ const FIGMA_PRESERVED_PARAMS = [
   'mode',
   't', // Figma timestamp/version parameter
   'kind',
+  'p', // FigJam board parameter
 ];
 
 const GOOGLE_DOCS_PRESERVED_PARAMS = [
@@ -102,6 +103,11 @@ export function cleanUrl(url: string): string {
     // Normalize Notion URLs to canonical format (removes slug variations)
     if (hostname.includes('notion.so')) {
       cleaned = normalizeNotionUrl(cleaned);
+    }
+
+    // Normalize Figma URLs to canonical format (removes name variations)
+    if (hostname.includes('figma.com')) {
+      cleaned = normalizeFigmaUrl(cleaned);
     }
 
     // Then apply our custom cleaning for tracking parameters
@@ -170,13 +176,15 @@ export function extractFigmaNodeId(url: string): string | null {
 }
 
 /**
- * Check if URL is a Figma file URL
+ * Check if URL is a Figma file URL (includes design files and FigJam boards)
  */
 export function isFigmaFileUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
     return urlObj.hostname.includes('figma.com') &&
-           (urlObj.pathname.includes('/file/') || urlObj.pathname.includes('/design/'));
+           (urlObj.pathname.includes('/file/') ||
+            urlObj.pathname.includes('/design/') ||
+            urlObj.pathname.includes('/board/'));
   } catch (e) {
     return false;
   }
@@ -184,13 +192,17 @@ export function isFigmaFileUrl(url: string): boolean {
 
 /**
  * Extract Figma file key from URL
+ * Supports /file/, /design/, and /board/ (FigJam) URLs
  */
 export function extractFigmaFileKey(url: string): string | null {
   try {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/');
 
-    // Figma URL format: /file/{fileKey}/{fileName} or /design/{fileKey}/{fileName}
+    // Figma URL formats:
+    // - /file/{fileKey}/{fileName}
+    // - /design/{fileKey}/{fileName}
+    // - /board/{boardKey}/{boardName} (FigJam)
     const fileIndex = pathParts.indexOf('file');
     if (fileIndex !== -1 && pathParts.length > fileIndex + 1) {
       return pathParts[fileIndex + 1];
@@ -199,6 +211,11 @@ export function extractFigmaFileKey(url: string): string | null {
     const designIndex = pathParts.indexOf('design');
     if (designIndex !== -1 && pathParts.length > designIndex + 1) {
       return pathParts[designIndex + 1];
+    }
+
+    const boardIndex = pathParts.indexOf('board');
+    if (boardIndex !== -1 && pathParts.length > boardIndex + 1) {
+      return pathParts[boardIndex + 1];
     }
 
     return null;
@@ -262,6 +279,51 @@ export function normalizeNotionUrl(url: string): string {
     return canonicalUrl.toString();
   } catch (e) {
     console.error('Error normalizing Notion URL:', e);
+    return url;
+  }
+}
+
+/**
+ * Normalize Figma URL to use canonical format based on file/board key
+ * This ensures different names for the same file/board are treated as identical
+ * Example:
+ *   - /board/ABC123/Old-Name?node-id=1 -> /board/ABC123?node-id=1
+ *   - /board/ABC123/New-Name?node-id=1 -> /board/ABC123?node-id=1
+ */
+export function normalizeFigmaUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(p => p);
+    const fileKey = extractFigmaFileKey(url);
+
+    if (!fileKey) {
+      return url; // Return as-is if we can't extract file key
+    }
+
+    // Determine the type (file, design, or board)
+    let type: string | null = null;
+    if (pathParts.includes('file')) {
+      type = 'file';
+    } else if (pathParts.includes('design')) {
+      type = 'design';
+    } else if (pathParts.includes('board')) {
+      type = 'board';
+    }
+
+    if (!type) {
+      return url; // Can't determine type, return as-is
+    }
+
+    // Construct canonical URL: /{type}/{fileKey} (without the name part)
+    const canonicalPath = `/${type}/${fileKey}`;
+
+    // Preserve query parameters (node-id, etc.)
+    const canonicalUrl = new URL(canonicalPath, urlObj.origin);
+    canonicalUrl.search = urlObj.search;
+
+    return canonicalUrl.toString();
+  } catch (e) {
+    console.error('Error normalizing Figma URL:', e);
     return url;
   }
 }

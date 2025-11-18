@@ -56,17 +56,19 @@ export async function inspectHistory() {
     });
   }
 
-  // Check migration flag
-  const migrationResult = await chrome.storage.local.get('history_cleaned_v1');
+  // Check migration flags
+  const migrationResult = await chrome.storage.local.get(['history_cleaned_v1', 'history_cleaned_v2']);
   console.log('\n=== MIGRATION STATUS ===');
-  console.log('Migration completed:', !!migrationResult.history_cleaned_v1);
+  console.log('Migration v1 completed:', !!migrationResult.history_cleaned_v1);
+  console.log('Migration v2 completed:', !!migrationResult.history_cleaned_v2);
 
   return {
     totalItems: items.length,
     uniqueUrls: urlCounts.size,
     duplicateCount: duplicates.length,
     totalDuplicates: duplicates.reduce((sum, d) => sum + (d.count - 1), 0),
-    migrationCompleted: !!migrationResult.history_cleaned_v1,
+    migrationV1Completed: !!migrationResult.history_cleaned_v1,
+    migrationV2Completed: !!migrationResult.history_cleaned_v2,
     duplicates,
   };
 }
@@ -97,9 +99,9 @@ export async function forceCleanHistory() {
 }
 
 /**
- * Reset migration flag to allow re-running
+ * Reset migration flags to allow re-running
  */
 export async function resetMigrationFlag() {
-  await chrome.storage.local.remove('history_cleaned_v1');
-  console.log('Migration flag reset. Restart the extension to run migration again.');
+  await chrome.storage.local.remove(['history_cleaned_v1', 'history_cleaned_v2']);
+  console.log('Migration flags reset. Restart the extension to run migration again.');
 }
