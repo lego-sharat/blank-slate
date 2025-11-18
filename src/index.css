@@ -4835,6 +4835,228 @@ body.light-theme {
 }
 
 /* ===================================
+   Mail View Styles
+   =================================== */
+
+.mail-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.mail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.mail-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.mail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mail-stats {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.mail-view-all-button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.mail-view-all-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-tertiary);
+}
+
+.mail-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mail-filter-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mail-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.mail-filter-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.mail-filter-count {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.mail-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.mail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mail-item {
+  background: var(--bg-secondary);
+  padding: 12px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.mail-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.mail-item.unread {
+  border-left-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.mail-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.mail-from {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.mail-sender-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.mail-unread-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+}
+
+.mail-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.mail-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mail-badge-onboarding {
+  background-color: rgba(129, 162, 190, 0.15);
+  color: #81a2be;
+}
+
+.mail-badge-support {
+  background-color: rgba(178, 148, 187, 0.15);
+  color: #b294bb;
+}
+
+.mail-badge-general {
+  background-color: rgba(150, 152, 150, 0.15);
+  color: #969896;
+}
+
+.mail-attachment-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary);
+}
+
+.mail-subject {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.mail-snippet {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.mail-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.mail-time {
+  color: var(--text-tertiary);
+}
+
+/* ===================================
    Sidebar Icon Styles
    =================================== */
 

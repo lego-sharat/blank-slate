@@ -1,4 +1,4 @@
-import { calendarToken, todos, thoughts, history, linearIssues, githubPRs, settings, calendarEvents } from '@/store/store';
+import { calendarToken, todos, thoughts, history, linearIssues, githubPRs, mailMessages, settings, calendarEvents } from '@/store/store';
 import { getCalendarToken } from '@/utils/storageManager';
 
 /**
@@ -65,15 +65,16 @@ export async function requestBackgroundRefresh() {
  */
 export async function loadCachedDataDirectly() {
   try {
-    const { getTodos, getThoughts, getHistory, getLinearIssues, getGitHubPRs, getCalendarEvents } = await import('@/utils/storageManager');
+    const { getTodos, getThoughts, getHistory, getLinearIssues, getGitHubPRs, getCalendarEvents, getMailMessages } = await import('@/utils/storageManager');
 
-    const [todosData, thoughtsData, historyData, linearData, githubData, calendarData] = await Promise.all([
+    const [todosData, thoughtsData, historyData, linearData, githubData, calendarData, mailData] = await Promise.all([
       getTodos(),
       getThoughts(),
       getHistory(),
       getLinearIssues(),
       getGitHubPRs(),
       getCalendarEvents(),
+      getMailMessages(),
     ]);
 
     todos.value = todosData;
@@ -85,6 +86,7 @@ export async function loadCachedDataDirectly() {
     linearIssues.value = linearData;
     githubPRs.value = githubData;
     calendarEvents.value = calendarData;
+    mailMessages.value = mailData;
 
     console.log('Cached data loaded directly from chrome.storage');
   } catch (error) {
@@ -125,6 +127,12 @@ export async function syncAllData() {
     reviewRequested: [],
   };
 
+  mailMessages.value = data.mailMessages || {
+    all: [],
+    onboarding: [],
+    support: [],
+  };
+
   calendarEvents.value = data.calendarEvents || [];
 
   console.log('All data loaded from background:');
@@ -133,6 +141,7 @@ export async function syncAllData() {
   console.log('- History:', history.value.length);
   console.log('- Linear issues:', linearIssues.value.assignedToMe.length + linearIssues.value.createdByMe.length);
   console.log('- GitHub PRs:', githubPRs.value.createdByMe.length + githubPRs.value.reviewRequested.length);
+  console.log('- Mail messages:', mailMessages.value.all.length);
   console.log('- Calendar events:', calendarEvents.value.length);
   console.log('- Last sync:', new Date(data.lastSync || 0).toLocaleTimeString());
 }
@@ -168,6 +177,12 @@ export async function refreshAllData() {
   githubPRs.value = data.githubPRs || {
     createdByMe: [],
     reviewRequested: [],
+  };
+
+  mailMessages.value = data.mailMessages || {
+    all: [],
+    onboarding: [],
+    support: [],
   };
 
   calendarEvents.value = data.calendarEvents || [];

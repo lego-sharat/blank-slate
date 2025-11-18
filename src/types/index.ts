@@ -170,8 +170,29 @@ export interface HistoryItem {
   favicon?: string;
 }
 
+// Mail types
+export interface MailMessage {
+  id: string;
+  threadId: string;
+  snippet: string;
+  subject: string;
+  from: {
+    name?: string;
+    email: string;
+  };
+  to: Array<{
+    name?: string;
+    email: string;
+  }>;
+  date: string;
+  labels: string[];
+  isUnread: boolean;
+  hasAttachments: boolean;
+  category?: 'onboarding' | 'support' | 'general';
+}
+
 // View types
-export type ViewType = 'glance' | 'today' | 'planner' | 'thought' | 'thoughts' | 'tasks' | 'linear' | 'github' | 'history' | 'profile' | 'settings';
+export type ViewType = 'glance' | 'today' | 'planner' | 'thought' | 'thoughts' | 'tasks' | 'linear' | 'github' | 'history' | 'mail' | 'profile' | 'settings';
 
 // Sidebar section types
 export interface SidebarSection {

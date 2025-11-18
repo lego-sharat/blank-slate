@@ -7,11 +7,13 @@ import {
   setLinearIssues,
   setGitHubPRs,
   setCalendarEvents,
+  setMailMessages,
   setLastSync,
   getLastSync,
   getLinearIssues,
   getGitHubPRs,
   getCalendarEvents,
+  getMailMessages,
   getLastSupabaseSync,
   setLastSupabaseSync,
 } from './utils/storageManager';
@@ -19,6 +21,7 @@ import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
 import { syncAllToSupabase } from './utils/supabaseSync';
 import { fetchAllLinearIssues } from './utils/linearApi';
 import { fetchAllGitHubPRs } from './utils/githubApi';
+import { fetchAllMailMessages } from './utils/mailApi';
 import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
 import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
 
@@ -177,6 +180,31 @@ async function fetchAndCacheCalendarEvents() {
 }
 
 /**
+ * Fetch Mail messages and cache them
+ * Note: Requires Gmail OAuth token to be configured
+ */
+async function fetchAndCacheMailMessages() {
+  try {
+    // Get calendar token (Gmail uses the same OAuth token)
+    const { getCalendarToken } = await import('./utils/storageManager');
+    const token = await getCalendarToken();
+
+    if (!token) {
+      console.log('Gmail token not configured, skipping mail fetch');
+      return;
+    }
+
+    console.log('Fetching mail messages...');
+    const messages = await fetchAllMailMessages(token);
+    await setMailMessages(messages);
+    console.log(`Mail messages cached successfully (${messages.all.length} total, ${messages.onboarding.length} onboarding, ${messages.support.length} support)`);
+  } catch (error) {
+    console.error('Failed to fetch mail messages:', error);
+    // Don't throw - allow other data fetching to continue
+  }
+}
+
+/**
  * Sync all data to Supabase
  */
 async function syncToSupabase() {
@@ -233,7 +261,7 @@ async function syncToSupabase() {
 }
 
 /**
- * Fetch all external data (Linear, GitHub, Calendar)
+ * Fetch all external data (Linear, GitHub, Calendar, Mail)
  * This is the main data fetching function - runs every 2 minutes
  */
 async function fetchAllExternalData() {
@@ -243,6 +271,7 @@ async function fetchAllExternalData() {
     fetchAndCacheLinearIssues(),
     fetchAndCacheGitHubPRs(),
     fetchAndCacheCalendarEvents(),
+    fetchAndCacheMailMessages(),
   ]);
 
   await setLastSync(Date.now());
@@ -288,13 +317,14 @@ async function performPeriodicSync() {
 async function getAllCachedData() {
   console.log('Getting all cached data for foreground...');
 
-  const [todos, thoughts, history, linearIssues, githubPRs, calendarEvents, settings] = await Promise.all([
+  const [todos, thoughts, history, linearIssues, githubPRs, calendarEvents, mailMessages, settings] = await Promise.all([
     getTodos(),
     getThoughts(),
     getHistory(),
     getLinearIssues(),
     getGitHubPRs(),
     getCalendarEvents(),
+    getMailMessages(),
     getSettings(),
   ]);
 
@@ -305,6 +335,7 @@ async function getAllCachedData() {
     linearIssues,
     githubPRs,
     calendarEvents,
+    mailMessages,
     settings,
     lastSync: await getLastSync(),
   };

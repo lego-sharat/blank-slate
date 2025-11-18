@@ -3,7 +3,7 @@
  * Provides type-safe access to stored data
  */
 
-import type { Todo, Thought, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, Settings } from '@/types';
+import type { Todo, Thought, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, MailMessage, Settings } from '@/types';
 
 export const STORAGE_KEYS = {
   TODOS: 'todos',
@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   CALENDAR_TOKEN: 'calendar_token',
   LINEAR_ISSUES: 'linear_issues',
   GITHUB_PRS: 'github_prs',
+  MAIL_MESSAGES: 'mail_messages',
   SETTINGS: 'settings',
   LAST_SYNC: 'last_sync',
   LAST_SUPABASE_SYNC: 'last_supabase_sync',
@@ -138,6 +139,26 @@ export async function setGitHubPRs(prs: {
   reviewRequested: GitHubPR[];
 }): Promise<void> {
   return setInStorage(STORAGE_KEYS.GITHUB_PRS, prs);
+}
+
+export async function getMailMessages(): Promise<{
+  all: MailMessage[];
+  onboarding: MailMessage[];
+  support: MailMessage[];
+}> {
+  return getFromStorage(STORAGE_KEYS.MAIL_MESSAGES, {
+    all: [],
+    onboarding: [],
+    support: [],
+  });
+}
+
+export async function setMailMessages(messages: {
+  all: MailMessage[];
+  onboarding: MailMessage[];
+  support: MailMessage[];
+}): Promise<void> {
+  return setInStorage(STORAGE_KEYS.MAIL_MESSAGES, messages);
 }
 
 export async function getSettings(): Promise<Partial<Settings>> {
