@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface ProcessMailRequest {
   userId: string
-  messageIds: string[] // Array of mail_messages.id (UUIDs)
+  threadIds: string[] // Array of gmail thread IDs
 }
 
 interface ActionItem {
@@ -23,16 +23,16 @@ interface SummaryResult {
 }
 
 /**
- * Process Mail Summary with AI
+ * Process Mail Summary with AI (Thread-Focused)
  *
- * Generates AI summaries and extracts action items from emails using Claude Haiku.
- * Triggered asynchronously by the sync-gmail function after fetching new emails.
+ * Generates AI summaries and extracts action items from email THREADS using Claude Haiku.
+ * Triggered asynchronously by the sync-gmail function after fetching new threads.
  *
  * Flow:
  * 1. Check rate limits (100 summaries/day default)
- * 2. Fetch mail messages from database
- * 3. Call Claude Haiku API for each message
- * 4. Store summaries and action items
+ * 2. Fetch all messages in each thread from database
+ * 3. Call Claude Haiku API with full thread context
+ * 4. Store thread-level summaries and action items
  * 5. Track usage for rate limiting
  */
 serve(async (req) => {
@@ -48,16 +48,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Parse request body
-    const { userId, messageIds }: ProcessMailRequest = await req.json()
+    const { userId, threadIds }: ProcessMailRequest = await req.json()
 
-    if (!userId || !messageIds || messageIds.length === 0) {
+    if (!userId || !threadIds || threadIds.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Missing userId or messageIds' }),
+        JSON.stringify({ error: 'Missing userId or threadIds' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`[AI Summary] Processing ${messageIds.length} messages for user ${userId}`)
+    console.log(`[AI Summary] Processing ${threadIds.length} threads for user ${userId}`)
 
     // Check rate limit (uses function from migration)
     const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc(
@@ -65,7 +65,7 @@ serve(async (req) => {
       {
         p_user_id: userId,
         p_action: 'generate_summary',
-        p_limit: 100, // 100 summaries per day
+        p_limit: 100, // 100 thread summaries per day
       }
     )
 
@@ -82,35 +82,11 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'Rate limit exceeded',
-          message: 'You have reached the daily limit of 100 email summaries',
+          message: 'You have reached the daily limit of 100 email thread summaries',
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Fetch mail messages
-    const { data: messages, error: fetchError } = await supabase
-      .from('mail_messages')
-      .select('*')
-      .in('id', messageIds)
-      .eq('user_id', userId)
-
-    if (fetchError) {
-      console.error('[AI Summary] Failed to fetch messages:', fetchError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch messages' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!messages || messages.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'No messages found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`[AI Summary] Fetched ${messages.length} messages`)
 
     // Get Anthropic API key
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
@@ -121,62 +97,70 @@ serve(async (req) => {
       )
     }
 
-    // Process each message
+    // Process each thread
     const results = []
     let successCount = 0
     let errorCount = 0
 
-    for (const message of messages) {
+    for (const threadId of threadIds) {
       try {
-        // Skip if summary already exists
-        const { data: existingSummary } = await supabase
-          .from('mail_summaries')
-          .select('id')
-          .eq('message_id', message.id)
+        // Check if thread already has a recent summary (less than 1 hour old)
+        const { data: existingThread } = await supabase
+          .from('mail_threads')
+          .select('summary, summary_generated_at')
+          .eq('user_id', userId)
+          .eq('gmail_thread_id', threadId)
           .single()
 
-        if (existingSummary) {
-          console.log(`[AI Summary] Skipping message ${message.id} - summary already exists`)
-          continue
+        if (existingThread?.summary && existingThread.summary_generated_at) {
+          const summaryAge = Date.now() - new Date(existingThread.summary_generated_at).getTime()
+          const oneHour = 60 * 60 * 1000
+
+          if (summaryAge < oneHour) {
+            console.log(`[AI Summary] Skipping thread ${threadId} - recent summary exists`)
+            continue
+          }
         }
 
-        // Generate summary using Claude Haiku
-        const summaryResult = await generateSummary(message, anthropicApiKey)
+        // Fetch all messages in the thread (chronological order)
+        const { data: messages, error: fetchError } = await supabase
+          .from('mail_messages')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('thread_id', threadId)
+          .order('date', { ascending: true })
 
-        // Insert summary
-        const { data: summaryData, error: summaryError } = await supabase
-          .from('mail_summaries')
-          .insert({
-            message_id: message.id,
-            user_id: userId,
-            summary: summaryResult.summary,
-          })
-          .select()
-          .single()
-
-        if (summaryError) {
-          console.error(`[AI Summary] Failed to insert summary for message ${message.id}:`, summaryError)
+        if (fetchError) {
+          console.error(`[AI Summary] Failed to fetch messages for thread ${threadId}:`, fetchError)
           errorCount++
           continue
         }
 
-        // Insert action items if any
-        if (summaryResult.actionItems.length > 0) {
-          const actionItems = summaryResult.actionItems.map((item) => ({
-            message_id: message.id,
-            user_id: userId,
-            description: item.description,
-            due_date: item.dueDate || null,
-            priority: item.priority || 'medium',
-          }))
+        if (!messages || messages.length === 0) {
+          console.log(`[AI Summary] No messages found for thread ${threadId}`)
+          continue
+        }
 
-          const { error: actionItemsError } = await supabase
-            .from('mail_action_items')
-            .insert(actionItems)
+        console.log(`[AI Summary] Generating summary for thread ${threadId} with ${messages.length} messages`)
 
-          if (actionItemsError) {
-            console.error(`[AI Summary] Failed to insert action items for message ${message.id}:`, actionItemsError)
-          }
+        // Generate thread summary using Claude Haiku
+        const summaryResult = await generateThreadSummary(messages, anthropicApiKey)
+
+        // Update thread with summary and action items
+        const { error: updateError } = await supabase
+          .from('mail_threads')
+          .update({
+            summary: summaryResult.summary,
+            action_items: summaryResult.actionItems,
+            summary_generated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId)
+          .eq('gmail_thread_id', threadId)
+
+        if (updateError) {
+          console.error(`[AI Summary] Failed to update thread ${threadId}:`, updateError)
+          errorCount++
+          continue
         }
 
         // Track usage
@@ -188,18 +172,18 @@ serve(async (req) => {
 
         successCount++
         results.push({
-          messageId: message.id,
+          threadId,
           success: true,
           summary: summaryResult.summary,
           actionItemsCount: summaryResult.actionItems.length,
         })
 
-        console.log(`[AI Summary] ✓ Processed message ${message.id}`)
+        console.log(`[AI Summary] ✓ Processed thread ${threadId}`)
       } catch (error) {
-        console.error(`[AI Summary] Error processing message ${message.id}:`, error)
+        console.error(`[AI Summary] Error processing thread ${threadId}:`, error)
         errorCount++
         results.push({
-          messageId: message.id,
+          threadId,
           success: false,
           error: error.message,
         })
@@ -211,7 +195,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        processed: messages.length,
+        processed: threadIds.length,
         successCount,
         errorCount,
         results,
@@ -231,34 +215,50 @@ serve(async (req) => {
 })
 
 /**
- * Generate summary and action items using Claude Haiku
+ * Generate thread summary and action items using Claude Haiku
+ * Analyzes the entire conversation with full context
  */
-async function generateSummary(message: any, apiKey: string): Promise<SummaryResult> {
-  const prompt = `You are an AI assistant that helps summarize emails and extract action items.
+async function generateThreadSummary(messages: any[], apiKey: string): Promise<SummaryResult> {
+  // Build conversation context
+  const threadContext = messages.map((msg, idx) => {
+    return `
+Message ${idx + 1} (${new Date(msg.date).toLocaleDateString()}):
+From: ${msg.from_name || msg.from_email}
+Subject: ${msg.subject}
+${msg.body_preview || msg.snippet || '(No content)'}
+---`
+  }).join('\n')
 
-Email Details:
-From: ${message.from_name || message.from_email}
-Subject: ${message.subject || '(No subject)'}
-Date: ${message.date}
-Body: ${message.body_preview || message.snippet || '(No content)'}
+  const prompt = `You are an AI assistant that helps summarize email threads and extract action items.
 
-Please provide:
-1. A concise 1-2 sentence summary of this email
-2. A list of action items (tasks, deadlines, requests) if any
+This is an email conversation with ${messages.length} message(s):
+${threadContext}
+
+Please analyze this entire email thread and provide:
+1. A concise 2-3 sentence summary of the overall conversation, including:
+   - What the conversation is about
+   - Key points discussed
+   - Current status or outcome if applicable
+
+2. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
+   - Only include actionable items that require someone to do something
+   - Include context about who needs to do what
+   - Identify any mentioned deadlines or timeframes
 
 Respond in JSON format:
 {
-  "summary": "Brief summary here",
+  "summary": "Brief summary of the entire conversation",
   "actionItems": [
     {
-      "description": "Action item description",
+      "description": "Specific action item with context",
       "dueDate": "YYYY-MM-DD" or null,
       "priority": "high" | "medium" | "low"
     }
   ]
 }
 
-If there are no action items, return an empty array.`
+If there are no action items, return an empty array.
+Focus on actionable items, not general statements.`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -269,7 +269,7 @@ If there are no action items, return an empty array.`
     },
     body: JSON.stringify({
       model: 'claude-haiku-20240307',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',

@@ -12,6 +12,18 @@ interface OAuthToken {
   last_history_id: string | null
 }
 
+interface GmailMessage {
+  id: string
+  threadId: string
+  labelIds: string[]
+  snippet: string
+  payload: {
+    headers: Array<{ name: string; value: string }>
+    parts?: any[]
+  }
+  internalDate: string
+}
+
 serve(async (req) => {
   try {
     // Initialize Supabase with service role
@@ -19,23 +31,9 @@ serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    // Verify service role access by checking JWT
+    // Verify service role access
     const authHeader = req.headers.get('Authorization')
-
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized - No authorization header' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    }
-
-    // Verify the token is valid by checking user
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    // Only allow service role (cron job) to call this
-    // Regular users should not be able to trigger sync for all users
-    if (authError || token !== serviceKey) {
+    if (!authHeader || authHeader.replace('Bearer ', '') !== serviceKey) {
       return new Response(JSON.stringify({ error: 'Unauthorized - Service role required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -50,7 +48,7 @@ serve(async (req) => {
       throw new Error('ENCRYPTION_KEY not configured')
     }
 
-    // Get all users with Gmail connected using decryption function
+    // Get all users with Gmail connected
     const { data: tokens, error: tokensError } = await supabase.rpc('get_all_oauth_tokens', {
       p_provider: 'gmail',
       p_encryption_key: encryptionKey
@@ -104,39 +102,73 @@ async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: str
     accessToken = await refreshAccessToken(supabase, token, encryptionKey)
   }
 
-  // Fetch messages
-  const messages = await fetchGmailMessages(accessToken)
-  console.log(`[User ${token.user_id}] Fetched ${messages.length} messages`)
+  // Determine if this is first sync or incremental sync
+  const isFirstSync = !token.last_history_id
+  let changedThreadIds: Set<string>
 
-  if (messages.length === 0) {
+  if (isFirstSync) {
+    console.log(`[User ${token.user_id}] First sync - fetching recent messages...`)
+    changedThreadIds = await fetchRecentThreads(accessToken)
+  } else {
+    console.log(`[User ${token.user_id}] Incremental sync using History API...`)
+    changedThreadIds = await fetchChangedThreads(accessToken, token.last_history_id)
+  }
+
+  console.log(`[User ${token.user_id}] Found ${changedThreadIds.size} changed threads`)
+
+  if (changedThreadIds.size === 0) {
+    console.log(`[User ${token.user_id}] No changes detected`)
     return
   }
 
-  // Parse and categorize messages
-  const parsedMessages = messages.map(msg => parseMessage(msg, token.user_id))
+  // Fetch all messages for each changed thread
+  const threadUpdates = await Promise.all(
+    Array.from(changedThreadIds).map(threadId =>
+      fetchThreadMessages(accessToken, threadId, token.user_id)
+    )
+  )
 
-  // Upsert to database
-  const { error: upsertError } = await supabase
-    .from('mail_messages')
-    .upsert(parsedMessages, {
-      onConflict: 'user_id,gmail_message_id',
-      ignoreDuplicates: false
-    })
+  // Filter out threads that should be skipped (spam, trash, etc)
+  const validThreads = threadUpdates.filter(thread =>
+    !thread.messages.some(msg =>
+      msg.labelIds.some(label => SKIP_LABELS.includes(label))
+    )
+  )
 
-  if (upsertError) throw upsertError
+  console.log(`[User ${token.user_id}] Processing ${validThreads.length} valid threads`)
 
-  console.log(`[User ${token.user_id}] Saved ${parsedMessages.length} messages`)
+  // Process each thread
+  for (const thread of validThreads) {
+    try {
+      await saveThread(supabase, thread, token.user_id)
+    } catch (err) {
+      console.error(`[User ${token.user_id}] Failed to save thread ${thread.threadId}:`, err)
+    }
+  }
 
-  // Trigger AI summarization for new messages (async)
-  const newMessageIds = parsedMessages.map(m => m.gmail_message_id)
-  if (newMessageIds.length > 0) {
-    // Fire and forget - don't wait
+  // Update last_history_id
+  const newHistoryId = await getLatestHistoryId(accessToken)
+  if (newHistoryId) {
+    await supabase
+      .from('oauth_tokens')
+      .update({ last_history_id: newHistoryId })
+      .eq('user_id', token.user_id)
+      .eq('provider', 'gmail')
+
+    console.log(`[User ${token.user_id}] Updated last_history_id to ${newHistoryId}`)
+  }
+
+  // Trigger AI summarization for threads (fire and forget)
+  if (validThreads.length > 0) {
+    const threadIds = validThreads.map(t => t.threadId)
     supabase.functions.invoke('process-mail-summary', {
-      body: { userId: token.user_id, messageIds: newMessageIds }
+      body: { userId: token.user_id, threadIds }
     }).catch((err: Error) => {
       console.error(`[User ${token.user_id}] Failed to trigger AI summarization:`, err)
     })
   }
+
+  console.log(`[User ${token.user_id}] Sync complete`)
 }
 
 async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKey: string): Promise<string> {
@@ -158,7 +190,7 @@ async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKe
   const data = await response.json()
   const expiresAt = Date.now() + (data.expires_in * 1000)
 
-  // Update token in database with advisory lock to prevent race conditions
+  // Update token with advisory lock
   const { data: lockResult, error: lockError } = await supabase.rpc('refresh_oauth_token_with_lock', {
     p_user_id: token.user_id,
     p_provider: 'gmail',
@@ -167,76 +199,197 @@ async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKe
     p_encryption_key: encryptionKey
   })
 
-  if (lockError) {
-    console.error(`[Token Refresh] Error updating token:`, lockError)
-    throw lockError
-  }
-
+  if (lockError) throw lockError
   if (!lockResult) {
-    console.log(`[Token Refresh] Refresh already in progress for user ${token.user_id}, skipped`)
+    console.log(`[Token Refresh] Refresh already in progress, skipped`)
   }
 
   return data.access_token
 }
 
-async function fetchGmailMessages(accessToken: string): Promise<any[]> {
-  // Fetch messages from INBOX, excluding spam/trash/promotions/social
+// Fetch recent threads for first sync (last 500 messages)
+async function fetchRecentThreads(accessToken: string): Promise<Set<string>> {
   const params = new URLSearchParams({
-    maxResults: '50',
+    maxResults: '500',
     labelIds: 'INBOX',
     q: '-in:spam -in:trash -category:promotions -category:social -category:updates'
   })
 
-  const listResponse = await fetch(`${GMAIL_API_BASE}/messages?${params}`, {
+  const response = await fetch(`${GMAIL_API_BASE}/messages?${params}`, {
     headers: { 'Authorization': `Bearer ${accessToken}` }
   })
 
-  if (!listResponse.ok) {
-    throw new Error(`Gmail API error: ${listResponse.statusText}`)
+  if (!response.ok) {
+    throw new Error(`Gmail API error: ${response.statusText}`)
   }
 
-  const listData = await listResponse.json()
-  const messageIds = listData.messages || []
+  const data = await response.json()
+  const messages = data.messages || []
 
-  if (messageIds.length === 0) {
-    return []
-  }
+  // Extract unique thread IDs
+  const threadIds = new Set<string>()
+  messages.forEach((msg: any) => threadIds.add(msg.threadId))
 
-  // Fetch full message details (batch)
-  const messages = await Promise.all(
-    messageIds.slice(0, 50).map(async (msg: any) => {
-      const msgResponse = await fetch(`${GMAIL_API_BASE}/messages/${msg.id}?format=full`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      })
-      return msgResponse.json()
-    })
-  )
-
-  return messages
+  return threadIds
 }
 
-function parseMessage(gmailMsg: any, userId: string) {
-  const headers = gmailMsg.payload?.headers || []
-  const getHeader = (name: string) =>
-    headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || ''
+// Fetch changed threads using Gmail History API
+async function fetchChangedThreads(accessToken: string, lastHistoryId: string): Promise<Set<string>> {
+  const params = new URLSearchParams({
+    startHistoryId: lastHistoryId,
+    historyTypes: 'messageAdded,messageDeleted,labelAdded,labelRemoved'
+  })
 
-  const from = getHeader('from')
+  const response = await fetch(`${GMAIL_API_BASE}/history?${params}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) {
+    // If history ID is too old, fall back to recent threads
+    if (response.status === 404) {
+      console.log('[History API] History ID expired, falling back to recent threads')
+      return await fetchRecentThreads(accessToken)
+    }
+    throw new Error(`Gmail History API error: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  const history = data.history || []
+
+  // Extract unique thread IDs from all history events
+  const threadIds = new Set<string>()
+  history.forEach((event: any) => {
+    event.messagesAdded?.forEach((msg: any) => threadIds.add(msg.message.threadId))
+    event.messagesDeleted?.forEach((msg: any) => threadIds.add(msg.message.threadId))
+    event.labelsAdded?.forEach((msg: any) => threadIds.add(msg.message.threadId))
+    event.labelsRemoved?.forEach((msg: any) => threadIds.add(msg.message.threadId))
+  })
+
+  return threadIds
+}
+
+// Fetch all messages in a thread
+async function fetchThreadMessages(accessToken: string, threadId: string, userId: string) {
+  const response = await fetch(`${GMAIL_API_BASE}/threads/${threadId}?format=full`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch thread ${threadId}: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  const messages: GmailMessage[] = data.messages || []
+
+  return {
+    threadId,
+    userId,
+    messages
+  }
+}
+
+// Get latest history ID from Gmail
+async function getLatestHistoryId(accessToken: string): Promise<string | null> {
+  const response = await fetch(`${GMAIL_API_BASE}/profile`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) return null
+
+  const data = await response.json()
+  return data.historyId || null
+}
+
+// Save thread and all its messages to database
+async function saveThread(supabase: any, thread: { threadId: string; userId: string; messages: GmailMessage[] }, userId: string) {
+  if (thread.messages.length === 0) return
+
+  const messages = thread.messages
+  const firstMessage = messages[0]
+  const lastMessage = messages[messages.length - 1]
+
+  // Parse messages
+  const parsedMessages = messages.map(msg => parseMessage(msg, userId))
+
+  // Extract thread metadata
+  const subject = getHeader(firstMessage, 'subject') || '(No subject)'
+  const allParticipants = new Set<string>()
+
+  messages.forEach(msg => {
+    const from = getHeader(msg, 'from')
+    const to = getHeader(msg, 'to')
+    const cc = getHeader(msg, 'cc')
+
+    if (from) allParticipants.add(from)
+    if (to) to.split(',').forEach(email => allParticipants.add(email.trim()))
+    if (cc) cc.split(',').forEach(email => allParticipants.add(email.trim()))
+  })
+
+  const participants = Array.from(allParticipants).map(p => {
+    const match = p.match(/(.*?)\s*<(.+?)>/) || [null, p, p]
+    return {
+      name: match[1]?.replace(/"/g, '').trim() || match[2]?.trim(),
+      email: match[2]?.trim() || match[1]?.trim()
+    }
+  })
+
+  // Determine category
+  const labelIds = [...new Set(messages.flatMap(m => m.labelIds))]
+  const category = categorizeThread(labelIds, subject)
+
+  // Check if any message is unread
+  const isUnread = messages.some(m => m.labelIds.includes('UNREAD'))
+
+  // Check if thread has attachments
+  const hasAttachments = messages.some(m =>
+    m.payload?.parts?.some((p: any) => p.filename && p.filename.length > 0)
+  )
+
+  // Upsert thread
+  const { error: threadError } = await supabase
+    .from('mail_threads')
+    .upsert({
+      user_id: userId,
+      gmail_thread_id: thread.threadId,
+      subject,
+      participants,
+      category,
+      labels: labelIds,
+      is_unread: isUnread,
+      has_attachments: hasAttachments,
+      message_count: messages.length,
+      first_message_date: parsedMessages[0].date,
+      last_message_date: parsedMessages[parsedMessages.length - 1].date,
+      last_synced_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,gmail_thread_id',
+      ignoreDuplicates: false
+    })
+
+  if (threadError) throw threadError
+
+  // Upsert all messages in thread
+  const { error: messagesError } = await supabase
+    .from('mail_messages')
+    .upsert(parsedMessages, {
+      onConflict: 'user_id,gmail_message_id',
+      ignoreDuplicates: false
+    })
+
+  if (messagesError) throw messagesError
+}
+
+function getHeader(message: GmailMessage, name: string): string {
+  const headers = message.payload?.headers || []
+  return headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || ''
+}
+
+function parseMessage(gmailMsg: GmailMessage, userId: string) {
+  const from = getHeader(gmailMsg, 'from')
   const fromMatch = from.match(/(.*?)\s*<(.+?)>/) || [null, from, from]
 
-  const subject = getHeader('subject')
-  const date = getHeader('date')
-  const labelIds = gmailMsg.labelIds || []
-
-  // Categorize based on labels or subject
-  let category: 'onboarding' | 'support' | 'general' = 'general'
-  const labelNames = labelIds.join(' ').toLowerCase()
-  const subjectLower = subject.toLowerCase()
-
-  if (labelNames.includes('onboarding') || subjectLower.includes('welcome') || subjectLower.includes('getting started')) {
-    category = 'onboarding'
-  } else if (labelNames.includes('support') || subjectLower.includes('support') || subjectLower.includes('help')) {
-    category = 'support'
-  }
+  const subject = getHeader(gmailMsg, 'subject')
+  const date = getHeader(gmailMsg, 'date')
 
   return {
     user_id: userId,
@@ -245,13 +398,26 @@ function parseMessage(gmailMsg: any, userId: string) {
     subject: subject || '(No subject)',
     from_email: fromMatch[2]?.trim() || fromMatch[1]?.trim(),
     from_name: fromMatch[1]?.replace(/"/g, '').trim(),
-    to_addresses: [{ email: getHeader('to') }],
-    date: new Date(date || Date.now()).toISOString(),
+    to_addresses: [{ email: getHeader(gmailMsg, 'to') }],
+    date: new Date(parseInt(gmailMsg.internalDate)).toISOString(),
     snippet: gmailMsg.snippet || '',
     body_preview: gmailMsg.snippet?.substring(0, 500),
-    labels: labelIds,
-    category,
-    is_unread: labelIds.includes('UNREAD'),
+    labels: gmailMsg.labelIds,
+    category: categorizeThread(gmailMsg.labelIds, subject),
+    is_unread: gmailMsg.labelIds.includes('UNREAD'),
     has_attachments: gmailMsg.payload?.parts?.some((p: any) => p.filename && p.filename.length > 0) || false
   }
+}
+
+function categorizeThread(labelIds: string[], subject: string): 'onboarding' | 'support' | 'general' {
+  const labelNames = labelIds.join(' ').toLowerCase()
+  const subjectLower = subject.toLowerCase()
+
+  if (labelNames.includes('onboarding') || subjectLower.includes('welcome') || subjectLower.includes('getting started')) {
+    return 'onboarding'
+  } else if (labelNames.includes('support') || subjectLower.includes('support') || subjectLower.includes('help')) {
+    return 'support'
+  }
+
+  return 'general'
 }
