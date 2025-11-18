@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'preact/hooks';
 import type { HistoryItem, HistoryItemType } from '@/types';
 import { history } from '@/store/store';
+import { deleteHistoryItem, getHistoryItems } from '@/utils/historyTracker';
 
 export default function HistoryView() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,6 +121,18 @@ export default function HistoryView() {
     }
   };
 
+  const handleDeleteItem = async (e: Event, itemId: string) => {
+    // Prevent the item click event from firing
+    e.stopPropagation();
+
+    // Delete the item
+    await deleteHistoryItem(itemId);
+
+    // Refresh the history data
+    const updatedItems = await getHistoryItems();
+    history.value = updatedItems;
+  };
+
   const renderHistoryItems = (items: HistoryItem[], showBadges: boolean) => {
     if (items.length === 0) {
       return <div class="history-empty-state">No history items found</div>;
@@ -155,7 +168,18 @@ export default function HistoryView() {
                     </span>
                   )}
                 </div>
-                <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+                <div class="history-item-actions">
+                  <span class="history-item-time">{formatTimeAgo(item.visitedAt)}</span>
+                  <button
+                    class="history-item-delete-btn"
+                    onClick={(e) => handleDeleteItem(e, item.id)}
+                    title="Delete from history"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor">
+                      <path d="M2 4h10M5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1m1 0v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h6z" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div class="history-item-title">{item.title}</div>

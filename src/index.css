@@ -4862,10 +4862,43 @@ body.light-theme {
   border-color: rgba(129, 162, 190, 0.3);
 }
 
+.history-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .history-item-time {
   font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+.history-item-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.history-item:hover .history-item-delete-btn {
+  opacity: 1;
+}
+
+.history-item-delete-btn:hover {
+  background: rgba(204, 102, 102, 0.1);
+  color: #cc6666;
+}
+
+.history-item-delete-btn:active {
+  transform: scale(0.95);
 }
 
 .history-item-title {
