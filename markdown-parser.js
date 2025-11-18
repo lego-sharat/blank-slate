@@ -40,17 +40,8 @@ renderer.link = function(href, title, text) {
   return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
 };
 
-// Custom renderer for checkboxes (GitHub-style task lists)
-const originalListItemRenderer = renderer.listitem.bind(renderer);
-renderer.listitem = function(text, task, checked) {
-  if (task) {
-    const checkbox = checked ?
-      '<input type="checkbox" checked disabled class="task-list-item-checkbox">' :
-      '<input type="checkbox" disabled class="task-list-item-checkbox">';
-    return `<li class="task-list-item">${checkbox} ${text}</li>`;
-  }
-  return originalListItemRenderer(text, task, checked);
-};
+// Note: We don't need a custom listitem renderer because marked's GFM support
+// already handles task lists natively when gfm: true is set
 
 marked.use({ renderer });
 
