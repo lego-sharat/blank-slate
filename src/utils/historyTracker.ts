@@ -21,7 +21,12 @@ const HISTORY_STORAGE_KEY = 'history_items';
  * Extract title from page (synchronous version for non-Figma URLs)
  */
 function extractTitle(url: string, pageTitle?: string): string {
-  if (pageTitle && pageTitle !== 'undefined') {
+  // Always prefer the browser's page title if available and valid
+  if (pageTitle && pageTitle !== 'undefined' && pageTitle.trim() !== '') {
+    // Clean up Figma page titles by removing " - Figma" or " – Figma" suffix
+    if (url.includes('figma.com')) {
+      return pageTitle.replace(/\s+[-–]\s+Figma\s*$/i, '').trim();
+    }
     return pageTitle;
   }
 
@@ -29,15 +34,15 @@ function extractTitle(url: string, pageTitle?: string): string {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
 
-    // Extract meaningful title from URL
+    // Extract meaningful title from URL as fallback
     if (url.includes('docs.google.com/document')) {
-      return pageTitle || 'Google Doc';
+      return 'Google Doc';
     } else if (url.includes('docs.google.com/spreadsheets')) {
-      return pageTitle || 'Google Sheet';
+      return 'Google Sheet';
     } else if (url.includes('docs.google.com/presentation')) {
-      return pageTitle || 'Google Slides';
+      return 'Google Slides';
     } else if (url.includes('docs.google.com/forms')) {
-      return pageTitle || 'Google Form';
+      return 'Google Form';
     } else if (url.includes('notion.so')) {
       const parts = pathname.split('/').filter(p => p);
       return parts[parts.length - 1]?.replace(/-/g, ' ') || 'Notion Page';
@@ -64,22 +69,35 @@ function extractTitle(url: string, pageTitle?: string): string {
 }
 
 /**
- * Extract enhanced title from page (async version that uses Figma API for Figma URLs)
+ * Extract enhanced title from page (async version that uses Figma API only as fallback)
  */
 async function extractTitleAsync(url: string, pageTitle?: string): Promise<string> {
-  // For Figma URLs, try to get the title from the API
+  // First, try to get title from the browser (just like Notion)
+  const browserTitle = extractTitle(url, pageTitle);
+
+  // For Figma URLs with node IDs, try to enhance with API to get "File - Node" format
+  // Only use API if:
+  // 1. We have a node ID in the URL (user is viewing a specific frame/component)
+  // 2. Browser title doesn't already include node name
   if (isFigmaFileUrl(url)) {
-    try {
-      const figmaTitle = await getFigmaTitle(url, pageTitle);
-      return figmaTitle;
-    } catch (e) {
-      console.error('Error getting Figma title from API:', e);
-      // Fall back to regular title extraction
+    const { extractFigmaNodeId } = await import('./urlCleaner');
+    const nodeId = extractFigmaNodeId(url);
+
+    // Only call API if we have a node ID and the browser title doesn't include " - "
+    // (which would indicate it already has "File - Node" format)
+    if (nodeId && !browserTitle.includes(' - ')) {
+      try {
+        const figmaTitle = await getFigmaTitle(url, browserTitle);
+        return figmaTitle;
+      } catch (e) {
+        console.log('[History Tracker] Figma API unavailable, using browser title:', browserTitle);
+        // Fall back to browser title
+      }
     }
   }
 
-  // For non-Figma URLs or if Figma API fails, use regular extraction
-  return extractTitle(url, pageTitle);
+  // For all other cases, use the browser title
+  return browserTitle;
 }
 
 /**
