@@ -2,9 +2,13 @@
 -- Keep oauth_tokens and config tables intact
 -- This ensures clean schema with proper gmail_labels vs ai_labels separation
 
--- Drop only mail data tables and their functions
+-- Drop all 4 old mail-related tables
+DROP TABLE IF EXISTS mail_action_items CASCADE;
+DROP TABLE IF EXISTS mail_summaries CASCADE;
 DROP TABLE IF EXISTS mail_messages CASCADE;
 DROP TABLE IF EXISTS mail_threads CASCADE;
+
+-- Drop related functions
 DROP FUNCTION IF EXISTS process_unsummarized_threads(UUID);
 DROP FUNCTION IF EXISTS get_integration_stats(UUID, INTEGER);
 
