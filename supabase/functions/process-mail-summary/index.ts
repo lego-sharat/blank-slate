@@ -102,6 +102,25 @@ serve(async (req) => {
       )
     }
 
+    // Get user's email for action item filtering
+    const { data: userData, error: userError } = await supabase
+      .from('oauth_tokens')
+      .select('email')
+      .eq('user_id', userId)
+      .eq('provider', 'gmail')
+      .single()
+
+    if (userError || !userData?.email) {
+      console.error('[AI Summary] Failed to fetch user email:', userError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch user email' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const userEmail = userData.email
+    console.log(`[AI Summary] Processing for user: ${userEmail}`)
+
     // Process each thread
     const results = []
     let successCount = 0
@@ -150,7 +169,7 @@ serve(async (req) => {
 
         // Generate thread summary using Claude Haiku
         const category = existingThread?.category || 'general'
-        const summaryResult = await generateThreadSummary(messages, category, anthropicApiKey)
+        const summaryResult = await generateThreadSummary(messages, category, userEmail, anthropicApiKey)
 
         // Update thread with summary, action items, topic, integration, labels, and satisfaction score (if applicable)
         const updateData: any = {
@@ -239,8 +258,9 @@ serve(async (req) => {
  * Generate thread summary and action items using Claude Haiku
  * Analyzes the entire conversation with full context
  * For onboarding/support threads, also extracts customer satisfaction score
+ * Only extracts action items that the user needs to do
  */
-async function generateThreadSummary(messages: any[], category: string, apiKey: string): Promise<SummaryResult> {
+async function generateThreadSummary(messages: any[], category: string, userEmail: string, apiKey: string): Promise<SummaryResult> {
   // Build conversation context
   const threadContext = messages.map((msg, idx) => {
     return `
@@ -296,6 +316,8 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 }`
 
   const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
+
+User's email address: ${userEmail}
 
 This is an email conversation with ${messages.length} message(s):
 ${threadContext}
@@ -368,10 +390,20 @@ Please analyze this entire email thread and provide:
 
    Use 1-4 most relevant labels. Always include at least one email type label.
 
-5. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
-   - Only include actionable items that require someone to do something
-   - Include context about who needs to do what
+5. Action items for the user (${userEmail})
+   - ONLY extract action items that the USER needs to do (not what others need to do)
+   - Examples of valid action items for the user:
+     * "Respond to customer's question about Klaviyo integration"
+     * "Schedule demo call with customer on Friday"
+     * "Review and provide feedback on design mockups"
+     * "Follow up with engineering team about bug fix"
+   - DO NOT include:
+     * Actions that others need to do for the user
+     * General observations or statements
+     * Things the user already completed
+   - Include context about what needs to be done
    - Identify any mentioned deadlines or timeframes
+   - If there are no action items for the user, return an empty array
 ${satisfactionInstructions}
 
 IMPORTANT: Respond with ONLY a valid JSON object, no other text or markdown formatting.
@@ -379,11 +411,12 @@ Use this exact structure:
 ${responseFormat}
 
 Guidelines:
-- If no action items: return empty array
+- If no action items for the user: return empty array
+- Only include action items that ${userEmail} needs to do themselves
 - If no integration mentioned: use null for integrationName
 - For integrationName: Extract exact name as mentioned in email (e.g., "Yotpo Reviews" not "yotpo-reviews")
 - For labels: Select 1-4 most relevant labels from the list above
-- Focus on actionable items, not general statements`
+- Focus on actionable items that require the user to take action`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
