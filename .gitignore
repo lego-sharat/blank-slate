@@ -6,4 +6,6 @@ src/script.js.bak
 dist/
 script.js
 .env
+.env.local
+supabase/.env.local
 supabase/.temp
