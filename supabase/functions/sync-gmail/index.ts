@@ -121,12 +121,30 @@ async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: str
     return
   }
 
-  // Fetch all messages for each changed thread
-  const threadUpdates = await Promise.all(
-    Array.from(changedThreadIds).map(threadId =>
-      fetchThreadMessages(accessToken, threadId, token.user_id)
+  // Fetch all messages for each changed thread with rate limiting
+  // Process in batches of 5 to avoid Gmail API rate limits
+  const threadIds = Array.from(changedThreadIds)
+  const threadUpdates = []
+  const batchSize = 5
+  const delayMs = 1000 // 1 second delay between batches
+
+  for (let i = 0; i < threadIds.length; i += batchSize) {
+    const batch = threadIds.slice(i, i + batchSize)
+    console.log(`[User ${token.user_id}] Fetching threads ${i + 1}-${i + batch.length} of ${threadIds.length}`)
+
+    const batchResults = await Promise.all(
+      batch.map(threadId =>
+        fetchThreadMessages(accessToken, threadId, token.user_id)
+      )
     )
-  )
+
+    threadUpdates.push(...batchResults)
+
+    // Delay between batches to respect rate limits
+    if (i + batchSize < threadIds.length) {
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
+  }
 
   // Filter out threads that should be skipped (spam, trash, etc)
   const validThreads = threadUpdates.filter(thread =>
@@ -268,24 +286,45 @@ async function fetchChangedThreads(accessToken: string, lastHistoryId: string): 
   return threadIds
 }
 
-// Fetch all messages in a thread
-async function fetchThreadMessages(accessToken: string, threadId: string, userId: string) {
-  const response = await fetch(`${GMAIL_API_BASE}/threads/${threadId}?format=full`, {
-    headers: { 'Authorization': `Bearer ${accessToken}` }
-  })
+// Fetch all messages in a thread with retry logic for rate limits
+async function fetchThreadMessages(accessToken: string, threadId: string, userId: string, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(`${GMAIL_API_BASE}/threads/${threadId}?format=full`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch thread ${threadId}: ${response.statusText}`)
+      if (response.status === 429) {
+        // Rate limited - exponential backoff
+        const delay = Math.pow(2, attempt) * 1000 // 1s, 2s, 4s
+        console.log(`[Rate limit] Retrying thread ${threadId} after ${delay}ms (attempt ${attempt + 1}/${retries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch thread ${threadId}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const messages: GmailMessage[] = data.messages || []
+
+      return {
+        threadId,
+        userId,
+        messages
+      }
+    } catch (error) {
+      if (attempt === retries - 1) throw error
+
+      // For network errors, also retry with backoff
+      const delay = Math.pow(2, attempt) * 1000
+      console.log(`[Network error] Retrying thread ${threadId} after ${delay}ms (attempt ${attempt + 1}/${retries})`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
   }
 
-  const data = await response.json()
-  const messages: GmailMessage[] = data.messages || []
-
-  return {
-    threadId,
-    userId,
-    messages
-  }
+  throw new Error(`Failed to fetch thread ${threadId} after ${retries} attempts`)
 }
 
 // Get latest history ID from Gmail
