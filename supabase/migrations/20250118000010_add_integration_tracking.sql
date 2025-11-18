@@ -1,14 +1,19 @@
--- Add integration tracking for threads (Shopify mobile app builder)
--- Captures which Shopify app integration is being discussed
--- Examples: yotpo-reviews, klaviyo, recharge, gorgias, etc.
+-- Add integration tracking and flexible labels for threads
+-- Integration: AI extracts any integration/service name mentioned (not limited to predefined list)
+-- Labels: Flexible categorization for filtering (customer, promotional, internal, etc.)
 
 ALTER TABLE mail_threads
-ADD COLUMN integration_name TEXT;
+ADD COLUMN integration_name TEXT,
+ADD COLUMN labels TEXT[] DEFAULT '{}';
 
 -- Add index for filtering by integration
 CREATE INDEX idx_mail_threads_integration ON mail_threads(user_id, integration_name) WHERE integration_name IS NOT NULL;
 
-COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted Shopify app integration name mentioned in thread (e.g., yotpo-reviews, klaviyo, recharge, gorgias). Use "other-integration" for integrations not in our list.';
+-- Add GIN index for labels array for fast filtering
+CREATE INDEX idx_mail_threads_labels ON mail_threads USING GIN(labels);
+
+COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted integration/service name mentioned in thread (e.g., Yotpo Reviews, Klaviyo, Recharge). Free-form text, not limited to predefined list.';
+COMMENT ON COLUMN mail_threads.labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, etc.';
 
 -- Add function to get integration-specific stats
 -- Useful for understanding which integrations need the most support

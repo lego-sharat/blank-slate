@@ -21,7 +21,8 @@ interface SummaryResult {
   summary: string
   actionItems: ActionItem[]
   topic: string // AI-generated topic/label for categorization
-  integrationName?: string // Third-party integration/service mentioned
+  integrationName?: string // AI-extracted integration/service name (free-form)
+  labels: string[] // Flexible labels for categorization and filtering
   satisfactionScore?: number
   satisfactionAnalysis?: string
 }
@@ -151,17 +152,18 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, anthropicApiKey)
 
-        // Update thread with summary, action items, topic, integration, and satisfaction score (if applicable)
+        // Update thread with summary, action items, topic, integration, labels, and satisfaction score (if applicable)
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
           ai_topic: summaryResult.topic,
+          labels: summaryResult.labels || [],
           summary_generated_at: new Date().toISOString()
         }
 
         // Add integration name if detected
         if (summaryResult.integrationName) {
-          updateData.integration_name = summaryResult.integrationName.toLowerCase()
+          updateData.integration_name = summaryResult.integrationName
         }
 
         // Add satisfaction score for onboarding/support threads
@@ -267,7 +269,8 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 {
   "summary": "Brief summary of the entire conversation",
   "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
-  "integrationName": "boost | searchanise | searchtap | shopify-search | zevi | yotpo-reviews | judgeme | stamped-reviews | loox | firebase-push | ga4 | klaviyo | clevertap | moengage | netcore | junip | adjust | appsflyer | clickpost | contlo | deltax | facebook-pixel | fenix | gorgias | nector | neon | okendo | popcoin | rebuy | shopify-recommendations | reviews-io | rivyo | smile | recharge | stay-ai | loop | prive | appstle | swatch-king | wishlist-plus | flits | farzi | visenze | wizzy | findify | algolia | wair | webengage | appbrew-edd | appbrew-wishlist | appbrew-swatches | appbrew-size-guide | google-ads | firework | return-prime | eco-returns | juno | kapture | clarity | whatamore | quinn | branch | yotpo-rewards | trust-signal | msg91 | tidio | value-first | stamped-rewards | gokwik | shopflo | shiprocket | loyalty-lion | fast-simon | constructor | rebid | 99minds | attentive | kwikpass | fastrr | shopify-checkout | bitespeed | kustomer | lyvecom | searchspring | power-reviews | other-integration | null",
+  "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
+  "labels": ["customer-support", "high-priority"],
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -281,7 +284,8 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 {
   "summary": "Brief summary of the entire conversation",
   "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
-  "integrationName": "boost | searchanise | searchtap | shopify-search | zevi | yotpo-reviews | judgeme | stamped-reviews | loox | firebase-push | ga4 | klaviyo | clevertap | moengage | netcore | junip | adjust | appsflyer | clickpost | contlo | deltax | facebook-pixel | fenix | gorgias | nector | neon | okendo | popcoin | rebuy | shopify-recommendations | reviews-io | rivyo | smile | recharge | stay-ai | loop | prive | appstle | swatch-king | wishlist-plus | flits | farzi | visenze | wizzy | findify | algolia | wair | webengage | appbrew-edd | appbrew-wishlist | appbrew-swatches | appbrew-size-guide | google-ads | firework | return-prime | eco-returns | juno | kapture | clarity | whatamore | quinn | branch | yotpo-rewards | trust-signal | msg91 | tidio | value-first | stamped-rewards | gokwik | shopflo | shiprocket | loyalty-lion | fast-simon | constructor | rebid | 99minds | attentive | kwikpass | fastrr | shopify-checkout | bitespeed | kustomer | lyvecom | searchspring | power-reviews | other-integration | null",
+  "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
+  "labels": ["customer-support", "high-priority"],
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -291,12 +295,13 @@ ${msg.body_preview || msg.snippet || '(No content)'}
   ]
 }`
 
-  const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize customer support email threads and extract action items${isCustomerFacing ? ' and analyze customer satisfaction' : ''}.
+  const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
 
 This is an email conversation with ${messages.length} message(s):
 ${threadContext}
 
 Please analyze this entire email thread and provide:
+
 1. A concise 2-3 sentence summary of the overall conversation, including:
    - What the conversation is about
    - Key points discussed
@@ -315,30 +320,38 @@ Please analyze this entire email thread and provide:
    - other: Doesn't fit other categories
 
 3. Integration name (if applicable):
-   - IMPORTANT: This is for a Shopify mobile app builder - look for mentions of Shopify app integrations
-   - Search integrations: boost, searchanise, searchtap, shopify-search, zevi, wizzy, findify, algolia, fast-simon, constructor, cloudsearch, searchspring
-   - Reviews/Ratings: yotpo-reviews, judgeme, stamped-reviews, loox, junip, reviews-io, rivyo, okendo, nector-reviews, power-reviews
-   - Analytics/Push: ga4, klaviyo, clevertap, moengage, netcore, contlo, deltax, webengage, clarity, rebid, attentive, bitespeed, firebase-push
-   - Rewards/Loyalty: nector, popcoin, smile, flits, yotpo-rewards, loyalty-lion, 99minds, okendo-rewards
-   - Subscriptions: recharge, stay-ai, loop, prive, appstle, juno, subscription-ordering
-   - Product Recommendations: rebuy, shopify-recommendations, visenze, frequently-bought-together
-   - Returns: return-prime, eco-returns, loop-returns
-   - Checkout: gokwik, shopflo, fastrr, shopify-checkout
-   - Attribution: adjust, appsflyer, branch
-   - Customer Support: gorgias, kapture, tidio, kustomer
-   - Size Charts: wair, appbrew-size-guide, kiwi-size-chart, bf-size-chart
-   - Swatches: swatch-king, shopify-swatches, appbrew-swatches
-   - Wishlist: wishlist-plus, flits-wishlist, appbrew-wishlist
-   - Video: firework, whatamore, quinn, lyvecom
-   - EDD/Shipping: clickpost, fenix, grow-simplee, appbrew-edd, shiprocket
-   - OTP: trust-signal, msg91, value-first, kwikpass
-   - Ads: facebook-pixel, google-ads
-   - Other: neon, farzi, yagi-cancellable
-   - If customer mentions an integration NOT in this list: use "other-integration"
-   - If no integration mentioned: use null
-   - Use exact lowercase-hyphenated names from the list above
+   - Look for ANY Shopify app or third-party integration mentioned in the conversation
+   - Extract the exact name as mentioned (e.g., "Yotpo Reviews", "Klaviyo", "Judge.me", "Recharge")
+   - Common categories: Search apps, Reviews, Analytics, Push notifications, Rewards/Loyalty, Subscriptions, Product Recommendations, Returns, Checkout, Attribution, Customer Support, Size Charts, Wishlists, Video, Shipping/EDD, OTP, Ads
+   - Use null if no integration is mentioned
 
-4. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
+4. Labels (array of applicable labels for filtering):
+   Email Type Labels:
+   - "customer-support": Customer support inquiry or issue
+   - "onboarding": New customer onboarding
+   - "promotional": Promotional emails, marketing, offers
+   - "newsletter": Newsletter, product updates, announcements
+   - "social-media": Social media notifications, mentions
+   - "update": Software updates, changelogs, notifications
+   - "team-internal": Internal team communication
+   - "investor": Investor-related communication
+   - "product-query": General product questions
+
+   Priority/Status Labels:
+   - "high-priority": Urgent or critical issues
+   - "needs-response": Requires immediate response
+   - "escalated": Escalated to senior team
+   - "resolved": Issue has been resolved
+
+   Content Labels:
+   - "integration-related": Related to an integration
+   - "billing": Related to billing/payments
+   - "technical": Technical in nature
+   - "design": Design/UI/UX related
+
+   Use 1-4 most relevant labels. Always include at least one email type label.
+
+5. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
    - Only include actionable items that require someone to do something
    - Include context about who needs to do what
    - Identify any mentioned deadlines or timeframes
@@ -348,9 +361,12 @@ IMPORTANT: Respond with ONLY a valid JSON object, no other text or markdown form
 Use this exact structure:
 ${responseFormat}
 
-If there are no action items, return an empty array.
-For integrationName: Use null if no integration mentioned, exact name from list if it's a known integration, or "other-integration" if customer mentions an integration not in our list.
-Focus on actionable items, not general statements.`
+Guidelines:
+- If no action items: return empty array
+- If no integration mentioned: use null for integrationName
+- For integrationName: Extract exact name as mentioned in email (e.g., "Yotpo Reviews" not "yotpo-reviews")
+- For labels: Select 1-4 most relevant labels from the list above
+- Focus on actionable items, not general statements`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -414,15 +430,26 @@ Focus on actionable items, not general statements.`
     result.topic = 'other'
   }
 
-  // Validate and normalize integration name
+  // Validate integration name (free-form, keep as extracted)
   if (result.integrationName !== undefined && result.integrationName !== null) {
     if (typeof result.integrationName !== 'string' || result.integrationName.trim() === '') {
       console.warn('Invalid integration name from Claude, ignoring')
       delete result.integrationName
     } else {
-      // Normalize to lowercase
-      result.integrationName = result.integrationName.toLowerCase().trim()
+      // Keep as-is, just trim whitespace
+      result.integrationName = result.integrationName.trim()
     }
+  }
+
+  // Validate labels array
+  if (!Array.isArray(result.labels)) {
+    console.warn('Missing or invalid labels from Claude, defaulting to empty array')
+    result.labels = []
+  } else {
+    // Filter out invalid labels (non-string or empty)
+    result.labels = result.labels.filter(label =>
+      typeof label === 'string' && label.trim() !== ''
+    ).map(label => label.trim())
   }
 
   if (!Array.isArray(result.actionItems)) {
