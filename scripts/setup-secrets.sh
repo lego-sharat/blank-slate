@@ -23,54 +23,51 @@ fi
 # Check if linked to a project (supabase commands will fail with clear error if not linked)
 # Removed redundant check - let supabase CLI handle it
 
-echo "This script will set up the following secrets:"
-echo "  1. GOOGLE_CLIENT_ID - Google OAuth Client ID"
-echo "  2. GOOGLE_CLIENT_SECRET - Google OAuth Client Secret"
-echo "  3. ANTHROPIC_API_KEY - Anthropic API key for Claude"
-echo ""
-echo "You can find these values in:"
-echo "  - Google Cloud Console → APIs & Services → Credentials"
-echo "  - Anthropic Console → API Keys"
-echo ""
-
-# Function to set a secret
-set_secret() {
-    local secret_name=$1
-    local secret_description=$2
-
+# Check if .env file exists
+if [ ! -f supabase/.env ]; then
+    echo "❌ supabase/.env not found."
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Setting: $secret_name"
-    echo "$secret_description"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Please create supabase/.env and add your credentials."
+    echo "See supabase/.env.example for reference."
+    exit 1
+fi
 
-    # Check if secret already exists
-    if supabase secrets list 2>/dev/null | grep -q "$secret_name"; then
-        echo "⚠️  Secret $secret_name already exists."
-        read -p "Do you want to update it? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Skipping $secret_name"
-            return
-        fi
-    fi
+echo "Reading secrets from supabase/.env..."
+echo ""
 
-    read -sp "Enter $secret_name: " secret_value
-    echo
+# Read secrets from .env file
+GOOGLE_CLIENT_ID=$(grep -E '^GOOGLE_(OAUTH_)?CLIENT_ID=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+GOOGLE_CLIENT_SECRET=$(grep -E '^GOOGLE_(OAUTH_)?CLIENT_SECRET=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+ANTHROPIC_API_KEY=$(grep -E '^ANTHROPIC_API_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 
-    if [ -z "$secret_value" ]; then
-        echo "❌ Empty value, skipping"
-        return
-    fi
+# Validate required secrets
+if [ -z "$GOOGLE_CLIENT_ID" ]; then
+    echo "❌ GOOGLE_CLIENT_ID or GOOGLE_OAUTH_CLIENT_ID not found in supabase/.env"
+    exit 1
+fi
 
-    echo "$secret_value" | supabase secrets set "$secret_name"
-    echo "✅ $secret_name set successfully"
-}
+if [ -z "$GOOGLE_CLIENT_SECRET" ]; then
+    echo "❌ GOOGLE_CLIENT_SECRET or GOOGLE_OAUTH_CLIENT_SECRET not found in supabase/.env"
+    exit 1
+fi
 
-# Set each secret
-set_secret "GOOGLE_CLIENT_ID" "Your Google OAuth 2.0 Client ID (from Google Cloud Console)"
-set_secret "GOOGLE_CLIENT_SECRET" "Your Google OAuth 2.0 Client Secret (from Google Cloud Console)"
-set_secret "ANTHROPIC_API_KEY" "Your Anthropic API key for Claude Haiku (from Anthropic Console)"
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "❌ ANTHROPIC_API_KEY not found in supabase/.env"
+    exit 1
+fi
+
+echo "Setting secrets in Supabase..."
+echo ""
+
+# Set secrets using the correct format
+supabase secrets set GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+echo "✅ GOOGLE_CLIENT_ID set"
+
+supabase secrets set GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET"
+echo "✅ GOOGLE_CLIENT_SECRET set"
+
+supabase secrets set ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+echo "✅ ANTHROPIC_API_KEY set"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
