@@ -2,15 +2,25 @@
 -- Integration: AI extracts any integration/service name mentioned (not limited to predefined list)
 -- Labels: Flexible categorization for filtering (customer, promotional, internal, etc.)
 
-ALTER TABLE mail_threads
-ADD COLUMN integration_name TEXT,
-ADD COLUMN labels TEXT[] DEFAULT '{}';
+-- Add columns if they don't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'mail_threads' AND column_name = 'integration_name') THEN
+    ALTER TABLE mail_threads ADD COLUMN integration_name TEXT;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'mail_threads' AND column_name = 'labels') THEN
+    ALTER TABLE mail_threads ADD COLUMN labels TEXT[] DEFAULT '{}';
+  END IF;
+END $$;
 
 -- Add index for filtering by integration
-CREATE INDEX idx_mail_threads_integration ON mail_threads(user_id, integration_name) WHERE integration_name IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_mail_threads_integration ON mail_threads(user_id, integration_name) WHERE integration_name IS NOT NULL;
 
 -- Add GIN index for labels array for fast filtering
-CREATE INDEX idx_mail_threads_labels ON mail_threads USING GIN(labels);
+CREATE INDEX IF NOT EXISTS idx_mail_threads_labels ON mail_threads USING GIN(labels);
 
 COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted integration/service name mentioned in thread (e.g., Yotpo Reviews, Klaviyo, Recharge). Free-form text, not limited to predefined list.';
 COMMENT ON COLUMN mail_threads.labels IS 'AI-generated labels for flexible categorization: customer-support, onboarding, promotional, newsletter, social-media, team-internal, investor, product-query, update, etc.';
