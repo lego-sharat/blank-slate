@@ -39,6 +39,7 @@ echo ""
 GOOGLE_CLIENT_ID=$(grep -E '^GOOGLE_OAUTH_CLIENT_ID=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 GOOGLE_CLIENT_SECRET=$(grep -E '^GOOGLE_OAUTH_CLIENT_SECRET=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 ANTHROPIC_API_KEY=$(grep -E '^ANTHROPIC_API_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+ENCRYPTION_KEY=$(grep -E '^ENCRYPTION_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 
 # Validate required secrets
 if [ -z "$GOOGLE_CLIENT_ID" ]; then
@@ -56,6 +57,16 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     exit 1
 fi
 
+# Generate encryption key if not provided
+if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "⚠️  ENCRYPTION_KEY not found in supabase/.env"
+    echo "Generating a new encryption key..."
+    ENCRYPTION_KEY=$(openssl rand -base64 32)
+    echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> supabase/.env
+    echo "✅ Generated and saved ENCRYPTION_KEY to supabase/.env"
+    echo ""
+fi
+
 echo "Setting secrets in Supabase..."
 echo ""
 
@@ -68,6 +79,9 @@ echo "✅ GOOGLE_CLIENT_SECRET set"
 
 supabase secrets set ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 echo "✅ ANTHROPIC_API_KEY set"
+
+supabase secrets set ENCRYPTION_KEY="$ENCRYPTION_KEY"
+echo "✅ ENCRYPTION_KEY set"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
