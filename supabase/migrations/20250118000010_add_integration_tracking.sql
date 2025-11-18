@@ -1,6 +1,6 @@
--- Add integration tracking for threads
--- Captures which third-party service/integration is being discussed
--- Examples: slack, github, stripe, zapier, salesforce, etc.
+-- Add integration tracking for threads (Shopify mobile app builder)
+-- Captures which Shopify app integration is being discussed
+-- Examples: yotpo-reviews, klaviyo, recharge, gorgias, etc.
 
 ALTER TABLE mail_threads
 ADD COLUMN integration_name TEXT;
@@ -8,9 +8,10 @@ ADD COLUMN integration_name TEXT;
 -- Add index for filtering by integration
 CREATE INDEX idx_mail_threads_integration ON mail_threads(user_id, integration_name) WHERE integration_name IS NOT NULL;
 
-COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted integration/third-party service name mentioned in thread (e.g., slack, github, stripe)';
+COMMENT ON COLUMN mail_threads.integration_name IS 'AI-extracted Shopify app integration name mentioned in thread (e.g., yotpo-reviews, klaviyo, recharge, gorgias). Use "other-integration" for integrations not in our list.';
 
 -- Add function to get integration-specific stats
+-- Useful for understanding which integrations need the most support
 CREATE OR REPLACE FUNCTION get_integration_stats(
   p_user_id UUID,
   p_days INTEGER DEFAULT 30

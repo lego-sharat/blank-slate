@@ -266,8 +266,8 @@ ${msg.body_preview || msg.snippet || '(No content)'}
   const responseFormat = isCustomerFacing ? `
 {
   "summary": "Brief summary of the entire conversation",
-  "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
-  "integrationName": "slack | github | stripe | zapier | salesforce | jira | hubspot | mailchimp | shopify | quickbooks | zoom | google-workspace | microsoft-teams | aws | azure | twilio | sendgrid | intercom | segment | amplitude | mixpanel | datadog | sentry | linear | notion | asana | trello | monday | airtable | figma | webhook | api | other-integration-name | null",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
+  "integrationName": "boost | searchanise | searchtap | shopify-search | zevi | yotpo-reviews | judgeme | stamped-reviews | loox | firebase-push | ga4 | klaviyo | clevertap | moengage | netcore | junip | adjust | appsflyer | clickpost | contlo | deltax | facebook-pixel | fenix | gorgias | nector | neon | okendo | popcoin | rebuy | shopify-recommendations | reviews-io | rivyo | smile | recharge | stay-ai | loop | prive | appstle | swatch-king | wishlist-plus | flits | farzi | visenze | wizzy | findify | algolia | wair | webengage | appbrew-edd | appbrew-wishlist | appbrew-swatches | appbrew-size-guide | google-ads | firework | return-prime | eco-returns | juno | kapture | clarity | whatamore | quinn | branch | yotpo-rewards | trust-signal | msg91 | tidio | value-first | stamped-rewards | gokwik | shopflo | shiprocket | loyalty-lion | fast-simon | constructor | rebid | 99minds | attentive | kwikpass | fastrr | shopify-checkout | bitespeed | kustomer | lyvecom | searchspring | power-reviews | other-integration | null",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -280,8 +280,8 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 }` : `
 {
   "summary": "Brief summary of the entire conversation",
-  "topic": "bug_report | feature_request | billing_question | technical_issue | product_feedback | account_issue | integration_help | general_inquiry | other",
-  "integrationName": "slack | github | stripe | zapier | salesforce | jira | hubspot | mailchimp | shopify | quickbooks | zoom | google-workspace | microsoft-teams | aws | azure | twilio | sendgrid | intercom | segment | amplitude | mixpanel | datadog | sentry | linear | notion | asana | trello | monday | airtable | figma | webhook | api | other-integration-name | null",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | general_inquiry | other",
+  "integrationName": "boost | searchanise | searchtap | shopify-search | zevi | yotpo-reviews | judgeme | stamped-reviews | loox | firebase-push | ga4 | klaviyo | clevertap | moengage | netcore | junip | adjust | appsflyer | clickpost | contlo | deltax | facebook-pixel | fenix | gorgias | nector | neon | okendo | popcoin | rebuy | shopify-recommendations | reviews-io | rivyo | smile | recharge | stay-ai | loop | prive | appstle | swatch-king | wishlist-plus | flits | farzi | visenze | wizzy | findify | algolia | wair | webengage | appbrew-edd | appbrew-wishlist | appbrew-swatches | appbrew-size-guide | google-ads | firework | return-prime | eco-returns | juno | kapture | clarity | whatamore | quinn | branch | yotpo-rewards | trust-signal | msg91 | tidio | value-first | stamped-rewards | gokwik | shopflo | shiprocket | loyalty-lion | fast-simon | constructor | rebid | 99minds | attentive | kwikpass | fastrr | shopify-checkout | bitespeed | kustomer | lyvecom | searchspring | power-reviews | other-integration | null",
   "actionItems": [
     {
       "description": "Specific action item with context",
@@ -291,7 +291,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
   ]
 }`
 
-  const prompt = `You are an AI assistant that helps summarize email threads and extract action items${isCustomerFacing ? ' and analyze customer satisfaction' : ''}.
+  const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize customer support email threads and extract action items${isCustomerFacing ? ' and analyze customer satisfaction' : ''}.
 
 This is an email conversation with ${messages.length} message(s):
 ${threadContext}
@@ -303,24 +303,40 @@ Please analyze this entire email thread and provide:
    - Current status or outcome if applicable
 
 2. A topic/label that best categorizes this thread:
-   - bug_report: Customer reporting a bug or error
-   - feature_request: Request for new features or enhancements
-   - billing_question: Questions about pricing, invoices, subscriptions
-   - technical_issue: Technical problems, integrations, setup issues
-   - product_feedback: General feedback, suggestions, opinions
-   - account_issue: Login, access, password, account management
-   - integration_help: Help with API, webhooks, third-party integrations
-   - general_inquiry: General questions, information requests
+   - integration_request: Customer requesting a new Shopify app integration (not yet supported)
+   - integration_issue: Problems with an existing integration (bugs, not working, setup issues)
+   - app_customization: Questions about mobile app design, UI/UX customization, branding, PDP/PLP/Cart templates, theme management, content blocks, landing pages
+   - feature_request: New feature requests for the app builder platform itself (new capabilities, enhancements)
+   - bug_report: Bugs in the mobile app or builder platform (crashes, display issues, functionality not working)
+   - billing_question: Questions about pricing, plans, subscriptions, payments, upgrades
+   - technical_issue: Technical problems, setup issues, deployment, catalog sync, deeplink setup, push notification setup
+   - onboarding_help: Help getting started, initial setup, tutorials, first-time configuration
+   - general_inquiry: General questions, information requests, how-to questions
    - other: Doesn't fit other categories
 
-3. Integration/Third-party service (if applicable):
-   - Look for mentions of specific third-party services, platforms, or integrations
-   - Examples: Slack, GitHub, Stripe, Zapier, Salesforce, Jira, etc.
-   - Use lowercase, hyphenated format: "google-workspace", "microsoft-teams"
-   - Common integrations: slack, github, stripe, zapier, salesforce, jira, hubspot, mailchimp, shopify, quickbooks, zoom, google-workspace, microsoft-teams, aws, azure, twilio, sendgrid, intercom, segment, amplitude, mixpanel, datadog, sentry, linear, notion, asana, trello, monday, airtable, figma
-   - For API/webhook discussions without specific service: use "api" or "webhook"
+3. Integration name (if applicable):
+   - IMPORTANT: This is for a Shopify mobile app builder - look for mentions of Shopify app integrations
+   - Search integrations: boost, searchanise, searchtap, shopify-search, zevi, wizzy, findify, algolia, fast-simon, constructor, cloudsearch, searchspring
+   - Reviews/Ratings: yotpo-reviews, judgeme, stamped-reviews, loox, junip, reviews-io, rivyo, okendo, nector-reviews, power-reviews
+   - Analytics/Push: ga4, klaviyo, clevertap, moengage, netcore, contlo, deltax, webengage, clarity, rebid, attentive, bitespeed, firebase-push
+   - Rewards/Loyalty: nector, popcoin, smile, flits, yotpo-rewards, loyalty-lion, 99minds, okendo-rewards
+   - Subscriptions: recharge, stay-ai, loop, prive, appstle, juno, subscription-ordering
+   - Product Recommendations: rebuy, shopify-recommendations, visenze, frequently-bought-together
+   - Returns: return-prime, eco-returns, loop-returns
+   - Checkout: gokwik, shopflo, fastrr, shopify-checkout
+   - Attribution: adjust, appsflyer, branch
+   - Customer Support: gorgias, kapture, tidio, kustomer
+   - Size Charts: wair, appbrew-size-guide, kiwi-size-chart, bf-size-chart
+   - Swatches: swatch-king, shopify-swatches, appbrew-swatches
+   - Wishlist: wishlist-plus, flits-wishlist, appbrew-wishlist
+   - Video: firework, whatamore, quinn, lyvecom
+   - EDD/Shipping: clickpost, fenix, grow-simplee, appbrew-edd, shiprocket
+   - OTP: trust-signal, msg91, value-first, kwikpass
+   - Ads: facebook-pixel, google-ads
+   - Other: neon, farzi, yagi-cancellable
+   - If customer mentions an integration NOT in this list: use "other-integration"
    - If no integration mentioned: use null
-   - If integration not in common list: use the service name in lowercase-hyphenated format
+   - Use exact lowercase-hyphenated names from the list above
 
 4. A list of action items (tasks, deadlines, requests, follow-ups) extracted from the ENTIRE thread
    - Only include actionable items that require someone to do something
@@ -333,7 +349,7 @@ Use this exact structure:
 ${responseFormat}
 
 If there are no action items, return an empty array.
-For integrationName: Use null if no integration is mentioned, otherwise use lowercase-hyphenated service name.
+For integrationName: Use null if no integration mentioned, exact name from list if it's a known integration, or "other-integration" if customer mentions an integration not in our list.
 Focus on actionable items, not general statements.`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
