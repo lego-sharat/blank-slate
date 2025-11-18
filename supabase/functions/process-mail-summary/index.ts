@@ -321,8 +321,22 @@ Please analyze this entire email thread and provide:
 
 3. Integration name (if applicable):
    - Look for ANY Shopify app or third-party integration mentioned in the conversation
-   - Extract the exact name as mentioned (e.g., "Yotpo Reviews", "Klaviyo", "Judge.me", "Recharge")
-   - Common categories: Search apps, Reviews, Analytics, Push notifications, Rewards/Loyalty, Subscriptions, Product Recommendations, Returns, Checkout, Attribution, Customer Support, Size Charts, Wishlists, Video, Shipping/EDD, OTP, Ads
+   - Extract the exact name as mentioned by the customer
+   - Examples of common integrations to look for:
+     * Search: "Boost", "Searchanise", "Zevi", "Algolia", "Fast Simon", "Findify"
+     * Reviews: "Yotpo Reviews", "Judge.me", "Stamped", "Loox", "Junip", "Reviews.io", "Okendo"
+     * Analytics/Push: "GA4", "Klaviyo", "CleverTap", "Moengage", "Firebase", "WebEngage"
+     * Rewards: "Smile", "Nector", "Loyalty Lion", "Yotpo Rewards", "99minds"
+     * Subscriptions: "Recharge", "Stay.AI", "Loop", "Appstle", "Prive"
+     * Checkout: "Gokwik", "Shopflo", "Fastrr"
+     * Returns: "Return Prime", "Eco Returns", "Loop Returns"
+     * Customer Support: "Gorgias", "Kapture", "Tidio", "Kustomer"
+     * Attribution: "Adjust", "Appsflyer", "Branch"
+     * Video: "Firework", "Whatamore", "Quinn"
+     * Size Charts: "Wair", "Kiwi Size Chart"
+     * Product Recommendations: "Rebuy", "Visenze"
+     * Shipping/EDD: "Shiprocket", "Clickpost", "Fenix"
+   - If customer mentions a different integration not in examples above, still extract it
    - Use null if no integration is mentioned
 
 4. Labels (array of applicable labels for filtering):
