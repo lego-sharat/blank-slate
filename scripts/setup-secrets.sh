@@ -36,18 +36,18 @@ echo "Reading secrets from supabase/.env..."
 echo ""
 
 # Read secrets from .env file
-GOOGLE_CLIENT_ID=$(grep -E '^GOOGLE_(OAUTH_)?CLIENT_ID=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
-GOOGLE_CLIENT_SECRET=$(grep -E '^GOOGLE_(OAUTH_)?CLIENT_SECRET=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+GOOGLE_CLIENT_ID=$(grep -E '^GOOGLE_OAUTH_CLIENT_ID=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+GOOGLE_CLIENT_SECRET=$(grep -E '^GOOGLE_OAUTH_CLIENT_SECRET=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 ANTHROPIC_API_KEY=$(grep -E '^ANTHROPIC_API_KEY=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
 
 # Validate required secrets
 if [ -z "$GOOGLE_CLIENT_ID" ]; then
-    echo "❌ GOOGLE_CLIENT_ID or GOOGLE_OAUTH_CLIENT_ID not found in supabase/.env"
+    echo "❌ GOOGLE_OAUTH_CLIENT_ID not found in supabase/.env"
     exit 1
 fi
 
 if [ -z "$GOOGLE_CLIENT_SECRET" ]; then
-    echo "❌ GOOGLE_CLIENT_SECRET or GOOGLE_OAUTH_CLIENT_SECRET not found in supabase/.env"
+    echo "❌ GOOGLE_OAUTH_CLIENT_SECRET not found in supabase/.env"
     exit 1
 fi
 
