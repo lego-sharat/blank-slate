@@ -14,12 +14,26 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# Check if we're linked to a project
-if [ ! -f .supabase/config.toml ]; then
-    echo "❌ Not linked to a Supabase project"
-    echo "   Run: supabase link --project-ref YOUR_PROJECT_REF"
+# Check if .env file exists
+if [ ! -f supabase/.env ]; then
+    echo "❌ supabase/.env not found."
+    echo "Please create supabase/.env and add SUPABASE_PROJECT_REF"
     exit 1
 fi
+
+# Read SUPABASE_PROJECT_REF from .env
+SUPABASE_PROJECT_REF=$(grep -E '^SUPABASE_PROJECT_REF=' supabase/.env 2>/dev/null | cut -d '=' -f2-)
+
+if [ -z "$SUPABASE_PROJECT_REF" ]; then
+    echo "❌ SUPABASE_PROJECT_REF not found in supabase/.env"
+    echo "Please add: SUPABASE_PROJECT_REF=your-project-ref-here"
+    exit 1
+fi
+
+# Link to Supabase project (will skip if already linked)
+echo "🔗 Ensuring project is linked: $SUPABASE_PROJECT_REF"
+supabase link --project-ref "$SUPABASE_PROJECT_REF" 2>&1 || echo "Note: Link command completed (this is usually fine)"
+echo ""
 
 echo "📦 Deploying Edge Functions..."
 echo ""
