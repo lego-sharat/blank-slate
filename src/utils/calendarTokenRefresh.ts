@@ -10,6 +10,11 @@ interface GoogleProviderToken {
   timestamp: number;
 }
 
+interface Settings {
+  supabaseUrl?: string;
+  supabaseKey?: string;
+}
+
 /**
  * Get Google provider token from chrome.storage
  */
@@ -43,17 +48,18 @@ async function refreshGoogleTokenInBackground(): Promise<string | null> {
 
   try {
     // Get Supabase credentials
-    const result = await chrome.storage.local.get(['supabaseUrl', 'supabaseKey', 'supabaseSession']);
+    const result = await chrome.storage.local.get(['settings', 'supabaseSession']);
+    const settings = (result.settings || {}) as Settings;
 
-    if (!result.supabaseUrl || !result.supabaseKey ||
-        typeof result.supabaseUrl !== 'string' ||
-        typeof result.supabaseKey !== 'string') {
+    if (!settings.supabaseUrl || !settings.supabaseKey ||
+        typeof settings.supabaseUrl !== 'string' ||
+        typeof settings.supabaseKey !== 'string') {
       console.error('[Calendar Token Refresh] Supabase not configured');
       return null;
     }
 
-    const supabaseUrl = result.supabaseUrl as string;
-    const supabaseKey = result.supabaseKey as string;
+    const supabaseUrl = settings.supabaseUrl as string;
+    const supabaseKey = settings.supabaseKey as string;
     const supabaseSession = result.supabaseSession as any;
 
     if (!supabaseSession || !supabaseSession.refresh_token) {

@@ -26,10 +26,23 @@ export function initSupabase(url, supabaseKey) {
             return result[key] || null;
           },
           setItem: async (key, value) => {
+            // Always save to the Supabase-generated key
             await chrome.storage.local.set({ [key]: value });
+
+            // ALSO save to a consistent 'supabaseSession' key for easy access
+            // Parse the session value to store it in our consistent location
+            try {
+              const session = JSON.parse(value);
+              await chrome.storage.local.set({ supabaseSession: session });
+            } catch (e) {
+              // If it's not JSON, just store the raw value
+              await chrome.storage.local.set({ supabaseSession: value });
+            }
           },
           removeItem: async (key) => {
             await chrome.storage.local.remove(key);
+            // Also remove from our consistent location
+            await chrome.storage.local.remove('supabaseSession');
           }
         }
       },
