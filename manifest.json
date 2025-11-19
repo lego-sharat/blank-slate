@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A minimal, greyscale new tab page with todo list and notes",
   "chrome_url_overrides": {
-    "newtab": "newtab.html"
+    "newtab": "src/pages/newtab/index.html"
   },
   "permissions": [
     "storage",
@@ -13,7 +13,7 @@
     "alarms"
   ],
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "src/pages/background/index.ts",
     "type": "module"
   },
   "host_permissions": [

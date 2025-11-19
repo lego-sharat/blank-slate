@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR, HistoryItem } from '@/types';
+import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR, HistoryItem, MailThread } from '@/types';
 import {
   setTodos as saveToStorage_Todos,
   setThoughts as saveToStorage_Notes,
@@ -18,6 +18,7 @@ export const STORAGE_KEYS = {
   CALENDAR_EVENTS: 'calendar_events',
   LINEAR_ISSUES: 'linear_issues',
   GITHUB_PRS: 'github_prs',
+  MAIL_MESSAGES: 'mail_messages',
 } as const;
 
 // Core signals
@@ -41,6 +42,15 @@ export const githubPRs = signal<{
 }>({
   createdByMe: [],
   reviewRequested: [],
+});
+export const mailThreads = signal<{
+  all: MailThread[];
+  onboarding: MailThread[];
+  support: MailThread[];
+}>({
+  all: [],
+  onboarding: [],
+  support: [],
 });
 export const settings = signal<Settings>({
   notionApiKey: '',
@@ -161,6 +171,19 @@ export const allGitHubPRs = computed(() => {
     ...githubPRs.value.createdByMe,
     ...githubPRs.value.reviewRequested,
   ];
+});
+
+// Mail computed signals
+export const allMailMessages = computed(() => {
+  return mailThreads.value.all;
+});
+
+export const onboardingMailMessages = computed(() => {
+  return mailThreads.value.onboarding;
+});
+
+export const supportMailMessages = computed(() => {
+  return mailThreads.value.support;
 });
 
 // Load configuration and cached data from chrome.storage

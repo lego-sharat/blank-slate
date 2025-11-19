@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Pre-push hook to run TypeScript type checking
+# This prevents pushing code with TypeScript errors
+
+echo "Running TypeScript type checking..."
+
+# Run typecheck
+npm run typecheck
+
+# Capture the exit code
+TYPECHECK_EXIT_CODE=$?
+
+# If typecheck failed, prevent the push
+if [ $TYPECHECK_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript type checking failed!"
+  echo "Please fix the type errors before pushing."
+  echo "Run 'npm run typecheck' to see the errors."
+  exit 1
+fi
+
+echo "✅ TypeScript type checking passed!"
+exit 0

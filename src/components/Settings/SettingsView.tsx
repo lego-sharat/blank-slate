@@ -1,6 +1,11 @@
 import { currentView, settings } from '@/store/store';
 import { useState, useEffect } from 'preact/hooks';
 import type { Settings } from '@/types';
+import {
+  checkGmailConnection,
+  initiateGmailOAuth,
+  disconnectGmail,
+} from '@/utils/mailSupabaseSync';
 
 export default function SettingsView() {
   const handleBack = () => {
@@ -17,6 +22,11 @@ export default function SettingsView() {
   const [isSaved, setIsSaved] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState('');
 
+  // Gmail connection state
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailLastSync, setGmailLastSync] = useState<string | undefined>();
+  const [gmailConnecting, setGmailConnecting] = useState(false);
+
   useEffect(() => {
     // Get the Chrome extension redirect URL
     const url = chrome.runtime.getURL('auth-callback.html');
@@ -32,6 +42,12 @@ export default function SettingsView() {
         setGithubToken(storedSettings.githubToken || '');
         setFigmaApiKey(storedSettings.figmaApiKey || '');
       }
+    });
+
+    // Check Gmail connection status
+    checkGmailConnection().then((status) => {
+      setGmailConnected(status.connected);
+      setGmailLastSync(status.lastSync);
     });
   }, []);
 
@@ -67,6 +83,62 @@ export default function SettingsView() {
   const handleCopyRedirectUrl = () => {
     navigator.clipboard.writeText(redirectUrl);
     alert('Redirect URL copied to clipboard!');
+  };
+
+  const handleConnectGmail = async () => {
+    setGmailConnecting(true);
+    try {
+      const result = await initiateGmailOAuth();
+      console.log('[Gmail OAuth] Result:', result);
+      if (result.success && result.oauthUrl) {
+        // Open OAuth URL in new tab
+        window.open(result.oauthUrl, '_blank');
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const status = await checkGmailConnection();
+          if (status.connected) {
+            setGmailConnected(true);
+            setGmailLastSync(status.lastSync);
+            clearInterval(pollInterval);
+            setGmailConnecting(false);
+            alert('Gmail connected successfully!');
+          }
+        }, 2000);
+
+        // Stop polling after 2 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          setGmailConnecting(false);
+        }, 120000);
+      } else {
+        alert(`Failed to connect Gmail: ${result.error || 'Unknown error'}`);
+        setGmailConnecting(false);
+      }
+    } catch (error) {
+      console.error('Error connecting Gmail:', error);
+      alert('Failed to connect Gmail. Check console for details.');
+      setGmailConnecting(false);
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    if (!confirm('Are you sure you want to disconnect Gmail? Your email history will be cleared.')) {
+      return;
+    }
+
+    try {
+      const result = await disconnectGmail();
+      if (result.success) {
+        setGmailConnected(false);
+        setGmailLastSync(undefined);
+        alert('Gmail disconnected successfully!');
+      } else {
+        alert(`Failed to disconnect Gmail: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error disconnecting Gmail:', error);
+      alert('Failed to disconnect Gmail. Check console for details.');
+    }
   };
 
   return (
@@ -270,6 +342,76 @@ export default function SettingsView() {
             >
               {isSaved ? 'Saved!' : 'Save Settings'}
             </button>
+          </div>
+        </div>
+
+        {/* Gmail Integration */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Gmail Integration</h3>
+          <div class="settings-section-description">
+            Connect your Gmail account to sync emails with AI summaries and action items. Emails are fetched server-side every 2 minutes and cached locally.
+          </div>
+          <div class="settings-section-content">
+            <div class="settings-connection-status">
+              <div class="settings-connection-indicator">
+                <div class={`settings-status-dot ${gmailConnected ? 'connected' : 'disconnected'}`}></div>
+                <span class="settings-status-text">
+                  {gmailConnected ? 'Connected' : 'Not Connected'}
+                </span>
+              </div>
+              {gmailLastSync && (
+                <div class="settings-last-sync">
+                  Last synced: {new Date(gmailLastSync).toLocaleString()}
+                </div>
+              )}
+            </div>
+
+            {!gmailConnected ? (
+              <div>
+                <button
+                  class="settings-connect-btn"
+                  onClick={handleConnectGmail}
+                  disabled={gmailConnecting}
+                >
+                  {gmailConnecting ? 'Connecting...' : 'Connect Gmail'}
+                </button>
+                <div class="settings-info-box" style="margin-top: 16px;">
+                  <p>
+                    <strong>What happens when you connect?</strong>
+                  </p>
+                  <ul class="settings-instructions-sub">
+                    <li>You'll authorize read-only access to your Gmail</li>
+                    <li>Emails are synced server-side every 2 minutes</li>
+                    <li>AI generates summaries and extracts action items</li>
+                    <li>Mail filtered by onboarding/support categories</li>
+                    <li>Spam, promotions, and updates are automatically excluded</li>
+                  </ul>
+                  <p class="settings-note">
+                    <strong>Privacy:</strong> Your OAuth tokens are encrypted and stored securely in Supabase. The extension only has read-only access to your Gmail.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <button
+                  class="settings-disconnect-btn"
+                  onClick={handleDisconnectGmail}
+                >
+                  Disconnect Gmail
+                </button>
+                <div class="settings-info-box" style="margin-top: 16px;">
+                  <p>
+                    <strong>Connection Details:</strong>
+                  </p>
+                  <ul class="settings-instructions-sub">
+                    <li>Emails are synced automatically every 2 minutes</li>
+                    <li>AI summaries: Up to 100 per day (free tier)</li>
+                    <li>Local cache: Last 30 days of emails (~50MB)</li>
+                    <li>View your emails in the Mail tab</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

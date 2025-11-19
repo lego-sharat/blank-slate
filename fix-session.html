@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fix Supabase Session</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .log {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .success { background: #1e3a1e; color: #4ec9b0; }
+    .error { background: #3a1e1e; color: #f48771; }
+    .info { background: #1e2a3a; color: #9cdcfe; }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 Supabase Session Migration Tool</h1>
+  <p>This tool will copy your session from the Supabase key to our consistent key.</p>
+
+  <button onclick="diagnose()">1. Diagnose Issue</button>
+  <button onclick="fixSession()">2. Fix Session</button>
+  <button onclick="verifyFix()">3. Verify Fix</button>
+
+  <div id="logs"></div>
+
+  <script>
+    function log(message, type = 'info') {
+      const logsDiv = document.getElementById('logs');
+      const logDiv = document.createElement('div');
+      logDiv.className = `log ${type}`;
+      logDiv.textContent = message;
+      logsDiv.appendChild(logDiv);
+    }
+
+    async function diagnose() {
+      document.getElementById('logs').innerHTML = '';
+      log('🔍 Starting diagnosis...', 'info');
+
+      try {
+        const storage = await chrome.storage.local.get(null);
+        const keys = Object.keys(storage);
+
+        log(`Found ${keys.length} storage keys`, 'info');
+
+        // Find Supabase key
+        const supabaseKey = keys.find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+
+        if (!supabaseKey) {
+          log('❌ No Supabase session key found', 'error');
+          return;
+        }
+
+        log(`✅ Found Supabase key: ${supabaseKey}`, 'success');
+
+        // Check supabaseSession
+        if (storage.supabaseSession) {
+          log('✅ supabaseSession key exists', 'success');
+
+          const session = storage.supabaseSession;
+          const isString = typeof session === 'string';
+
+          log(`   Type: ${isString ? 'string (WRONG!)' : 'object (CORRECT)'}`, isString ? 'error' : 'success');
+
+          if (isString) {
+            log('⚠️  Session is stored as string, should be object', 'error');
+          } else {
+            log(`   Has access_token: ${!!session.access_token}`, session.access_token ? 'success' : 'error');
+            log(`   Has user: ${!!session.user}`, session.user ? 'success' : 'error');
+            log(`   User ID: ${session.user?.id || 'missing'}`, session.user?.id ? 'success' : 'error');
+          }
+        } else {
+          log('❌ supabaseSession key NOT found', 'error');
+          log('   This is why sync is failing!', 'error');
+        }
+
+        // Check settings
+        if (storage.settings) {
+          log('✅ Settings exist', 'success');
+          log(`   Has supabaseUrl: ${!!storage.settings.supabaseUrl}`, storage.settings.supabaseUrl ? 'success' : 'error');
+          log(`   Has supabaseKey: ${!!storage.settings.supabaseKey}`, storage.settings.supabaseKey ? 'success' : 'error');
+        } else {
+          log('❌ Settings not found', 'error');
+        }
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function fixSession() {
+      document.getElementById('logs').innerHTML = '';
+      log('🔧 Starting fix...', 'info');
+
+      try {
+        const storage = await chrome.storage.local.get(null);
+
+        // Find Supabase key
+        const supabaseKey = Object.keys(storage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+
+        if (!supabaseKey) {
+          log('❌ No Supabase session found to migrate', 'error');
+          return;
+        }
+
+        log(`✅ Found session at: ${supabaseKey}`, 'success');
+
+        // Get session data
+        const sessionData = storage[supabaseKey];
+
+        if (!sessionData) {
+          log('❌ Session key exists but has no data', 'error');
+          return;
+        }
+
+        // Parse if string
+        let session = sessionData;
+        if (typeof sessionData === 'string') {
+          log('   Parsing JSON string...', 'info');
+          try {
+            session = JSON.parse(sessionData);
+            log('   ✅ Parsed successfully', 'success');
+          } catch (e) {
+            log(`   ❌ Failed to parse: ${e.message}`, 'error');
+            return;
+          }
+        }
+
+        // Validate structure
+        if (!session.access_token) {
+          log('❌ Session missing access_token', 'error');
+          return;
+        }
+
+        if (!session.user?.id) {
+          log('❌ Session missing user.id', 'error');
+          return;
+        }
+
+        log(`✅ Session valid:`, 'success');
+        log(`   User: ${session.user.email}`, 'info');
+        log(`   User ID: ${session.user.id}`, 'info');
+        log(`   Token: ${session.access_token.substring(0, 30)}...`, 'info');
+
+        // Save to supabaseSession
+        log('💾 Saving to supabaseSession key...', 'info');
+        await chrome.storage.local.set({ supabaseSession: session });
+
+        log('✅ Session migrated successfully!', 'success');
+        log('🎉 Please reload the extension to apply changes', 'success');
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    async function verifyFix() {
+      document.getElementById('logs').innerHTML = '';
+      log('✅ Verifying fix...', 'info');
+
+      try {
+        const result = await chrome.storage.local.get('supabaseSession');
+
+        if (!result.supabaseSession) {
+          log('❌ supabaseSession still missing', 'error');
+          return;
+        }
+
+        const session = result.supabaseSession;
+
+        log('✅ supabaseSession exists', 'success');
+        log(`   Type: ${typeof session}`, 'info');
+        log(`   Has access_token: ${!!session.access_token}`, session.access_token ? 'success' : 'error');
+        log(`   Has user: ${!!session.user}`, session.user ? 'success' : 'error');
+        log(`   User ID: ${session.user?.id || 'missing'}`, session.user?.id ? 'success' : 'error');
+        log(`   Email: ${session.user?.email || 'missing'}`, session.user?.email ? 'success' : 'error');
+
+        if (session.access_token && session.user?.id) {
+          log('\n🎉 Everything looks good!', 'success');
+          log('Now reload the extension and check the logs:', 'info');
+          log('  ✅ Should see: "[Mail Threads] Fetching threads from Supabase..."', 'info');
+          log('  ✅ Should see: "✓ Synced X todos to Supabase"', 'info');
+        } else {
+          log('\n⚠️  Session structure is incomplete', 'error');
+        }
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-run diagnosis on load
+    window.onload = () => {
+      log('👋 Ready! Click "1. Diagnose Issue" to start', 'info');
+    };
+  </script>
+</body>
+</html>

@@ -27,6 +27,10 @@ export default function Sidebar() {
     currentView.value = 'history';
   };
 
+  const navigateToMail = () => {
+    currentView.value = 'mail';
+  };
+
   const navigateToTasks = () => {
     currentView.value = 'tasks';
   };
@@ -152,6 +156,18 @@ export default function Sidebar() {
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
               <span class="sidebar-item-label">History</span>
+            </div>
+
+            {/* Mail */}
+            <div
+              class={`sidebar-item ${currentView.value === 'mail' ? 'active' : ''}`}
+              onClick={navigateToMail}
+            >
+              <svg class="sidebar-item-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span class="sidebar-item-label">Mail</span>
             </div>
 
             {/* Tasks */}

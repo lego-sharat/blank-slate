@@ -26,11 +26,30 @@ export function initSupabase(url, supabaseKey) {
             return result[key] || null;
           },
           setItem: async (key, value) => {
+            // Always save to the Supabase-generated key
             await chrome.storage.local.set({ [key]: value });
+
+            // ALSO save to a consistent 'supabaseSession' key for easy access
+            // Parse the session value to store it in our consistent location
+            try {
+              const session = JSON.parse(value);
+              await chrome.storage.local.set({ supabaseSession: session });
+            } catch (e) {
+              // If it's not JSON, just store the raw value
+              await chrome.storage.local.set({ supabaseSession: value });
+            }
           },
           removeItem: async (key) => {
             await chrome.storage.local.remove(key);
+            // Also remove from our consistent location
+            await chrome.storage.local.remove('supabaseSession');
           }
+        }
+      },
+      realtime: {
+        // Disable Realtime to prevent DOM errors in service worker
+        params: {
+          eventsPerSecond: -1
         }
       }
     });
@@ -39,17 +58,22 @@ export function initSupabase(url, supabaseKey) {
     supabaseClient.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
 
-      if (event === 'SIGNED_IN') {
-        // User signed in successfully
-        window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
-          detail: { event, session }
-        }));
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out
-        window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
-          detail: { event, session: null }
-        }));
-      } else if (event === 'TOKEN_REFRESHED') {
+      // Only dispatch events if window exists (not in service worker context)
+      if (typeof window !== 'undefined') {
+        if (event === 'SIGNED_IN') {
+          // User signed in successfully
+          window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
+            detail: { event, session }
+          }));
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out
+          window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
+            detail: { event, session: null }
+          }));
+        }
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
         // Token was refreshed automatically
         console.log('Auth token refreshed automatically');
       }

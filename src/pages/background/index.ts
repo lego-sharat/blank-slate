@@ -1,4 +1,3 @@
-import { shouldTrackUrl, updateHistoryItemTitle } from './utils/historyTracker';
 import {
   getTodos,
   getThoughts,
@@ -12,15 +11,32 @@ import {
   getLinearIssues,
   getGitHubPRs,
   getCalendarEvents,
+  getMailMessages,
+  setMailMessages,
   getLastSupabaseSync,
   setLastSupabaseSync,
-} from './utils/storageManager';
-import { initSupabase, getSupabaseClient } from './utils/supabaseClient';
-import { syncAllToSupabase } from './utils/supabaseSync';
-import { fetchAllLinearIssues } from './utils/linearApi';
-import { fetchAllGitHubPRs } from './utils/githubApi';
-import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
-import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
+} from '@/utils/storageManager';
+import { syncTodosToSupabase } from '@/utils/todosClient';
+import { syncThoughtsToSupabase } from '@/utils/thoughtsClient';
+import { syncHistoryToSupabase } from '@/utils/historyClient';
+import { fetchAllLinearIssues } from '@/utils/linearApi';
+import { fetchAllGitHubPRs } from '@/utils/githubApi';
+import { cleanAndDeduplicateHistory } from '@/utils/cleanHistory';
+import { fetchCalendarEventsWithRetry } from '@/utils/calendarTokenRefresh';
+import { syncThreadsFromSupabase } from '@/utils/mailThreadsSync';
+import {
+  shouldTrackUrl,
+  createHistoryItemAsync,
+  saveHistoryItem,
+  updateHistoryItemTitle,
+  deleteHistoryItem,
+  deleteHistoryItemByUrl
+} from '@/utils/historyTracker';
+import {
+  inspectHistory,
+  forceCleanHistory,
+  resetMigrationFlag
+} from '@/utils/debugHistory';
 
 /**
  * Background script for:
@@ -73,9 +89,10 @@ async function runHistoryCleanupMigration() {
 }
 
 /**
- * Initialize Supabase on startup
+ * Check Supabase configuration on startup
+ * Note: No initialization needed - REST clients get credentials on-demand
  */
-async function initializeSupabase() {
+async function checkSupabaseConfiguration() {
   try {
     const settings = await getSettings();
     console.log('Checking Supabase configuration...');
@@ -83,33 +100,13 @@ async function initializeSupabase() {
     console.log('  - Has Key:', !!settings.supabaseKey);
 
     if (settings.supabaseUrl && settings.supabaseKey) {
-      console.log('  - URL value:', settings.supabaseUrl);
-      console.log('  - Key length:', settings.supabaseKey?.length || 0);
-
-      const client = initSupabase(settings.supabaseUrl, settings.supabaseKey);
-      if (client) {
-        console.log('✓ Supabase initialized in background');
-
-        // Test the connection
-        try {
-          const { error } = await client.from('todos').select('count').limit(1);
-          if (error) {
-            console.error('✗ Supabase connection test failed:', error.message);
-          } else {
-            console.log('✓ Supabase connection test successful');
-          }
-        } catch (testError) {
-          console.error('✗ Supabase connection test error:', testError);
-        }
-      } else {
-        console.error('✗ Supabase initialization failed - client is null');
-      }
+      console.log('✓ Supabase configured (REST API clients ready)');
     } else {
       console.log('ℹ Supabase not configured (no URL or key in settings)');
       console.log('  Configure Supabase in Settings to enable cloud sync');
     }
   } catch (error) {
-    console.error('✗ Failed to initialize Supabase:', error);
+    console.error('✗ Failed to check Supabase configuration:', error);
   }
 }
 
@@ -177,40 +174,34 @@ async function fetchAndCacheCalendarEvents() {
 }
 
 /**
- * Sync all data to Supabase
+ * Fetch Mail threads from Supabase (NEW: thread-focused approach)
+ * Replaces old message-based fetching
+ */
+async function fetchAndCacheMailMessages() {
+  try {
+    console.log('Syncing mail threads from Supabase...');
+
+    // Fetch threads from Supabase
+    const threads = await syncThreadsFromSupabase();
+
+    // Cache in chrome.storage
+    await setMailMessages(threads);
+
+    console.log(`Mail sync complete: ${threads.all.length} total, ${threads.onboarding.length} onboarding, ${threads.support.length} support`);
+  } catch (error) {
+    console.error('Failed to sync mail threads:', error);
+    // Don't throw - allow other data fetching to continue
+  }
+}
+
+/**
+ * Sync all data to Supabase using REST API clients
  */
 async function syncToSupabase() {
   try {
-    const settings = await getSettings();
     console.log('=== Supabase Sync Attempt ===');
-    console.log('Settings check:', {
-      hasUrl: !!settings.supabaseUrl,
-      hasKey: !!settings.supabaseKey,
-      url: settings.supabaseUrl,
-      keyLength: settings.supabaseKey?.length || 0,
-    });
 
-    if (!settings.supabaseUrl || !settings.supabaseKey) {
-      console.log('⚠ Supabase not configured, skipping sync (no URL or key in settings)');
-      return;
-    }
-
-    // Verify client is initialized
-    const client = getSupabaseClient();
-    console.log('Supabase client status:', client ? 'initialized' : 'NOT initialized');
-
-    if (!client) {
-      console.warn('⚠ Supabase client not initialized despite having settings');
-      console.log('Attempting to reinitialize...');
-      await initializeSupabase();
-      const retryClient = getSupabaseClient();
-      if (!retryClient) {
-        console.error('✗ Reinitialization failed - aborting sync');
-        return;
-      }
-    }
-
-    console.log('→ Starting data sync...');
+    // Load data from chrome.storage
     const [todos, thoughts, history] = await Promise.all([
       getTodos(),
       getThoughts(),
@@ -218,7 +209,13 @@ async function syncToSupabase() {
     ]);
 
     console.log(`→ Data loaded: ${todos.length} todos, ${thoughts.length} thoughts, ${history.length} history items`);
-    await syncAllToSupabase(todos, thoughts, history);
+
+    // Sync using REST API clients (they handle credential checks internally)
+    await Promise.all([
+      syncTodosToSupabase(todos),
+      syncThoughtsToSupabase(thoughts),
+      syncHistoryToSupabase(history),
+    ]);
 
     // Update last Supabase sync timestamp
     await setLastSupabaseSync(Date.now());
@@ -233,7 +230,7 @@ async function syncToSupabase() {
 }
 
 /**
- * Fetch all external data (Linear, GitHub, Calendar)
+ * Fetch all external data (Linear, GitHub, Calendar, Mail)
  * This is the main data fetching function - runs every 2 minutes
  */
 async function fetchAllExternalData() {
@@ -243,6 +240,7 @@ async function fetchAllExternalData() {
     fetchAndCacheLinearIssues(),
     fetchAndCacheGitHubPRs(),
     fetchAndCacheCalendarEvents(),
+    fetchAndCacheMailMessages(),
   ]);
 
   await setLastSync(Date.now());
@@ -288,13 +286,14 @@ async function performPeriodicSync() {
 async function getAllCachedData() {
   console.log('Getting all cached data for foreground...');
 
-  const [todos, thoughts, history, linearIssues, githubPRs, calendarEvents, settings] = await Promise.all([
+  const [todos, thoughts, history, linearIssues, githubPRs, calendarEvents, mailMessages, settings] = await Promise.all([
     getTodos(),
     getThoughts(),
     getHistory(),
     getLinearIssues(),
     getGitHubPRs(),
     getCalendarEvents(),
+    getMailMessages(),
     getSettings(),
   ]);
 
@@ -305,6 +304,7 @@ async function getAllCachedData() {
     linearIssues,
     githubPRs,
     calendarEvents,
+    mailMessages,
     settings,
     lastSync: await getLastSync(),
   };
@@ -317,8 +317,10 @@ async function getAllCachedData() {
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   // Handle title changes (for dynamic sites like Notion)
-  if (changeInfo.title && tab.url && shouldTrackUrl(tab.url)) {
-    await updateHistoryItemTitle(tab.url, changeInfo.title);
+  if (changeInfo.title && tab.url) {
+    if (shouldTrackUrl(tab.url)) {
+      await updateHistoryItemTitle(tab.url, changeInfo.title);
+    }
   }
 
   // Only process when the page is completely loaded
@@ -327,7 +329,6 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
 
     // Check if we should track this URL
     if (shouldTrackUrl(url)) {
-      const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
       const historyItem = await createHistoryItemAsync(url, tab.title);
 
       if (historyItem) {
@@ -347,7 +348,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const url = tab.url;
 
       if (shouldTrackUrl(url)) {
-        const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
         const historyItem = await createHistoryItemAsync(url, tab.title);
 
         if (historyItem) {
@@ -393,7 +393,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugInspectHistory': {
           // Debug: Inspect history for duplicates
-          const { inspectHistory } = await import('./utils/debugHistory');
           const stats = await inspectHistory();
           sendResponse({ success: true, data: stats });
           break;
@@ -401,7 +400,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugForceCleanHistory': {
           // Debug: Force cleanup of history
-          const { forceCleanHistory } = await import('./utils/debugHistory');
           const result = await forceCleanHistory();
           sendResponse({ success: true, data: result });
           break;
@@ -409,7 +407,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugResetMigration': {
           // Debug: Reset migration flag
-          const { resetMigrationFlag } = await import('./utils/debugHistory');
           await resetMigrationFlag();
           sendResponse({ success: true });
           break;
@@ -417,7 +414,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'deleteHistoryItem': {
           // Delete a history item by ID
-          const { deleteHistoryItem } = await import('./utils/historyTracker');
           await deleteHistoryItem(message.id);
           sendResponse({ success: true });
           break;
@@ -425,7 +421,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'deleteHistoryItemByUrl': {
           // Delete a history item by URL
-          const { deleteHistoryItemByUrl } = await import('./utils/historyTracker');
           await deleteHistoryItemByUrl(message.url);
           sendResponse({ success: true });
           break;
@@ -452,7 +447,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed/updated');
   await runHistoryCleanupMigration();
-  await initializeSupabase();
+  await checkSupabaseConfiguration();
   await fetchAllExternalData();
 });
 
@@ -460,7 +455,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.runtime.onStartup.addListener(async () => {
   console.log('Browser started');
   await runHistoryCleanupMigration();
-  await initializeSupabase();
+  await checkSupabaseConfiguration();
   await fetchAllExternalData();
 });
 
@@ -473,11 +468,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-// Listen for storage changes to reinitialize Supabase if settings change
+// Listen for storage changes to check Supabase configuration
 chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (areaName === 'local' && changes.settings) {
-    console.log('Settings changed, reinitializing Supabase');
-    await initializeSupabase();
+    console.log('Settings changed, checking Supabase configuration');
+    await checkSupabaseConfiguration();
     // Also refresh data immediately when settings change
     await fetchAllExternalData();
   }
@@ -486,7 +481,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 // Initialize immediately on script load
 (async () => {
   await runHistoryCleanupMigration();
-  await initializeSupabase();
+  await checkSupabaseConfiguration();
   // Fetch data on startup
   await fetchAllExternalData();
   console.log('Background script loaded and ready');

@@ -2,18 +2,19 @@ import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { resolve } from 'path';
 import { copyFileSync } from 'fs';
+import { crx } from '@crxjs/vite-plugin';
+import manifest from './manifest.json';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: './',
   plugins: [
     preact(),
+    crx({ manifest }),
     {
       name: 'copy-files',
       closeBundle() {
-        // Copy manifest.json to dist
-        copyFileSync('manifest.json', 'dist/manifest.json');
-        // Copy auth-callback.js to dist
+        // Copy auth-callback files (not handled by CRXJS)
+        copyFileSync('auth-callback.html', 'dist/auth-callback.html');
         copyFileSync('auth-callback.js', 'dist/auth-callback.js');
         // Copy markdown-parser.js to dist
         copyFileSync('markdown-parser.js', 'dist/markdown-parser.js');
@@ -21,18 +22,12 @@ export default defineConfig({
     },
   ],
   build: {
-    outDir: 'dist',
-    emptyOutDir: true,
+    minify: false, // Disable minification for easier debugging
+    modulePreload: false, // Disable module preload polyfill (breaks in service workers)
     rollupOptions: {
-      input: {
-        newtab: resolve(__dirname, 'newtab.html'),
-        'auth-callback': resolve(__dirname, 'auth-callback.html'),
-        background: resolve(__dirname, 'src/background.ts'),
-      },
       output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]',
+        // Disable dynamic import polyfill for service workers
+        inlineDynamicImports: false,
       },
     },
   },

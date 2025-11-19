@@ -10,6 +10,11 @@ interface GoogleProviderToken {
   timestamp: number;
 }
 
+interface Settings {
+  supabaseUrl?: string;
+  supabaseKey?: string;
+}
+
 /**
  * Get Google provider token from chrome.storage
  */
@@ -42,32 +47,75 @@ async function refreshGoogleTokenInBackground(): Promise<string | null> {
   const { refresh_token } = tokenData;
 
   try {
-    // Get Supabase client to refresh the session
-    const { getSupabaseClient } = await import('./supabaseClient');
-    const supabaseClient = getSupabaseClient();
+    // Get Supabase credentials
+    const result = await chrome.storage.local.get(['settings', 'supabaseSession']);
+    const settings = (result.settings || {}) as Settings;
 
-    if (supabaseClient) {
-      console.log('[Calendar Token Refresh] Attempting Supabase session refresh...');
-      const { data, error } = await supabaseClient.auth.refreshSession();
-
-      if (!error && data.session?.provider_token) {
-        console.log('[Calendar Token Refresh] Got new provider_token from Supabase session refresh');
-
-        // Update stored token
-        await chrome.storage.local.set({
-          google_provider_token: {
-            token: data.session.provider_token,
-            refresh_token: refresh_token,
-            expires_in: 3600,
-            timestamp: Date.now()
-          }
-        });
-
-        return data.session.provider_token;
-      }
-
-      console.log('[Calendar Token Refresh] Supabase session refresh did not return provider_token');
+    if (!settings.supabaseUrl || !settings.supabaseKey ||
+        typeof settings.supabaseUrl !== 'string' ||
+        typeof settings.supabaseKey !== 'string') {
+      console.error('[Calendar Token Refresh] Supabase not configured');
+      return null;
     }
+
+    const supabaseUrl = settings.supabaseUrl as string;
+    const supabaseKey = settings.supabaseKey as string;
+    const supabaseSession = result.supabaseSession as any;
+
+    if (!supabaseSession || !supabaseSession.refresh_token) {
+      console.error('[Calendar Token Refresh] No Supabase refresh token available');
+      return null;
+    }
+
+    console.log('[Calendar Token Refresh] Attempting Supabase session refresh via REST API...');
+
+    // Call Supabase auth refresh endpoint
+    const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        refresh_token: supabaseSession.refresh_token
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Calendar Token Refresh] Session refresh failed:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.provider_token) {
+      console.log('[Calendar Token Refresh] Got new provider_token from Supabase session refresh');
+
+      // Update stored Supabase session
+      await chrome.storage.local.set({
+        supabaseSession: {
+          ...supabaseSession,
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          user: data.user
+        }
+      });
+
+      // Update stored Google token
+      await chrome.storage.local.set({
+        google_provider_token: {
+          token: data.provider_token,
+          refresh_token: refresh_token,
+          expires_in: 3600,
+          timestamp: Date.now()
+        }
+      });
+
+      return data.provider_token;
+    }
+
+    console.log('[Calendar Token Refresh] Supabase session refresh did not return provider_token');
 
     // If Supabase refresh didn't work, we need to re-authenticate
     console.warn('[Calendar Token Refresh] Token refresh failed. User needs to re-authenticate.');
