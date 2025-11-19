@@ -222,7 +222,8 @@ GRANT EXECUTE ON FUNCTION update_archive_queue_status TO service_role;
 CREATE OR REPLACE FUNCTION cleanup_archive_queue()
 RETURNS INTEGER AS $$
 DECLARE
-  v_deleted_count INTEGER;
+  v_deleted_count INTEGER := 0;
+  v_temp_count INTEGER;
 BEGIN
   -- Delete completed items older than 7 days
   DELETE FROM gmail_archive_queue
@@ -237,7 +238,8 @@ BEGIN
     AND attempts >= max_attempts
     AND processed_at < NOW() - INTERVAL '7 days';
 
-  GET DIAGNOSTICS v_deleted_count = v_deleted_count + ROW_COUNT;
+  GET DIAGNOSTICS v_temp_count = ROW_COUNT;
+  v_deleted_count := v_deleted_count + v_temp_count;
 
   RETURN v_deleted_count;
 END;
