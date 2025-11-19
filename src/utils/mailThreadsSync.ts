@@ -1,12 +1,11 @@
 /**
- * Thread-Focused Mail Sync
+ * Thread-Focused Mail Sync (Background Worker Safe)
  *
- * Syncs mail threads (not individual messages) from Supabase mail_threads table
- * Works with the new schema where each thread has embedded summary, action_items, etc.
+ * Syncs mail threads from Supabase mail_threads table
+ * This version is safe to use in background service workers
  */
 
-// @ts-ignore
-import { getSupabase as getSupabaseClient } from '@/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export interface MailThread {
   id: string
@@ -45,6 +44,44 @@ export interface MailThread {
   summary_generated_at?: string
 }
 
+// Create a minimal Supabase client for background use
+function createBackgroundSupabaseClient(url: string, key: string) {
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,  // Don't persist in background
+      autoRefreshToken: false, // Don't auto-refresh in background
+      detectSessionInUrl: false, // Critical for service workers
+    },
+    global: {
+      headers: {
+        'x-client-info': 'chrome-extension-background'
+      }
+    }
+  })
+}
+
+/**
+ * Get Supabase credentials from chrome.storage
+ */
+async function getSupabaseCredentials(): Promise<{ url: string; key: string } | null> {
+  try {
+    const result = await chrome.storage.local.get(['supabaseUrl', 'supabaseKey'])
+
+    if (!result.supabaseUrl || !result.supabaseKey) {
+      console.log('[Mail Threads] Supabase not configured')
+      return null
+    }
+
+    return {
+      url: result.supabaseUrl,
+      key: result.supabaseKey
+    }
+  } catch (error) {
+    console.error('[Mail Threads] Error getting credentials:', error)
+    return null
+  }
+}
+
 /**
  * Fetch threads from Supabase (last 30 days to keep cache reasonable)
  */
@@ -54,12 +91,15 @@ export async function syncThreadsFromSupabase(): Promise<{
   support: MailThread[]
 }> {
   try {
-    const supabase = getSupabaseClient()
+    const credentials = await getSupabaseCredentials()
 
-    if (!supabase) {
-      console.log('[Mail Threads] Supabase not configured')
+    if (!credentials) {
+      console.log('[Mail Threads] No Supabase credentials available')
       return { all: [], onboarding: [], support: [] }
     }
+
+    // Create a fresh client for this request
+    const supabase = createBackgroundSupabaseClient(credentials.url, credentials.key)
 
     console.log('[Mail Threads] Fetching threads from Supabase...')
 
@@ -107,11 +147,13 @@ export async function checkGmailConnection(): Promise<{
   lastSync?: string
 }> {
   try {
-    const supabase = getSupabaseClient()
+    const credentials = await getSupabaseCredentials()
 
-    if (!supabase) {
+    if (!credentials) {
       return { connected: false }
     }
+
+    const supabase = createBackgroundSupabaseClient(credentials.url, credentials.key)
 
     // Check if user has Gmail OAuth token
     const { data: token, error } = await supabase
@@ -139,11 +181,13 @@ export async function checkGmailConnection(): Promise<{
  */
 export async function markThreadAsRead(threadId: string, isRead: boolean): Promise<boolean> {
   try {
-    const supabase = getSupabaseClient()
+    const credentials = await getSupabaseCredentials()
 
-    if (!supabase) {
+    if (!credentials) {
       return false
     }
+
+    const supabase = createBackgroundSupabaseClient(credentials.url, credentials.key)
 
     const { error } = await supabase
       .from('mail_threads')
@@ -171,11 +215,13 @@ export async function initiateGmailOAuth(): Promise<{
   error?: string
 }> {
   try {
-    const supabase = getSupabaseClient()
+    const credentials = await getSupabaseCredentials()
 
-    if (!supabase) {
+    if (!credentials) {
       return { success: false, error: 'Supabase not configured' }
     }
+
+    const supabase = createBackgroundSupabaseClient(credentials.url, credentials.key)
 
     // Get current user session
     const {
@@ -214,11 +260,13 @@ export async function initiateGmailOAuth(): Promise<{
  */
 export async function disconnectGmail(): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = getSupabaseClient()
+    const credentials = await getSupabaseCredentials()
 
-    if (!supabase) {
+    if (!credentials) {
       return { success: false, error: 'Supabase not configured' }
     }
+
+    const supabase = createBackgroundSupabaseClient(credentials.url, credentials.key)
 
     const { error } = await supabase.from('oauth_tokens').delete().eq('provider', 'gmail')
 
