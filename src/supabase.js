@@ -32,6 +32,12 @@ export function initSupabase(url, supabaseKey) {
             await chrome.storage.local.remove(key);
           }
         }
+      },
+      realtime: {
+        // Disable Realtime to prevent DOM errors in service worker
+        params: {
+          eventsPerSecond: -1
+        }
       }
     });
 
