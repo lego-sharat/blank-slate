@@ -1,4 +1,4 @@
-import { shouldTrackUrl, updateHistoryItemTitle } from './utils/historyTracker';
+// Note: historyTracker is dynamically imported to avoid loading Supabase Realtime at startup
 import {
   getTodos,
   getThoughts,
@@ -347,8 +347,11 @@ async function getAllCachedData() {
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   // Handle title changes (for dynamic sites like Notion)
-  if (changeInfo.title && tab.url && shouldTrackUrl(tab.url)) {
-    await updateHistoryItemTitle(tab.url, changeInfo.title);
+  if (changeInfo.title && tab.url) {
+    const { shouldTrackUrl, updateHistoryItemTitle } = await import('./utils/historyTracker');
+    if (shouldTrackUrl(tab.url)) {
+      await updateHistoryItemTitle(tab.url, changeInfo.title);
+    }
   }
 
   // Only process when the page is completely loaded
@@ -356,8 +359,8 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
     const url = tab.url;
 
     // Check if we should track this URL
+    const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
     if (shouldTrackUrl(url)) {
-      const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
       const historyItem = await createHistoryItemAsync(url, tab.title);
 
       if (historyItem) {
@@ -376,8 +379,8 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     if (tab.url && tab.status === 'complete') {
       const url = tab.url;
 
+      const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
       if (shouldTrackUrl(url)) {
-        const { createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
         const historyItem = await createHistoryItemAsync(url, tab.title);
 
         if (historyItem) {
