@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "setup": "./.githooks/install.sh",
     "deploy-edge-function": "./deploy-edge-function.sh",
     "db:setup": "./scripts/setup-supabase.sh",
     "db:link": "supabase link",
