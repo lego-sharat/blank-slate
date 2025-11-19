@@ -1,9 +1,12 @@
 /**
- * Thread-Focused Mail Sync (Background Worker Safe)
+ * Thread-Focused Mail Sync
  *
  * Syncs mail threads from Supabase mail_threads table
- * This version uses direct REST API calls to avoid DOM dependencies
+ * Uses shared Supabase client (configured for service workers)
  */
+
+// @ts-ignore
+import { getSupabase as getSupabaseClient } from '@/supabase';
 
 export interface MailThread {
   id: string
@@ -43,114 +46,6 @@ export interface MailThread {
 }
 
 /**
- * Make a direct REST API call to Supabase (no client library needed)
- */
-async function supabaseFetch(
-  url: string,
-  apiKey: string,
-  table: string,
-  params: Record<string, string>
-): Promise<any[]> {
-  const queryString = new URLSearchParams(params).toString()
-  const apiUrl = `${url}/rest/v1/${table}?${queryString}`
-
-  const response = await fetch(apiUrl, {
-    method: 'GET',
-    headers: {
-      'apikey': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(`Supabase API error: ${response.status} ${response.statusText}`)
-  }
-
-  return response.json()
-}
-
-/**
- * Update records in Supabase using direct REST API
- */
-async function supabaseUpdate(
-  url: string,
-  apiKey: string,
-  table: string,
-  filter: Record<string, string>,
-  data: Record<string, any>
-): Promise<void> {
-  const filterString = new URLSearchParams(filter).toString()
-  const apiUrl = `${url}/rest/v1/${table}?${filterString}`
-
-  const response = await fetch(apiUrl, {
-    method: 'PATCH',
-    headers: {
-      'apikey': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(data)
-  })
-
-  if (!response.ok) {
-    throw new Error(`Supabase API error: ${response.status} ${response.statusText}`)
-  }
-}
-
-/**
- * Delete records from Supabase using direct REST API
- */
-async function supabaseDelete(
-  url: string,
-  apiKey: string,
-  table: string,
-  filter: Record<string, string>
-): Promise<void> {
-  const filterString = new URLSearchParams(filter).toString()
-  const apiUrl = `${url}/rest/v1/${table}?${filterString}`
-
-  const response = await fetch(apiUrl, {
-    method: 'DELETE',
-    headers: {
-      'apikey': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(`Supabase API error: ${response.status} ${response.statusText}`)
-  }
-}
-
-/**
- * Get Supabase credentials from chrome.storage
- */
-async function getSupabaseCredentials(): Promise<{ url: string; key: string } | null> {
-  try {
-    const result = await chrome.storage.local.get(['supabaseUrl', 'supabaseKey'])
-
-    if (!result.supabaseUrl || !result.supabaseKey ||
-        typeof result.supabaseUrl !== 'string' ||
-        typeof result.supabaseKey !== 'string') {
-      console.log('[Mail Threads] Supabase not configured')
-      return null
-    }
-
-    return {
-      url: result.supabaseUrl,
-      key: result.supabaseKey
-    }
-  } catch (error) {
-    console.error('[Mail Threads] Error getting credentials:', error)
-    return null
-  }
-}
-
-/**
  * Fetch threads from Supabase (last 30 days to keep cache reasonable)
  */
 export async function syncThreadsFromSupabase(): Promise<{
@@ -158,48 +53,47 @@ export async function syncThreadsFromSupabase(): Promise<{
   onboarding: MailThread[]
   support: MailThread[]
 }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    console.log('[Mail Threads] Supabase client not initialized');
+    return { all: [], onboarding: [], support: [] };
+  }
+
   try {
-    const credentials = await getSupabaseCredentials()
-
-    if (!credentials) {
-      console.log('[Mail Threads] No Supabase credentials available')
-      return { all: [], onboarding: [], support: [] }
-    }
-
-    console.log('[Mail Threads] Fetching threads from Supabase...')
+    console.log('[Mail Threads] Fetching threads from Supabase...');
 
     // Fetch threads from last 30 days
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Use direct REST API call instead of Supabase client
-    const threads = await supabaseFetch(
-      credentials.url,
-      credentials.key,
-      'mail_threads',
-      {
-        'last_message_date': `gte.${thirtyDaysAgo.toISOString()}`,
-        'order': 'last_message_date.desc',
-        'limit': '200'
-      }
-    )
+    const { data: threads, error } = await supabase
+      .from('mail_threads')
+      .select('*')
+      .gte('last_message_date', thirtyDaysAgo.toISOString())
+      .order('last_message_date', { ascending: false })
+      .limit(200); // Limit to most recent 200 threads
 
-    if (!threads || threads.length === 0) {
-      console.log('[Mail Threads] No threads found')
-      return { all: [], onboarding: [], support: [] }
+    if (error) {
+      console.error('[Mail Threads] Error fetching threads:', error);
+      return { all: [], onboarding: [], support: [] };
     }
 
-    console.log(`[Mail Threads] Fetched ${threads.length} threads`)
+    if (!threads || threads.length === 0) {
+      console.log('[Mail Threads] No threads found');
+      return { all: [], onboarding: [], support: [] };
+    }
+
+    console.log(`[Mail Threads] Fetched ${threads.length} threads`);
 
     // Categorize threads
-    const all = threads as MailThread[]
-    const onboarding = all.filter(t => t.category === 'onboarding')
-    const support = all.filter(t => t.category === 'support')
+    const all = threads as MailThread[];
+    const onboarding = all.filter(t => t.category === 'onboarding');
+    const support = all.filter(t => t.category === 'support');
 
-    return { all, onboarding, support }
+    return { all, onboarding, support };
   } catch (error) {
-    console.error('[Mail Threads] Unexpected error:', error)
-    return { all: [], onboarding: [], support: [] }
+    console.error('[Mail Threads] Unexpected error:', error);
+    return { all: [], onboarding: [], support: [] };
   }
 }
 
@@ -211,35 +105,30 @@ export async function checkGmailConnection(): Promise<{
   email?: string
   lastSync?: string
 }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { connected: false };
+  }
+
   try {
-    const credentials = await getSupabaseCredentials()
+    // Check if user has Gmail OAuth token
+    const { data: token, error } = await supabase
+      .from('oauth_tokens')
+      .select('provider, updated_at')
+      .eq('provider', 'gmail')
+      .maybeSingle();
 
-    if (!credentials) {
-      return { connected: false }
-    }
-
-    // Check if user has Gmail OAuth token using direct API
-    const tokens = await supabaseFetch(
-      credentials.url,
-      credentials.key,
-      'oauth_tokens',
-      {
-        'provider': 'eq.gmail',
-        'limit': '1'
-      }
-    )
-
-    if (!tokens || tokens.length === 0) {
-      return { connected: false }
+    if (error || !token) {
+      return { connected: false };
     }
 
     return {
       connected: true,
-      lastSync: tokens[0].updated_at,
-    }
+      lastSync: token.updated_at,
+    };
   } catch (error) {
-    console.error('[Mail Threads] Error checking connection:', error)
-    return { connected: false }
+    console.error('[Mail Threads] Error checking connection:', error);
+    return { connected: false };
   }
 }
 
@@ -247,77 +136,72 @@ export async function checkGmailConnection(): Promise<{
  * Mark thread as read/unread
  */
 export async function markThreadAsRead(threadId: string, isRead: boolean): Promise<boolean> {
-  try {
-    const credentials = await getSupabaseCredentials()
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return false;
+  }
 
-    if (!credentials) {
-      return false
+  try {
+    const { error } = await supabase
+      .from('mail_threads')
+      .update({ is_unread: !isRead })
+      .eq('id', threadId);
+
+    if (error) {
+      console.error('[Mail Threads] Error updating thread:', error);
+      return false;
     }
 
-    // Update using direct API
-    await supabaseUpdate(
-      credentials.url,
-      credentials.key,
-      'mail_threads',
-      { 'id': `eq.${threadId}` },
-      { is_unread: !isRead }
-    )
-
-    return true
+    return true;
   } catch (error) {
-    console.error('[Mail Threads] Error updating thread:', error)
-    return false
+    console.error('[Mail Threads] Unexpected error:', error);
+    return false;
   }
 }
 
 /**
  * Initiate Gmail OAuth flow
- * Note: This should only be called from UI context where we have user session
  */
 export async function initiateGmailOAuth(): Promise<{
   success: boolean
   oauthUrl?: string
   error?: string
 }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   try {
-    const credentials = await getSupabaseCredentials()
+    // Get current user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!credentials) {
-      return { success: false, error: 'Supabase not configured' }
+    if (!session) {
+      return { success: false, error: 'Not authenticated' };
     }
 
-    // Get session from storage (set by UI auth flow)
-    const result = await chrome.storage.local.get(['supabaseSession'])
-    const session = result.supabaseSession as { access_token?: string } | undefined
-
-    if (!session?.access_token) {
-      return { success: false, error: 'Not authenticated' }
-    }
-
-    // Call gmail-oauth-init Edge Function using direct fetch
-    const response = await fetch(`${credentials.url}/functions/v1/gmail-oauth-init`, {
-      method: 'POST',
+    // Call gmail-oauth-init Edge Function
+    const { data, error } = await supabase.functions.invoke('gmail-oauth-init', {
       headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'apikey': credentials.key,
-        'Content-Type': 'application/json'
-      }
-    })
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}` }
+    if (error) {
+      console.error('[OAuth] Error initiating OAuth:', error);
+      return { success: false, error: error.message };
     }
-
-    const data = await response.json()
 
     if (!data.success || !data.oauthUrl) {
-      return { success: false, error: 'Failed to generate OAuth URL' }
+      return { success: false, error: 'Failed to generate OAuth URL' };
     }
 
-    return { success: true, oauthUrl: data.oauthUrl }
+    return { success: true, oauthUrl: data.oauthUrl };
   } catch (error) {
-    console.error('[OAuth] Unexpected error:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error('[OAuth] Unexpected error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -325,24 +209,22 @@ export async function initiateGmailOAuth(): Promise<{
  * Disconnect Gmail (remove OAuth tokens)
  */
 export async function disconnectGmail(): Promise<{ success: boolean; error?: string }> {
-  try {
-    const credentials = await getSupabaseCredentials()
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
 
-    if (!credentials) {
-      return { success: false, error: 'Supabase not configured' }
+  try {
+    const { error } = await supabase.from('oauth_tokens').delete().eq('provider', 'gmail');
+
+    if (error) {
+      console.error('[OAuth] Error disconnecting Gmail:', error);
+      return { success: false, error: error.message };
     }
 
-    // Delete OAuth tokens using direct API
-    await supabaseDelete(
-      credentials.url,
-      credentials.key,
-      'oauth_tokens',
-      { 'provider': 'eq.gmail' }
-    )
-
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error('[OAuth] Unexpected error:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error('[OAuth] Unexpected error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
