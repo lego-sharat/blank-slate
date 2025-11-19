@@ -33,6 +33,26 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
+        manualChunks(id) {
+          // Isolate chunks by entry point to prevent sharing code between
+          // background (service worker) and newtab (browser window)
+
+          // Don't create chunks from node_modules - inline them
+          if (id.includes('node_modules')) {
+            return undefined; // Let Rollup bundle with importer
+          }
+
+          // historyTracker and its dependencies should be a separate chunk
+          // that's only loaded when needed (not at background startup)
+          if (id.includes('src/utils/historyTracker') ||
+              id.includes('src/utils/figmaApi') ||
+              id.includes('src/utils/urlCleaner')) {
+            return 'historyTracker';
+          }
+
+          // Don't create any other shared chunks - inline with entry point
+          return undefined;
+        },
       },
     },
   },
