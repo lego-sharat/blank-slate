@@ -47,12 +47,12 @@ Deploy database schema and functions:
 ```
 
 This creates:
-- `mail_messages` table
-- `mail_summaries` table
-- `mail_action_items` table
-- `oauth_tokens` table
-- `usage_tracking` table
-- Helper functions for cron jobs
+- `mail_threads` table - Email threads with AI summaries
+- `mail_messages` table - Individual email messages
+- `oauth_tokens` table - Encrypted Gmail OAuth tokens
+- `gmail_archive_queue` table - Queue for archiving threads in Gmail
+- `usage_tracking` table - Rate limiting for AI features
+- Helper functions for cron jobs and archive processing
 
 ### 2. Setup Secrets
 
@@ -84,8 +84,8 @@ Or deploy a specific function:
 Deploys:
 - `gmail-oauth-init` - OAuth initialization
 - `gmail-oauth-callback` - OAuth callback handler
-- `sync-gmail` - Gmail sync (called by cron)
-- `process-mail-summary` - AI summarization
+- `sync-gmail` - Gmail sync + archive queue processing (called by cron every 2min)
+- `process-mail-summary` - AI summarization with Claude Haiku
 
 ### 4. Test Locally
 
@@ -237,13 +237,16 @@ scripts/
 
 supabase/
 ├── migrations/               # Database migrations
+│   ├── 002_create_tables_with_rls.sql
 │   ├── 20250118000001_create_mail_tables.sql
-│   ├── 20250118000002_create_oauth_tokens.sql
-│   └── 20250118000003_setup_mail_sync_cron.sql
+│   ├── 20250118000004_encrypt_oauth_tokens.sql
+│   ├── 20250118000012_recreate_mail_tables.sql
+│   ├── 20250119000001_add_archive_and_status_features.sql  # NEW: Archive feature
+│   └── ... (other migrations)
 ├── functions/                # Edge Functions
 │   ├── gmail-oauth-init/
 │   ├── gmail-oauth-callback/
-│   ├── sync-gmail/
+│   ├── sync-gmail/           # Updated: Now processes archive queue
 │   └── process-mail-summary/
 └── .env                      # Local development secrets (gitignored)
 ```
@@ -263,6 +266,35 @@ supabase/
 4. Sign in with Google
 5. Click "Connect Gmail"
 6. Emails will sync every 2 minutes!
+
+## Archive Feature
+
+The archive feature allows users to archive threads directly from the extension:
+
+**How it works:**
+1. User clicks "Archive" button on any email thread
+2. Thread is immediately marked as `archived` in database
+3. Thread is added to `gmail_archive_queue` for Gmail sync
+4. Background sync (every 2min) processes queue and archives in Gmail
+5. Archived threads are excluded from extension UI
+
+**Monitoring:**
+```bash
+# View archive queue status
+./scripts/monitor-mail.sh archive-queue
+
+# Or run directly with SQL:
+SELECT * FROM gmail_archive_queue
+WHERE status = 'pending'
+ORDER BY created_at DESC;
+```
+
+**Key metrics:**
+- Success rate: `COUNT(completed) / COUNT(total) * 100`
+- Average processing time: Usually < 2 minutes (next sync cycle)
+- Failed items: Retry up to 3 times with exponential backoff
+
+For complete archive feature documentation, see: `ARCHIVE_FEATURE_DEPLOYMENT.md`
 
 ## Support
 
