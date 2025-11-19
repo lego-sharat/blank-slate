@@ -47,18 +47,20 @@ export interface MailThread {
  */
 async function getSupabaseCredentials(): Promise<{ url: string; key: string } | null> {
   try {
-    const result = await chrome.storage.local.get(['supabaseUrl', 'supabaseKey'])
+    // Get the settings object from chrome.storage
+    const result = await chrome.storage.local.get('settings')
+    const settings = result.settings || {}
 
-    if (!result.supabaseUrl || !result.supabaseKey ||
-        typeof result.supabaseUrl !== 'string' ||
-        typeof result.supabaseKey !== 'string') {
+    if (!settings.supabaseUrl || !settings.supabaseKey ||
+        typeof settings.supabaseUrl !== 'string' ||
+        typeof settings.supabaseKey !== 'string') {
       console.log('[Mail Threads] Supabase not configured')
       return null
     }
 
     return {
-      url: result.supabaseUrl,
-      key: result.supabaseKey
+      url: settings.supabaseUrl,
+      key: settings.supabaseKey
     }
   } catch (error) {
     console.error('[Mail Threads] Error getting credentials:', error)
