@@ -33,6 +33,7 @@
     "preact": "^10.27.2"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.2.1",
     "@preact/preset-vite": "^2.10.2",
     "@types/chrome": "^0.1.30",
     "esbuild": "^0.19.0",

@@ -16,14 +16,14 @@ import {
   setMailMessages,
   getLastSupabaseSync,
   setLastSupabaseSync,
-} from './utils/storageManager';
+} from '@/utils/storageManager';
 // @ts-ignore
-import { initSupabase, getSupabase as getSupabaseClient } from './supabase';
-import { syncAllToSupabase } from './utils/supabaseSync';
-import { fetchAllLinearIssues } from './utils/linearApi';
-import { fetchAllGitHubPRs } from './utils/githubApi';
-import { cleanAndDeduplicateHistory } from './utils/cleanHistory';
-import { fetchCalendarEventsWithRetry } from './utils/calendarTokenRefresh';
+import { initSupabase, getSupabase as getSupabaseClient } from '@/supabase';
+import { syncAllToSupabase } from '@/utils/supabaseSync';
+import { fetchAllLinearIssues } from '@/utils/linearApi';
+import { fetchAllGitHubPRs } from '@/utils/githubApi';
+import { cleanAndDeduplicateHistory } from '@/utils/cleanHistory';
+import { fetchCalendarEventsWithRetry } from '@/utils/calendarTokenRefresh';
 
 /**
  * Background script for:
@@ -188,7 +188,7 @@ async function fetchAndCacheMailMessages() {
     console.log('Syncing mail threads from Supabase...');
 
     // Import the NEW thread sync utility
-    const { syncThreadsFromSupabase } = await import('./utils/mailThreadsSync');
+    const { syncThreadsFromSupabase } = await import('@/utils/mailThreadsSync');
 
     // Fetch threads from Supabase
     const threads = await syncThreadsFromSupabase();
@@ -348,7 +348,7 @@ async function getAllCachedData() {
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   // Handle title changes (for dynamic sites like Notion)
   if (changeInfo.title && tab.url) {
-    const { shouldTrackUrl, updateHistoryItemTitle } = await import('./utils/historyTracker');
+    const { shouldTrackUrl, updateHistoryItemTitle } = await import('@/utils/historyTracker');
     if (shouldTrackUrl(tab.url)) {
       await updateHistoryItemTitle(tab.url, changeInfo.title);
     }
@@ -359,7 +359,7 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
     const url = tab.url;
 
     // Check if we should track this URL
-    const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+    const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('@/utils/historyTracker');
     if (shouldTrackUrl(url)) {
       const historyItem = await createHistoryItemAsync(url, tab.title);
 
@@ -379,7 +379,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     if (tab.url && tab.status === 'complete') {
       const url = tab.url;
 
-      const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('./utils/historyTracker');
+      const { shouldTrackUrl, createHistoryItemAsync, saveHistoryItem } = await import('@/utils/historyTracker');
       if (shouldTrackUrl(url)) {
         const historyItem = await createHistoryItemAsync(url, tab.title);
 
@@ -426,7 +426,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugInspectHistory': {
           // Debug: Inspect history for duplicates
-          const { inspectHistory } = await import('./utils/debugHistory');
+          const { inspectHistory } = await import('@/utils/debugHistory');
           const stats = await inspectHistory();
           sendResponse({ success: true, data: stats });
           break;
@@ -434,7 +434,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugForceCleanHistory': {
           // Debug: Force cleanup of history
-          const { forceCleanHistory } = await import('./utils/debugHistory');
+          const { forceCleanHistory } = await import('@/utils/debugHistory');
           const result = await forceCleanHistory();
           sendResponse({ success: true, data: result });
           break;
@@ -442,7 +442,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'debugResetMigration': {
           // Debug: Reset migration flag
-          const { resetMigrationFlag } = await import('./utils/debugHistory');
+          const { resetMigrationFlag } = await import('@/utils/debugHistory');
           await resetMigrationFlag();
           sendResponse({ success: true });
           break;
@@ -450,7 +450,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'deleteHistoryItem': {
           // Delete a history item by ID
-          const { deleteHistoryItem } = await import('./utils/historyTracker');
+          const { deleteHistoryItem } = await import('@/utils/historyTracker');
           await deleteHistoryItem(message.id);
           sendResponse({ success: true });
           break;
@@ -458,7 +458,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         case 'deleteHistoryItemByUrl': {
           // Delete a history item by URL
-          const { deleteHistoryItemByUrl } = await import('./utils/historyTracker');
+          const { deleteHistoryItemByUrl } = await import('@/utils/historyTracker');
           await deleteHistoryItemByUrl(message.url);
           sendResponse({ success: true });
           break;
