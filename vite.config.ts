@@ -21,6 +21,15 @@ export default defineConfig({
       },
     },
   ],
+  build: {
+    modulePreload: false, // Disable module preload polyfill (breaks in service workers)
+    rollupOptions: {
+      output: {
+        // Disable dynamic import polyfill for service workers
+        inlineDynamicImports: false,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
