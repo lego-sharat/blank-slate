@@ -13,6 +13,7 @@ import {
   getGitHubPRs,
   getCalendarEvents,
   getMailMessages,
+  setMailMessages,
   getLastSupabaseSync,
   setLastSupabaseSync,
 } from './utils/storageManager';
@@ -179,22 +180,25 @@ async function fetchAndCacheCalendarEvents() {
 }
 
 /**
- * Fetch Mail messages from Supabase and cache in IndexedDB
- * Replaces old client-side Gmail API fetching
+ * Fetch Mail threads from Supabase (NEW: thread-focused approach)
+ * Replaces old message-based fetching
  */
 async function fetchAndCacheMailMessages() {
   try {
-    console.log('Syncing mail from Supabase...');
+    console.log('Syncing mail threads from Supabase...');
 
-    // Import the new Supabase sync utility
-    const { syncMailFromSupabase } = await import('./utils/mailSupabaseSync');
+    // Import the NEW thread sync utility
+    const { syncThreadsFromSupabase } = await import('./utils/mailThreadsSync');
 
-    // Fetch from Supabase and cache in IndexedDB
-    const messages = await syncMailFromSupabase();
+    // Fetch threads from Supabase
+    const threads = await syncThreadsFromSupabase();
 
-    console.log(`Mail sync complete: ${messages.all.length} total, ${messages.onboarding.length} onboarding, ${messages.support.length} support`);
+    // Cache in chrome.storage
+    await setMailMessages(threads);
+
+    console.log(`Mail sync complete: ${threads.all.length} total, ${threads.onboarding.length} onboarding, ${threads.support.length} support`);
   } catch (error) {
-    console.error('Failed to sync mail messages:', error);
+    console.error('Failed to sync mail threads:', error);
     // Don't throw - allow other data fetching to continue
   }
 }

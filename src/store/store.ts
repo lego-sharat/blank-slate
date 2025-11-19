@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR, HistoryItem, MailMessage } from '@/types';
+import type { Todo, Thought, ReadingItem, CalendarEvent, Settings, ViewType, LinearIssue, GitHubPR, HistoryItem, MailThread } from '@/types';
 import {
   setTodos as saveToStorage_Todos,
   setThoughts as saveToStorage_Notes,
@@ -43,10 +43,10 @@ export const githubPRs = signal<{
   createdByMe: [],
   reviewRequested: [],
 });
-export const mailMessages = signal<{
-  all: MailMessage[];
-  onboarding: MailMessage[];
-  support: MailMessage[];
+export const mailThreads = signal<{
+  all: MailThread[];
+  onboarding: MailThread[];
+  support: MailThread[];
 }>({
   all: [],
   onboarding: [],

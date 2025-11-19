@@ -170,7 +170,43 @@ export interface HistoryItem {
   favicon?: string;
 }
 
-// Mail types
+// Mail types (Thread-focused)
+export interface MailThread {
+  id: string;
+  gmail_thread_id: string;
+  subject: string;
+  participants: Array<{ name: string; email: string }>;
+  category: 'onboarding' | 'support' | 'general';
+
+  // Gmail labels vs AI labels
+  gmail_labels: string[]; // INBOX, UNREAD, DTC, etc.
+  ai_labels: string[]; // customer-support, high-priority, cold-email, etc.
+
+  // AI-generated fields
+  ai_topic?: string;
+  integration_name?: string;
+  summary?: string;
+  action_items?: Array<{
+    description: string;
+    dueDate?: string;
+    priority?: 'high' | 'medium' | 'low';
+  }>;
+  satisfaction_score?: number;
+  satisfaction_analysis?: string;
+
+  // Thread stats
+  message_count: number;
+  is_unread: boolean;
+  has_attachments: boolean;
+
+  // Timestamps
+  first_message_date: string;
+  last_message_date: string;
+  last_synced_at: string;
+  summary_generated_at?: string;
+}
+
+// Legacy mail message type (keeping for backward compatibility)
 export interface MailMessage {
   id: string;
   threadId: string;

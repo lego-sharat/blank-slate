@@ -1,24 +1,18 @@
 import { useState, useEffect } from 'preact/hooks';
 import { useComputed } from '@preact/signals';
-import { mailMessages } from '@/store/store';
-import type { MailMessage } from '@/types';
+import { mailThreads } from '@/store/store';
+import type { MailThread } from '@/types';
 import {
-  getSummaryFromCache,
-  getActionItemsFromCache,
-  type MailActionItemDB,
-} from '@/utils/mailIndexedDB';
-import {
-  markMessageAsRead,
-  completeActionItemInSupabase,
   checkGmailConnection,
-} from '@/utils/mailSupabaseSync';
+  markThreadAsRead,
+} from '@/utils/mailThreadsSync';
 
 export default function MailView() {
   const [filter, setFilter] = useState<'all' | 'onboarding' | 'support'>('all');
-  const [expandedMailId, setExpandedMailId] = useState<string | null>(null);
-  const [mailDetails, setMailDetails] = useState<Record<string, { summary?: string; actionItems?: MailActionItemDB[] }>>({});
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const mails = useComputed(() => mailMessages.value);
+  const threads = useComputed(() => mailThreads.value);
 
   // Check Gmail connection status on mount
   useEffect(() => {
@@ -27,74 +21,58 @@ export default function MailView() {
     });
   }, []);
 
-  const getFilteredMails = (): MailMessage[] => {
-    let filtered: MailMessage[];
+  // Get all unique AI labels from threads
+  const availableLabels = useComputed(() => {
+    const labelsSet = new Set<string>();
+    threads.value.all.forEach(thread => {
+      thread.ai_labels?.forEach(label => labelsSet.add(label));
+    });
+    return Array.from(labelsSet).sort();
+  });
+
+  const getFilteredThreads = (): MailThread[] => {
+    let filtered: MailThread[];
+
+    // First filter by category tab
     switch (filter) {
       case 'all':
-        filtered = mails.value.all;
+        filtered = threads.value.all;
         break;
       case 'onboarding':
-        filtered = mails.value.onboarding;
+        filtered = threads.value.onboarding;
         break;
       case 'support':
-        filtered = mails.value.support;
+        filtered = threads.value.support;
         break;
       default:
         filtered = [];
     }
-    return filtered.slice(0, 50);
-  };
 
-  // Load summary and action items when mail is expanded
-  const toggleExpand = async (mailId: string) => {
-    if (expandedMailId === mailId) {
-      setExpandedMailId(null);
-      return;
+    // Then filter by selected labels
+    if (selectedLabels.length > 0) {
+      filtered = filtered.filter(thread =>
+        selectedLabels.some(label => thread.ai_labels?.includes(label))
+      );
     }
 
-    setExpandedMailId(mailId);
-
-    // Load details from IndexedDB if not already loaded
-    if (!mailDetails[mailId]) {
-      const [summary, actionItems] = await Promise.all([
-        getSummaryFromCache(mailId),
-        getActionItemsFromCache(mailId),
-      ]);
-
-      setMailDetails({
-        ...mailDetails,
-        [mailId]: {
-          summary: summary?.summary,
-          actionItems: actionItems || [],
-        },
-      });
-    }
+    return filtered.slice(0, 100); // Limit to 100 threads
   };
 
-  // Toggle action item completion
-  const handleToggleActionItem = async (itemId: string, currentStatus: boolean, e: Event) => {
+  const toggleLabelFilter = (label: string) => {
+    setSelectedLabels(prev =>
+      prev.includes(label)
+        ? prev.filter(l => l !== label)
+        : [...prev, label]
+    );
+  };
+
+  const toggleExpand = (threadId: string) => {
+    setExpandedThreadId(expandedThreadId === threadId ? null : threadId);
+  };
+
+  const handleToggleRead = async (threadId: string, currentUnreadStatus: boolean, e: Event) => {
     e.stopPropagation();
-    const success = await completeActionItemInSupabase(itemId, !currentStatus);
-    if (success) {
-      // Refresh mail details to show updated status
-      const mailId = expandedMailId;
-      if (mailId) {
-        const actionItems = await getActionItemsFromCache(mailId);
-        setMailDetails({
-          ...mailDetails,
-          [mailId]: {
-            ...mailDetails[mailId],
-            actionItems: actionItems || [],
-          },
-        });
-      }
-    }
-  };
-
-  // Toggle read/unread status
-  const handleToggleRead = async (mailId: string, currentUnreadStatus: boolean, e: Event) => {
-    e.stopPropagation();
-    await markMessageAsRead(mailId, currentUnreadStatus);
+    await markThreadAsRead(threadId, currentUnreadStatus);
     // The background sync will update the cache
   };
 
@@ -117,40 +95,56 @@ export default function MailView() {
     return date.toLocaleDateString();
   };
 
-  const getCategoryBadgeClass = (category?: string): string => {
+  const getCategoryBadgeClass = (category: string): string => {
     if (category === 'onboarding') return 'mail-badge-onboarding';
     if (category === 'support') return 'mail-badge-support';
     return 'mail-badge-general';
   };
 
-  const getCategoryLabel = (category?: string): string => {
+  const getCategoryLabel = (category: string): string => {
     if (category === 'onboarding') return 'Onboarding';
     if (category === 'support') return 'Support';
     return '';
   };
 
-  const filteredMails = getFilteredMails();
+  const getLabelBadgeClass = (label: string): string => {
+    if (label === 'high-priority') return 'mail-label-priority';
+    if (label === 'needs-response') return 'mail-label-urgent';
+    if (label === 'cold-email') return 'mail-label-cold';
+    if (label === 'customer-support') return 'mail-label-support';
+    return 'mail-label-default';
+  };
+
+  const getSatisfactionColor = (score: number): string => {
+    if (score >= 8) return '#4ade80'; // green
+    if (score >= 6) return '#fbbf24'; // yellow
+    if (score >= 4) return '#fb923c'; // orange
+    return '#f87171'; // red
+  };
+
+  const filteredThreads = getFilteredThreads();
 
   return (
     <div class="mail-view">
       <div class="mail-header">
         <h1 class="mail-title">Mail</h1>
         <div class="mail-header-actions">
-          <span class="mail-stats">{filteredMails.length} messages</span>
+          <span class="mail-stats">{filteredThreads.length} threads</span>
           <button class="mail-view-all-button" onClick={handleViewAll}>
             Open Gmail
           </button>
         </div>
       </div>
 
+      {/* Category Tabs */}
       <div class="mail-filters">
         <button
           class={`mail-filter-btn ${filter === 'all' ? 'active' : ''}`}
           onClick={() => setFilter('all')}
         >
           All Mail
-          {mails.value.all.length > 0 && (
-            <span class="mail-filter-count">{mails.value.all.length}</span>
+          {threads.value.all.length > 0 && (
+            <span class="mail-filter-count">{threads.value.all.length}</span>
           )}
         </button>
         <button
@@ -158,8 +152,8 @@ export default function MailView() {
           onClick={() => setFilter('onboarding')}
         >
           Onboarding
-          {mails.value.onboarding.length > 0 && (
-            <span class="mail-filter-count">{mails.value.onboarding.length}</span>
+          {threads.value.onboarding.length > 0 && (
+            <span class="mail-filter-count">{threads.value.onboarding.length}</span>
           )}
         </button>
         <button
@@ -167,11 +161,29 @@ export default function MailView() {
           onClick={() => setFilter('support')}
         >
           Support
-          {mails.value.support.length > 0 && (
-            <span class="mail-filter-count">{mails.value.support.length}</span>
+          {threads.value.support.length > 0 && (
+            <span class="mail-filter-count">{threads.value.support.length}</span>
           )}
         </button>
       </div>
+
+      {/* Label Filters */}
+      {availableLabels.value.length > 0 && (
+        <div class="mail-label-filters">
+          <span class="mail-label-filters-title">Labels:</span>
+          <div class="mail-label-chips">
+            {availableLabels.value.map(label => (
+              <button
+                key={label}
+                class={`mail-label-chip ${selectedLabels.includes(label) ? 'active' : ''} ${getLabelBadgeClass(label)}`}
+                onClick={() => toggleLabelFilter(label)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!isConnected && (
         <div class="mail-connection-warning">
@@ -184,34 +196,44 @@ export default function MailView() {
         </div>
       )}
 
-      {filteredMails.length === 0 ? (
+      {filteredThreads.length === 0 ? (
         <div class="mail-empty-state">
-          <p>{isConnected ? 'No messages found.' : 'Connect Gmail to see your emails here.'}</p>
+          <p>{isConnected ? 'No threads found.' : 'Connect Gmail to see your emails here.'}</p>
         </div>
       ) : (
         <div class="mail-list">
-          {filteredMails.map(mail => {
-            const isExpanded = expandedMailId === mail.id;
-            const details = mailDetails[mail.id];
+          {filteredThreads.map(thread => {
+            const isExpanded = expandedThreadId === thread.id;
+            const firstParticipant = thread.participants[0];
 
             return (
               <div
-                key={mail.id}
-                class={`mail-item ${mail.isUnread ? 'unread' : ''} ${isExpanded ? 'expanded' : ''}`}
+                key={thread.id}
+                class={`mail-item ${thread.is_unread ? 'unread' : ''} ${isExpanded ? 'expanded' : ''}`}
               >
-                <div class="mail-item-content" onClick={() => toggleExpand(mail.id)}>
+                <div class="mail-item-content" onClick={() => toggleExpand(thread.id)}>
                   <div class="mail-item-header">
                     <div class="mail-from">
-                      <span class="mail-sender-name">{mail.from.name || mail.from.email}</span>
-                      {mail.isUnread && <span class="mail-unread-dot"></span>}
+                      <span class="mail-sender-name">
+                        {firstParticipant?.name || firstParticipant?.email || 'Unknown'}
+                      </span>
+                      {thread.message_count > 1 && (
+                        <span class="mail-message-count">({thread.message_count})</span>
+                      )}
+                      {thread.is_unread && <span class="mail-unread-dot"></span>}
                     </div>
                     <div class="mail-badges">
-                      {mail.category && mail.category !== 'general' && (
-                        <span class={`mail-badge ${getCategoryBadgeClass(mail.category)}`}>
-                          {getCategoryLabel(mail.category)}
+                      {thread.category && thread.category !== 'general' && (
+                        <span class={`mail-badge ${getCategoryBadgeClass(thread.category)}`}>
+                          {getCategoryLabel(thread.category)}
                         </span>
                       )}
-                      {mail.hasAttachments && (
+                      {thread.integration_name && (
+                        <span class="mail-badge mail-badge-integration" title={`Integration: ${thread.integration_name}`}>
+                          {thread.integration_name}
+                        </span>
+                      )}
+                      {thread.has_attachments && (
                         <span class="mail-attachment-icon" title="Has attachments">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -221,37 +243,62 @@ export default function MailView() {
                     </div>
                   </div>
 
-                  <div class="mail-subject">{mail.subject || '(No subject)'}</div>
+                  <div class="mail-subject">{thread.subject || '(No subject)'}</div>
 
-                  {/* Show AI summary if available */}
-                  {details?.summary && (
+                  {/* AI Summary */}
+                  {thread.summary && (
                     <div class="mail-ai-summary">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M12 16v-4"/>
                         <path d="M12 8h.01"/>
                       </svg>
-                      <span>{details.summary}</span>
+                      <span>{thread.summary}</span>
                     </div>
                   )}
 
-                  {!isExpanded && <div class="mail-snippet">{mail.snippet}</div>}
+                  {/* AI Labels */}
+                  {thread.ai_labels && thread.ai_labels.length > 0 && (
+                    <div class="mail-ai-labels">
+                      {thread.ai_labels.slice(0, 3).map(label => (
+                        <span key={label} class={`mail-label-badge ${getLabelBadgeClass(label)}`}>
+                          {label}
+                        </span>
+                      ))}
+                      {thread.ai_labels.length > 3 && (
+                        <span class="mail-label-more">+{thread.ai_labels.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Satisfaction Score (for onboarding/support) */}
+                  {thread.satisfaction_score && (thread.category === 'onboarding' || thread.category === 'support') && (
+                    <div class="mail-satisfaction">
+                      <span class="mail-satisfaction-label">Customer Satisfaction:</span>
+                      <div class="mail-satisfaction-score" style={{ color: getSatisfactionColor(thread.satisfaction_score) }}>
+                        {thread.satisfaction_score}/10
+                      </div>
+                      {thread.satisfaction_analysis && isExpanded && (
+                        <span class="mail-satisfaction-analysis">{thread.satisfaction_analysis}</span>
+                      )}
+                    </div>
+                  )}
 
                   <div class="mail-footer">
-                    <span class="mail-time">{formatRelativeTime(mail.date)}</span>
+                    <span class="mail-time">{formatRelativeTime(thread.last_message_date)}</span>
                     <div class="mail-actions">
                       <button
                         class="mail-action-btn"
-                        onClick={(e) => handleToggleRead(mail.id, mail.isUnread, e)}
-                        title={mail.isUnread ? 'Mark as read' : 'Mark as unread'}
+                        onClick={(e) => handleToggleRead(thread.id, thread.is_unread, e)}
+                        title={thread.is_unread ? 'Mark as read' : 'Mark as unread'}
                       >
-                        {mail.isUnread ? 'Mark read' : 'Mark unread'}
+                        {thread.is_unread ? 'Mark read' : 'Mark unread'}
                       </button>
                       <button
                         class="mail-action-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(`https://mail.google.com/mail/u/0/#inbox/${mail.threadId}`, '_blank');
+                          window.open(`https://mail.google.com/mail/u/0/#inbox/${thread.gmail_thread_id}`, '_blank');
                         }}
                       >
                         Open in Gmail
@@ -261,26 +308,19 @@ export default function MailView() {
                 </div>
 
                 {/* Expanded view with action items */}
-                {isExpanded && details?.actionItems && details.actionItems.length > 0 && (
+                {isExpanded && thread.action_items && thread.action_items.length > 0 && (
                   <div class="mail-action-items">
                     <h4 class="mail-action-items-title">Action Items</h4>
                     <ul class="mail-action-items-list">
-                      {details.actionItems.map((item) => (
-                        <li key={item.id} class={`mail-action-item ${item.is_completed ? 'completed' : ''}`}>
-                          <label class="mail-action-item-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={item.is_completed}
-                              onChange={(e) => handleToggleActionItem(item.id, item.is_completed, e)}
-                            />
-                            <span class="mail-action-item-description">{item.description}</span>
-                          </label>
-                          {item.due_date && (
+                      {thread.action_items.map((item, idx) => (
+                        <li key={idx} class="mail-action-item">
+                          <span class="mail-action-item-description">{item.description}</span>
+                          {item.dueDate && (
                             <span class="mail-action-item-due-date">
-                              Due: {new Date(item.due_date).toLocaleDateString()}
+                              Due: {new Date(item.dueDate).toLocaleDateString()}
                             </span>
                           )}
-                          {item.priority !== 'medium' && (
+                          {item.priority && item.priority !== 'medium' && (
                             <span class={`mail-action-item-priority priority-${item.priority}`}>
                               {item.priority}
                             </span>

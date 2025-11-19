@@ -3,7 +3,7 @@
  * Provides type-safe access to stored data
  */
 
-import type { Todo, Thought, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, MailMessage, Settings } from '@/types';
+import type { Todo, Thought, HistoryItem, CalendarEvent, LinearIssue, GitHubPR, MailThread, Settings } from '@/types';
 
 export const STORAGE_KEYS = {
   TODOS: 'todos',
@@ -142,9 +142,9 @@ export async function setGitHubPRs(prs: {
 }
 
 export async function getMailMessages(): Promise<{
-  all: MailMessage[];
-  onboarding: MailMessage[];
-  support: MailMessage[];
+  all: MailThread[];
+  onboarding: MailThread[];
+  support: MailThread[];
 }> {
   return getFromStorage(STORAGE_KEYS.MAIL_MESSAGES, {
     all: [],
@@ -153,12 +153,12 @@ export async function getMailMessages(): Promise<{
   });
 }
 
-export async function setMailMessages(messages: {
-  all: MailMessage[];
-  onboarding: MailMessage[];
-  support: MailMessage[];
+export async function setMailMessages(threads: {
+  all: MailThread[];
+  onboarding: MailThread[];
+  support: MailThread[];
 }): Promise<void> {
-  return setInStorage(STORAGE_KEYS.MAIL_MESSAGES, messages);
+  return setInStorage(STORAGE_KEYS.MAIL_MESSAGES, threads);
 }
 
 export async function getSettings(): Promise<Partial<Settings>> {
