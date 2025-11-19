@@ -103,14 +103,9 @@ serve(async (req) => {
     }
 
     // Get user's email for action item filtering
-    const { data: userData, error: userError } = await supabase
-      .from('oauth_tokens')
-      .select('email')
-      .eq('user_id', userId)
-      .eq('provider', 'gmail')
-      .single()
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
 
-    if (userError || !userData?.email) {
+    if (userError || !userData?.user?.email) {
       console.error('[AI Summary] Failed to fetch user email:', userError)
       return new Response(
         JSON.stringify({ error: 'Failed to fetch user email' }),
@@ -118,7 +113,7 @@ serve(async (req) => {
       )
     }
 
-    const userEmail = userData.email
+    const userEmail = userData.user.email
     console.log(`[AI Summary] Processing for user: ${userEmail}`)
 
     // Process each thread
