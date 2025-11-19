@@ -5,6 +5,11 @@
  * which includes Realtime library with DOM dependencies
  */
 
+interface Settings {
+  supabaseUrl?: string;
+  supabaseKey?: string;
+}
+
 export interface MailThread {
   id: string
   user_id: string
@@ -49,7 +54,7 @@ async function getSupabaseCredentials(): Promise<{ url: string; key: string } | 
   try {
     // Get the settings object from chrome.storage
     const result = await chrome.storage.local.get('settings')
-    const settings = result.settings || {}
+    const settings = (result.settings || {}) as Settings
 
     if (!settings.supabaseUrl || !settings.supabaseKey ||
         typeof settings.supabaseUrl !== 'string' ||
