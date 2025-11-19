@@ -67,7 +67,9 @@ async function getSupabaseCredentials(): Promise<{ url: string; key: string } | 
   try {
     const result = await chrome.storage.local.get(['supabaseUrl', 'supabaseKey'])
 
-    if (!result.supabaseUrl || !result.supabaseKey) {
+    if (!result.supabaseUrl || !result.supabaseKey ||
+        typeof result.supabaseUrl !== 'string' ||
+        typeof result.supabaseKey !== 'string') {
       console.log('[Mail Threads] Supabase not configured')
       return null
     }
