@@ -110,86 +110,111 @@ This document tracks the implementation progress of the Chrome Extension Email C
 
 ---
 
-## Phase 3: Background Service Worker Architecture 🚧 IN PROGRESS
+## Phase 3: Background Service Worker Architecture ✅ MOSTLY COMPLETE
 
 **Goal**: Move Gmail sync and processing to background service worker for better performance
 
-### Background Service Worker Setup ⏳ NOT STARTED
-- [ ] Create `background/service-worker.js` as main entry point
-- [ ] Create `background/gmail-sync.js` for Gmail API operations
-- [ ] Create `background/supabase-client.js` for Supabase operations
-- [ ] Create `background/message-handler.js` for UI communication
-- [ ] Update manifest.json with background service worker config
-- [ ] Add periodic alarms:
-  - [ ] `sync-emails` (every 5 minutes)
-  - [ ] `process-queue` (every 2 minutes)
-  - [ ] `archive-newsletters` (every 60 minutes)
+**Status**: Architecture already implemented with server-side OAuth! 🎉
 
-**Estimated Files**:
-- `background/service-worker.js` (NEW - ~300 lines)
-- `background/gmail-sync.js` (NEW - ~200 lines)
-- `background/supabase-client.js` (NEW - ~150 lines)
-- `background/message-handler.js` (NEW - ~100 lines)
-- `manifest.json` (MODIFY)
+### Background Service Worker Setup ✅ COMPLETE
+- [x] Background service worker at `src/pages/background/index.ts` (490 lines)
+- [x] Periodic alarms configured:
+  - [x] `periodicSync` every 2 minutes (fetches all external data)
+  - [x] Supabase sync every 10 minutes
+- [x] Mail sync via `fetchAndCacheMailMessages()` integrated
+- [x] Chrome storage caching for fast UI loads
+- [x] Message handlers for foreground communication
 
-### Gmail API Integration ⏳ NOT STARTED
-- [ ] Implement OAuth2 flow with chrome.identity API
-- [ ] Add Gmail API thread fetching with pagination
-- [ ] Add Gmail API thread details fetching
-- [ ] Add Gmail API archive/modify operations
-- [ ] Implement sync token management for incremental sync
-- [ ] Add error handling and retry logic
-- [ ] Transform Gmail thread format to our schema
+**Existing Files**:
+- ✅ `src/pages/background/index.ts` (490 lines) - Main service worker
+- ✅ `src/utils/mailThreadsSync.ts` - Fetches from Supabase
+- ✅ `src/utils/mailSupabaseSync.ts` - Writes to Supabase
+- ✅ `manifest.json` - Already configured
 
-**Key Functions**:
-- [ ] `getAuthToken()` - Chrome identity OAuth
-- [ ] `fetchLatestThreads()` - Gmail threads.list API
-- [ ] `fetchThreadDetails()` - Gmail threads.get API
-- [ ] `archiveThread()` - Gmail threads.modify API
-- [ ] `transformThread()` - Convert Gmail format to our format
-- [ ] `extractBody()` - Parse email body from payload
+### OAuth Integration ✅ COMPLETE (Server-Side!)
+- [x] **Server-side OAuth via Supabase Edge Functions** (better than Chrome Identity!)
+- [x] `gmail-oauth-init` Edge Function - Generates OAuth URL
+- [x] `gmail-oauth-callback` Edge Function - Exchanges code for tokens
+- [x] Encrypted token storage in `oauth_tokens` table (pgcrypto)
+- [x] Token refresh with advisory locks (prevents race conditions)
+- [x] "Connect Gmail" button in Settings UI
+- [x] OAuth flow opens in new tab, auto-closes on success
 
-### Local Caching ⏳ NOT STARTED
-- [ ] Create `utils/cache.js` with ThreadCache class
-- [ ] Implement get/set/remove/clear operations
-- [ ] Add cache expiration (5-minute TTL)
-- [ ] Add cache size limits (500 threads max)
-- [ ] Add timestamp-based cache invalidation
-- [ ] Integrate with chrome.storage.local for persistence
+**Why Server-Side OAuth is Better**:
+- ✅ Tokens encrypted and stored in Supabase (multi-device sync)
+- ✅ Server handles token refresh automatically
+- ✅ Works even when browser is closed (cron jobs)
+- ✅ No sensitive tokens in extension code
+- ✅ Centralized OAuth management
 
-**Estimated Files**:
-- `src/utils/cache.js` (NEW - ~100 lines)
+**Existing Edge Functions**:
+- ✅ `supabase/functions/gmail-oauth-init/index.ts`
+- ✅ `supabase/functions/gmail-oauth-callback/index.ts`
+- ✅ `supabase/functions/sync-gmail/index.ts` (handles Gmail API + archive queue)
 
-### UI-Background Communication ⏳ NOT STARTED
-- [ ] Update Preact stores to use chrome.runtime.sendMessage
-- [ ] Add message handlers for:
-  - [ ] INIT - Initialize Supabase credentials
-  - [ ] FETCH_THREADS - Get threads with filters
-  - [ ] ARCHIVE_THREAD - Archive a thread
-  - [ ] COMPLETE_TODO - Mark todo as done
-  - [ ] FORCE_SYNC - Trigger immediate sync
-- [ ] Add listener for SYNC_COMPLETE events from background
-- [ ] Update thread-store.js to load from cache first
+### Gmail API Integration ✅ COMPLETE (Server-Side!)
+- [x] **All Gmail API operations handled server-side by sync-gmail Edge Function**
+- [x] Gmail History API for incremental sync
+- [x] Thread fetching with full message details
+- [x] Archive operations via modify API
+- [x] Token refresh on expiry
+- [x] Exponential backoff retry logic
 
-**Files to Modify**:
-- `src/stores/thread-store.js` (MODIFY)
-- `src/components/Mail/MailView.tsx` (MODIFY)
+**Architecture Decision**:
+- Extension does NOT call Gmail API directly (security + reliability)
+- Extension reads from Supabase (populated by Edge Function every 2min)
+- Extension writes user actions to Supabase (archive_thread RPC)
+- Edge Function processes everything server-side
 
-### Setup & Onboarding Flow ⏳ NOT STARTED
-- [ ] Create popup/setup.html for initial configuration
-- [ ] Create popup/setup.js for setup flow
-- [ ] Add 3-step setup wizard:
-  - [ ] Step 1: Google OAuth authentication
-  - [ ] Step 2: Supabase configuration (URL + Anon Key)
-  - [ ] Step 3: Anthropic API key (optional)
-- [ ] Add credential validation
-- [ ] Add first-time sync trigger
-- [ ] Store credentials securely in chrome.storage.local
+### Local Caching ✅ ALREADY IMPLEMENTED
+- [x] Chrome storage used for caching (see `storageManager.ts`)
+- [x] Cache expiration handled by background worker
+- [x] Threads cached via `setMailMessages()` / `getMailMessages()`
+- [x] Cache updates every 2 minutes automatically
+- [x] UI loads from cache first (instant render)
 
-**Estimated Files**:
-- `popup/setup.html` (NEW)
-- `popup/setup.js` (NEW)
-- `popup/setup.css` (NEW)
+**Existing Implementation**:
+- ✅ `src/utils/storageManager.ts` - Chrome storage wrapper
+- ✅ Background worker caches all data every 2 minutes
+- ✅ Foreground requests cached data via `chrome.runtime.sendMessage`
+
+### UI-Background Communication ✅ ALREADY IMPLEMENTED
+- [x] Preact components use chrome.storage directly
+- [x] Background worker has message handlers:
+  - [x] `getAllData` - Get all cached data
+  - [x] `refreshData` - Force immediate refresh
+  - [x] `syncNow` - Trigger full sync
+- [x] Background broadcasts updates via chrome.storage changes
+- [x] UI listens for storage changes and updates reactively
+
+**Existing Implementation**:
+- ✅ Background worker has full message handler (lines 367-440)
+- ✅ UI components read from chrome.storage via signals
+- ✅ Automatic reactivity via Preact signals
+
+### Setup & Onboarding Flow ✅ COMPLETE
+- [x] Settings page has full Supabase configuration UI
+- [x] "Connect Gmail" button triggers OAuth flow
+- [x] OAuth opens in new tab, auto-closes on success
+- [x] Credentials stored in Supabase settings table (encrypted)
+- [x] First-time sync triggers automatically after OAuth
+
+**Existing Implementation**:
+- ✅ `src/components/Settings/SettingsView.tsx` - Full setup UI
+- ✅ Supabase configuration form
+- ✅ Gmail OAuth connection button
+- ✅ Status indicators and instructions
+
+## What's Actually Missing from Phase 3?
+
+### Minor Improvements Needed 🔧
+- [ ] Add offline queue for user actions (archive/mark read while offline)
+- [ ] Add retry logic with exponential backoff for failed Supabase writes
+- [ ] Add loading states and error handling in MailView
+- [ ] Add "Retry" button for failed archive operations
+- [ ] Add network status indicator in UI
+
+**Estimated Effort**: 3-4 hours
 
 ---
 
