@@ -22,6 +22,7 @@ export default defineConfig({
     },
   ],
   build: {
+    minify: false, // Disable minification for easier debugging
     modulePreload: false, // Disable module preload polyfill (breaks in service workers)
     rollupOptions: {
       output: {
