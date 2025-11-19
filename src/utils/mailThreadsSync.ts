@@ -18,6 +18,11 @@ export interface MailThread {
   participants: Array<{ name: string; email: string }>
   category: 'onboarding' | 'support' | 'general'
 
+  // Status and escalation
+  status?: 'active' | 'archived' | 'waiting' | 'resolved'
+  is_escalation?: boolean
+  escalation_reason?: string
+
   // Gmail labels vs AI labels
   gmail_labels: string[] // INBOX, UNREAD, DTC, etc.
   ai_labels: string[] // customer-support, high-priority, cold-email, etc.
@@ -34,6 +39,10 @@ export interface MailThread {
   satisfaction_score?: number
   satisfaction_analysis?: string
 
+  // Customer metadata
+  customer_name?: string
+  customer_mrr?: number
+
   // Thread stats
   message_count: number
   is_unread: boolean
@@ -45,6 +54,7 @@ export interface MailThread {
   created_at: string
   last_synced_at: string
   summary_generated_at?: string
+  archived_at?: string
 }
 
 /**
@@ -158,6 +168,7 @@ export async function syncThreadsFromSupabase(): Promise<{
       'mail_threads',
       {
         'last_message_date': `gte.${thirtyDaysAgo.toISOString()}`,
+        'status': 'eq.active', // Only fetch active threads (exclude archived)
         'order': 'last_message_date.desc',
         'limit': '200'
       }

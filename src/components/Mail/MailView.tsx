@@ -6,6 +6,7 @@ import {
   checkGmailConnection,
   markThreadAsRead,
 } from '@/utils/mailThreadsSync';
+import { archiveThread } from '@/utils/mailSupabaseSync';
 
 export default function MailView() {
   const [filter, setFilter] = useState<'all' | 'onboarding' | 'support'>('all');
@@ -74,6 +75,20 @@ export default function MailView() {
     e.stopPropagation();
     await markThreadAsRead(threadId, currentUnreadStatus);
     // The background sync will update the cache
+  };
+
+  const handleArchive = async (threadId: string, e: Event) => {
+    e.stopPropagation();
+
+    const result = await archiveThread(threadId, true);
+
+    if (result.success) {
+      console.log('Thread archived successfully');
+      // The background sync will update the UI by removing the archived thread
+    } else {
+      console.error('Failed to archive thread:', result.error);
+      alert(`Failed to archive: ${result.error}`);
+    }
   };
 
   const handleViewAll = () => {
@@ -287,6 +302,18 @@ export default function MailView() {
                   <div class="mail-footer">
                     <span class="mail-time">{formatRelativeTime(thread.last_message_date)}</span>
                     <div class="mail-actions">
+                      <button
+                        class="mail-action-btn"
+                        onClick={(e) => handleArchive(thread.id, e)}
+                        title="Archive this thread (removes from inbox)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                          <polyline points="21 8 21 21 3 21 3 8"/>
+                          <rect x="1" y="3" width="22" height="5"/>
+                          <line x1="10" y1="12" x2="14" y2="12"/>
+                        </svg>
+                        Archive
+                      </button>
                       <button
                         class="mail-action-btn"
                         onClick={(e) => handleToggleRead(thread.id, thread.is_unread, e)}

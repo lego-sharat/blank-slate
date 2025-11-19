@@ -74,11 +74,17 @@ serve(async (req) => {
 
     console.log(`[Gmail Sync] Complete: ${successCount} succeeded, ${errorCount} failed`)
 
+    // Process archive queue
+    console.log('[Gmail Sync] Processing archive queue...')
+    const archiveResults = await processArchiveQueue(supabase, encryptionKey)
+    console.log(`[Gmail Sync] Archive queue: ${archiveResults.successCount} succeeded, ${archiveResults.errorCount} failed`)
+
     return new Response(JSON.stringify({
       success: true,
       processed: tokens?.length || 0,
       successCount,
-      errorCount
+      errorCount,
+      archiveQueue: archiveResults
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
@@ -480,4 +486,150 @@ function categorizeThread(labelIds: string[], subject: string): 'onboarding' | '
   }
 
   return 'general'
+}
+
+// Process archive queue - archive threads in Gmail that were archived from UI
+async function processArchiveQueue(supabase: any, encryptionKey: string) {
+  let successCount = 0
+  let errorCount = 0
+
+  try {
+    // Get pending archive queue items
+    const { data: queueItems, error: queueError } = await supabase.rpc('get_pending_archive_queue', {
+      p_limit: 50
+    })
+
+    if (queueError) {
+      console.error('[Archive Queue] Failed to fetch queue:', queueError)
+      return { successCount: 0, errorCount: 0 }
+    }
+
+    if (!queueItems || queueItems.length === 0) {
+      console.log('[Archive Queue] No items to process')
+      return { successCount: 0, errorCount: 0 }
+    }
+
+    console.log(`[Archive Queue] Processing ${queueItems.length} items`)
+
+    // Group by user_id to batch token fetches
+    const itemsByUser = new Map<string, any[]>()
+    for (const item of queueItems) {
+      if (!itemsByUser.has(item.user_id)) {
+        itemsByUser.set(item.user_id, [])
+      }
+      itemsByUser.get(item.user_id)!.push(item)
+    }
+
+    // Process each user's archive requests
+    for (const [userId, userItems] of itemsByUser.entries()) {
+      try {
+        // Get user's OAuth token
+        const { data: tokenData, error: tokenError } = await supabase.rpc('get_oauth_token', {
+          p_user_id: userId,
+          p_provider: 'gmail',
+          p_encryption_key: encryptionKey
+        })
+
+        if (tokenError || !tokenData || tokenData.length === 0) {
+          console.error(`[Archive Queue] Failed to get token for user ${userId}:`, tokenError)
+          // Mark all items for this user as failed
+          for (const item of userItems) {
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'failed',
+              p_error_message: 'Failed to get OAuth token'
+            })
+          }
+          errorCount += userItems.length
+          continue
+        }
+
+        const token = tokenData[0]
+        let accessToken = token.access_token
+
+        // Refresh if expired
+        if (Date.now() > token.expires_at) {
+          try {
+            accessToken = await refreshAccessToken(supabase, token, encryptionKey)
+          } catch (refreshError) {
+            console.error(`[Archive Queue] Token refresh failed for user ${userId}:`, refreshError)
+            for (const item of userItems) {
+              await supabase.rpc('update_archive_queue_status', {
+                p_queue_id: item.id,
+                p_status: 'failed',
+                p_error_message: 'Token refresh failed'
+              })
+            }
+            errorCount += userItems.length
+            continue
+          }
+        }
+
+        // Archive each thread in Gmail
+        for (const item of userItems) {
+          try {
+            await archiveThreadInGmail(accessToken, item.gmail_thread_id)
+
+            // Mark as completed
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'completed',
+              p_error_message: null
+            })
+
+            successCount++
+            console.log(`[Archive Queue] ✓ Archived thread ${item.gmail_thread_id}`)
+
+          } catch (archiveError) {
+            console.error(`[Archive Queue] Failed to archive thread ${item.gmail_thread_id}:`, archiveError)
+
+            // Mark as failed
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'failed',
+              p_error_message: archiveError.message || 'Unknown error'
+            })
+
+            errorCount++
+          }
+
+          // Small delay to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+
+      } catch (userError) {
+        console.error(`[Archive Queue] Error processing user ${userId}:`, userError)
+        errorCount += userItems.length
+      }
+    }
+
+  } catch (error) {
+    console.error('[Archive Queue] Unexpected error:', error)
+  }
+
+  return { successCount, errorCount }
+}
+
+// Archive a thread in Gmail by removing INBOX label
+async function archiveThreadInGmail(accessToken: string, threadId: string) {
+  const response = await fetch(
+    `${GMAIL_API_BASE}/threads/${threadId}/modify`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        removeLabelIds: ['INBOX', 'UNREAD']
+      })
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Gmail API error: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  return response.json()
 }
