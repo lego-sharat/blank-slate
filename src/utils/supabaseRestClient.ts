@@ -6,6 +6,11 @@
  * library with DOM dependencies that break in service workers.
  */
 
+interface Settings {
+  supabaseUrl?: string;
+  supabaseKey?: string;
+}
+
 export interface SupabaseCredentials {
   url: string
   key: string
@@ -18,15 +23,14 @@ export interface SupabaseCredentials {
  */
 export async function getSupabaseCredentials(): Promise<SupabaseCredentials | null> {
   try {
-    const result = await chrome.storage.local.get([
-      'supabaseUrl',
-      'supabaseKey',
-      'supabaseSession'
-    ])
+    const result = await chrome.storage.local.get(['settings', 'supabaseSession'])
 
-    if (!result.supabaseUrl || !result.supabaseKey ||
-        typeof result.supabaseUrl !== 'string' ||
-        typeof result.supabaseKey !== 'string') {
+    // Get settings object
+    const settings = (result.settings || {}) as Settings
+
+    if (!settings.supabaseUrl || !settings.supabaseKey ||
+        typeof settings.supabaseUrl !== 'string' ||
+        typeof settings.supabaseKey !== 'string') {
       console.log('[Supabase REST] Not configured')
       return null
     }
@@ -42,8 +46,8 @@ export async function getSupabaseCredentials(): Promise<SupabaseCredentials | nu
     }
 
     return {
-      url: result.supabaseUrl,
-      key: result.supabaseKey,
+      url: settings.supabaseUrl,
+      key: settings.supabaseKey,
       userId,
       accessToken
     }
