@@ -102,19 +102,20 @@ serve(async (req) => {
       )
     }
 
-    // Get user's email for action item filtering
+    // Get user's email and name for action item filtering
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
 
     if (userError || !userData?.user?.email) {
-      console.error('[AI Summary] Failed to fetch user email:', userError)
+      console.error('[AI Summary] Failed to fetch user data:', userError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch user email' }),
+        JSON.stringify({ error: 'Failed to fetch user data' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const userEmail = userData.user.email
-    console.log(`[AI Summary] Processing for user: ${userEmail}`)
+    const userName = userData.user.user_metadata?.name || userData.user.user_metadata?.full_name || null
+    console.log(`[AI Summary] Processing for user: ${userName || userEmail} (${userEmail})`)
 
     // Process each thread
     const results = []
@@ -164,7 +165,7 @@ serve(async (req) => {
 
         // Generate thread summary using Claude Haiku
         const category = existingThread?.category || 'general'
-        const summaryResult = await generateThreadSummary(messages, category, userEmail, anthropicApiKey)
+        const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
 
         // Update thread with summary, action items, topic, integration, labels, and satisfaction score (if applicable)
         const updateData: any = {
@@ -255,7 +256,7 @@ serve(async (req) => {
  * For onboarding/support threads, also extracts customer satisfaction score
  * Only extracts action items that the user needs to do
  */
-async function generateThreadSummary(messages: any[], category: string, userEmail: string, apiKey: string): Promise<SummaryResult> {
+async function generateThreadSummary(messages: any[], category: string, userEmail: string, userName: string | null, apiKey: string): Promise<SummaryResult> {
   // Build conversation context
   const threadContext = messages.map((msg, idx) => {
     return `
@@ -312,7 +313,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 
   const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
 
-User's email address: ${userEmail}
+User: ${userName ? `${userName} (${userEmail})` : userEmail}
 
 This is an email conversation with ${messages.length} message(s):
 ${threadContext}
@@ -396,7 +397,7 @@ Please analyze this entire email thread and provide:
    - Typically asking for a call/meeting to pitch their services
    - NOT from: actual customers, partners, investors, or people replying to your outreach
 
-5. Action items for the user (${userEmail})
+5. Action items for the user (${userName || userEmail})
    - ONLY extract action items that the USER needs to do (not what others need to do)
    - Examples of valid action items for the user:
      * "Respond to customer's question about Klaviyo integration"
@@ -418,7 +419,7 @@ ${responseFormat}
 
 Guidelines:
 - If no action items for the user: return empty array
-- Only include action items that ${userEmail} needs to do themselves
+- Only include action items that ${userName || userEmail} needs to do themselves
 - If no integration mentioned: use null for integrationName
 - For integrationName: Extract exact name as mentioned in email (e.g., "Yotpo Reviews" not "yotpo-reviews")
 - For labels: Select 1-4 most relevant labels from the list above
