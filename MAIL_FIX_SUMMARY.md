@@ -2,15 +2,31 @@
 
 ## Issues Fixed
 
-### 1. Supabase Credentials Not Found
-**Problem:** Mail sync was looking for credentials in the wrong place
-**Fix:** Updated `getSupabaseCredentials()` to read from `settings` object
+### 1. Supabase Credentials Not Found (ALL sync operations)
+**Problem:** Both mail sync AND shared REST client were looking for credentials in the wrong place
+**Fix:** Updated `getSupabaseCredentials()` in both files to read from `settings` object
 
-### 2. RLS Authentication Failure
-**Problem:** API calls used anon key instead of user session token, causing RLS to block all requests
-**Fix:** All API calls now use the authenticated user's `access_token`
+**Affected files:**
+- `src/utils/mailThreadsSync.ts` - Mail threads sync
+- `src/utils/supabaseRestClient.ts` - Todos, thoughts, history sync
+
+### 2. RLS Authentication Failure (Mail only)
+**Problem:** Mail API calls used anon key instead of user session token, causing RLS to block all requests
+**Fix:** All mail API calls now use the authenticated user's `access_token`
 
 ## Changes Made
+
+### File: `src/utils/supabaseRestClient.ts`
+
+1. **Added Settings interface** (lines 9-12)
+   - Proper TypeScript typing for settings object
+
+2. **Fixed credential lookup** (lines 26-29)
+   - Changed from `chrome.storage.local.get(['supabaseUrl', 'supabaseKey', 'supabaseSession'])`
+   - To: `chrome.storage.local.get(['settings', 'supabaseSession'])`
+   - Added type assertion: `(result.settings || {}) as Settings`
+
+This fixes todos, thoughts, and history sync.
 
 ### File: `src/utils/mailThreadsSync.ts`
 
@@ -71,12 +87,23 @@ curl 'https://YOUR_SUPABASE_URL/rest/v1/mail_threads?last_message_date=gte.2025-
 ### 3. Expected Logs
 
 After the fix, you should see:
+
+**For Mail Sync:**
 - ✅ `[Mail Threads] Fetching threads from Supabase...`
 - ✅ `[Mail Threads] Fetched X threads (Y onboarding, Z support)`
+
+**For Todos/Thoughts/History Sync:**
+- ✅ `✓ Synced X todos to Supabase`
+- ✅ `✓ Synced X thoughts to Supabase`
+- ✅ `✓ Synced X history items to Supabase`
 
 Instead of:
 - ❌ `[Mail Threads] Supabase not configured`
 - ❌ `[Mail Threads] No Supabase credentials available`
+- ❌ `[Supabase REST] Not configured`
+- ❌ `⚠ Supabase not configured, skipping todos sync`
+- ❌ `⚠ Supabase not configured, skipping thoughts sync`
+- ❌ `⚠ Supabase not configured, skipping history sync`
 
 ## Why This Was Happening
 
