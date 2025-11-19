@@ -175,15 +175,15 @@ export const allGitHubPRs = computed(() => {
 
 // Mail computed signals
 export const allMailMessages = computed(() => {
-  return mailMessages.value.all;
+  return mailThreads.value.all;
 });
 
 export const onboardingMailMessages = computed(() => {
-  return mailMessages.value.onboarding;
+  return mailThreads.value.onboarding;
 });
 
 export const supportMailMessages = computed(() => {
-  return mailMessages.value.support;
+  return mailThreads.value.support;
 });
 
 // Load configuration and cached data from chrome.storage
