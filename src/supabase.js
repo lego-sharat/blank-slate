@@ -39,17 +39,22 @@ export function initSupabase(url, supabaseKey) {
     supabaseClient.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
 
-      if (event === 'SIGNED_IN') {
-        // User signed in successfully
-        window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
-          detail: { event, session }
-        }));
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out
-        window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
-          detail: { event, session: null }
-        }));
-      } else if (event === 'TOKEN_REFRESHED') {
+      // Only dispatch events if window exists (not in service worker context)
+      if (typeof window !== 'undefined') {
+        if (event === 'SIGNED_IN') {
+          // User signed in successfully
+          window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
+            detail: { event, session }
+          }));
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out
+          window.dispatchEvent(new CustomEvent('supabase-auth-changed', {
+            detail: { event, session: null }
+          }));
+        }
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
         // Token was refreshed automatically
         console.log('Auth token refreshed automatically');
       }
