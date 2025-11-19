@@ -74,7 +74,27 @@ async function getSupabaseCredentials(): Promise<{ url: string; key: string } | 
 }
 
 /**
- * Make direct REST API call to Supabase
+ * Get user session for authenticated requests
+ */
+async function getSession(): Promise<{ access_token: string } | null> {
+  try {
+    const result = await chrome.storage.local.get('supabaseSession')
+    const session = result.supabaseSession as { access_token?: string } | undefined
+
+    if (!session?.access_token) {
+      console.log('[Mail Threads] No active session')
+      return null
+    }
+
+    return session as { access_token: string }
+  } catch (error) {
+    console.error('[Mail Threads] Error getting session:', error)
+    return null
+  }
+}
+
+/**
+ * Make direct REST API call to Supabase with user authentication
  */
 async function supabaseFetch(
   url: string,
@@ -82,6 +102,14 @@ async function supabaseFetch(
   table: string,
   params: Record<string, string>
 ): Promise<any[]> {
+  // Get user session for RLS authentication
+  const session = await getSession()
+
+  if (!session) {
+    console.log('[Mail Threads] Cannot fetch data - user not authenticated')
+    return []
+  }
+
   const queryString = new URLSearchParams(params).toString()
   const apiUrl = `${url}/rest/v1/${table}?${queryString}`
 
@@ -89,7 +117,7 @@ async function supabaseFetch(
     method: 'GET',
     headers: {
       'apikey': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${session.access_token}`, // Use user's access token for RLS
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     }
@@ -198,6 +226,13 @@ export async function markThreadAsRead(threadId: string, isRead: boolean): Promi
       return false
     }
 
+    const session = await getSession()
+
+    if (!session) {
+      console.log('[Mail Threads] Cannot update thread - user not authenticated')
+      return false
+    }
+
     const filterString = new URLSearchParams({ 'id': `eq.${threadId}` }).toString()
     const apiUrl = `${credentials.url}/rest/v1/mail_threads?${filterString}`
 
@@ -205,7 +240,7 @@ export async function markThreadAsRead(threadId: string, isRead: boolean): Promi
       method: 'PATCH',
       headers: {
         'apikey': credentials.key,
-        'Authorization': `Bearer ${credentials.key}`,
+        'Authorization': `Bearer ${session.access_token}`, // Use user's access token for RLS
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
@@ -286,6 +321,12 @@ export async function disconnectGmail(): Promise<{ success: boolean; error?: str
       return { success: false, error: 'Supabase not configured' }
     }
 
+    const session = await getSession()
+
+    if (!session) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
     const filterString = new URLSearchParams({ 'provider': 'eq.gmail' }).toString()
     const apiUrl = `${credentials.url}/rest/v1/oauth_tokens?${filterString}`
 
@@ -293,7 +334,7 @@ export async function disconnectGmail(): Promise<{ success: boolean; error?: str
       method: 'DELETE',
       headers: {
         'apikey': credentials.key,
-        'Authorization': `Bearer ${credentials.key}`,
+        'Authorization': `Bearer ${session.access_token}`, // Use user's access token for RLS
         'Content-Type': 'application/json'
       }
     })
