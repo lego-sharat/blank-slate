@@ -25,6 +25,9 @@ interface SummaryResult {
   labels: string[] // Flexible labels for categorization and filtering
   satisfactionScore?: number
   satisfactionAnalysis?: string
+  isEscalation?: boolean // Whether this requires immediate attention
+  escalationReason?: string // Why this is an escalation
+  status?: 'active' | 'waiting' | 'resolved' // Thread status
 }
 
 /**
@@ -167,7 +170,7 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
 
-        // Update thread with summary, action items, topic, integration, labels, and satisfaction score (if applicable)
+        // Update thread with summary, action items, topic, integration, labels, satisfaction score, escalation, and status
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
@@ -185,6 +188,20 @@ serve(async (req) => {
         if ((category === 'onboarding' || category === 'support') && summaryResult.satisfactionScore) {
           updateData.satisfaction_score = summaryResult.satisfactionScore
           updateData.satisfaction_analysis = summaryResult.satisfactionAnalysis
+        }
+
+        // Add escalation detection
+        if (summaryResult.isEscalation !== undefined) {
+          updateData.is_escalation = summaryResult.isEscalation
+          if (summaryResult.isEscalation && summaryResult.escalationReason) {
+            updateData.escalation_reason = summaryResult.escalationReason
+            updateData.escalated_at = new Date().toISOString()
+          }
+        }
+
+        // Add thread status
+        if (summaryResult.status) {
+          updateData.status = summaryResult.status
         }
 
         const { error: updateError } = await supabase
@@ -279,7 +296,41 @@ ${msg.body_preview || msg.snippet || '(No content)'}
    - Score 1-3: Unhappy/frustrated customer
    - Score 4-6: Neutral experience, some issues
    - Score 7-10: Satisfied/happy customer
-   - Provide a brief analysis explaining the score` : ''
+   - Provide a brief analysis explaining the score
+
+4. Escalation Detection (isEscalation and escalationReason):
+   - Mark as escalation (true) if ANY of these apply:
+     * Customer is angry, frustrated, or threatening to churn
+     * Multiple unresolved follow-ups or long wait times
+     * Issue is blocking business-critical functionality
+     * Customer explicitly asks to speak with senior management/founder
+     * High-value customer (based on context) with serious issue
+     * Complaint about poor service or multiple failures
+     * Legal threats or public reputation risks
+   - Provide brief reason if escalation (1 sentence)
+   - If not escalation: use false and null
+
+5. Thread Status:
+   - "waiting": Last message is from your team asking customer for info/action, waiting for their response
+   - "resolved": Issue clearly resolved, customer thanked you, or conversation naturally concluded
+   - "active": Requires response from your team, customer waiting, or ongoing discussion
+   - Default to "active" if unclear` : `
+
+3. Escalation Detection (isEscalation and escalationReason):
+   - Mark as escalation (true) if ANY of these apply:
+     * Urgent request requiring immediate attention
+     * Critical business issue or blocker
+     * Important stakeholder or high-priority sender
+     * Multiple unresolved follow-ups
+     * Time-sensitive matter with approaching deadline
+   - Provide brief reason if escalation (1 sentence)
+   - If not escalation: use false and null
+
+4. Thread Status:
+   - "waiting": Last message is from you asking someone for info/action, waiting for their response
+   - "resolved": Matter clearly resolved or conversation concluded
+   - "active": Requires action from you or ongoing discussion
+   - Default to "active" if unclear`
 
   const responseFormat = isCustomerFacing ? `
 {
@@ -295,7 +346,10 @@ ${msg.body_preview || msg.snippet || '(No content)'}
     }
   ],
   "satisfactionScore": 7,
-  "satisfactionAnalysis": "Brief explanation of the satisfaction score"
+  "satisfactionAnalysis": "Brief explanation of the satisfaction score",
+  "isEscalation": false,
+  "escalationReason": null,
+  "status": "active"
 }` : `
 {
   "summary": "Brief summary of the entire conversation",
@@ -308,7 +362,10 @@ ${msg.body_preview || msg.snippet || '(No content)'}
       "dueDate": "YYYY-MM-DD" or null,
       "priority": "high" | "medium" | "low"
     }
-  ]
+  ],
+  "isEscalation": false,
+  "escalationReason": null,
+  "status": "active"
 }`
 
   const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
@@ -520,6 +577,38 @@ Guidelines:
       delete result.satisfactionScore
       delete result.satisfactionAnalysis
     }
+  }
+
+  // Validate escalation detection
+  if (result.isEscalation !== undefined) {
+    if (typeof result.isEscalation !== 'boolean') {
+      console.warn('Invalid isEscalation from Claude, defaulting to false')
+      result.isEscalation = false
+      result.escalationReason = null
+    } else if (result.isEscalation && result.escalationReason) {
+      if (typeof result.escalationReason !== 'string' || result.escalationReason.trim() === '') {
+        console.warn('Invalid escalationReason from Claude, clearing')
+        result.escalationReason = null
+      } else {
+        result.escalationReason = result.escalationReason.trim()
+      }
+    }
+  } else {
+    // Default to false if not provided
+    result.isEscalation = false
+    result.escalationReason = null
+  }
+
+  // Validate status
+  const validStatuses = ['active', 'waiting', 'resolved']
+  if (result.status !== undefined) {
+    if (!validStatuses.includes(result.status)) {
+      console.warn(`Invalid status from Claude: ${result.status}, defaulting to "active"`)
+      result.status = 'active'
+    }
+  } else {
+    // Default to active if not provided
+    result.status = 'active'
   }
 
   return result
