@@ -84,7 +84,18 @@ export default function MailView() {
 
     if (result.success) {
       console.log('Thread archived successfully');
-      // The background sync will update the UI by removing the archived thread
+
+      // Optimistically remove thread from UI immediately
+      mailThreads.value = {
+        all: mailThreads.value.all.filter(t => t.id !== threadId),
+        onboarding: mailThreads.value.onboarding.filter(t => t.id !== threadId),
+        support: mailThreads.value.support.filter(t => t.id !== threadId),
+      };
+
+      // Close expanded view if this thread was expanded
+      if (expandedThreadId === threadId) {
+        setExpandedThreadId(null);
+      }
     } else {
       console.error('Failed to archive thread:', result.error);
       alert(`Failed to archive: ${result.error}`);
