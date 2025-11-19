@@ -1,4 +1,4 @@
-import { calendarToken, todos, thoughts, history, linearIssues, githubPRs, mailMessages, settings, calendarEvents } from '@/store/store';
+import { calendarToken, todos, thoughts, history, linearIssues, githubPRs, mailThreads, settings, calendarEvents } from '@/store/store';
 import { getCalendarToken } from '@/utils/storageManager';
 
 /**
@@ -86,7 +86,7 @@ export async function loadCachedDataDirectly() {
     linearIssues.value = linearData;
     githubPRs.value = githubData;
     calendarEvents.value = calendarData;
-    mailMessages.value = mailData;
+    mailThreads.value = mailData;
 
     console.log('Cached data loaded directly from chrome.storage');
   } catch (error) {
@@ -127,7 +127,7 @@ export async function syncAllData() {
     reviewRequested: [],
   };
 
-  mailMessages.value = data.mailMessages || {
+  mailThreads.value = data.mailMessages || {
     all: [],
     onboarding: [],
     support: [],
@@ -141,7 +141,7 @@ export async function syncAllData() {
   console.log('- History:', history.value.length);
   console.log('- Linear issues:', linearIssues.value.assignedToMe.length + linearIssues.value.createdByMe.length);
   console.log('- GitHub PRs:', githubPRs.value.createdByMe.length + githubPRs.value.reviewRequested.length);
-  console.log('- Mail messages:', mailMessages.value.all.length);
+  console.log('- Mail threads:', mailThreads.value.all.length);
   console.log('- Calendar events:', calendarEvents.value.length);
   console.log('- Last sync:', new Date(data.lastSync || 0).toLocaleTimeString());
 }
@@ -179,7 +179,7 @@ export async function refreshAllData() {
     reviewRequested: [],
   };
 
-  mailMessages.value = data.mailMessages || {
+  mailThreads.value = data.mailMessages || {
     all: [],
     onboarding: [],
     support: [],
