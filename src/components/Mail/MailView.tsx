@@ -6,9 +6,11 @@ import {
   checkGmailConnection,
   markThreadAsRead,
 } from '@/utils/mailThreadsSync';
+import { archiveThread } from '@/utils/mailSupabaseSync';
+import NavigationSidebar, { type MailViewType } from './NavigationSidebar';
 
 export default function MailView() {
-  const [filter, setFilter] = useState<'all' | 'onboarding' | 'support'>('all');
+  const [currentView, setCurrentView] = useState<MailViewType>('all');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -33,17 +35,41 @@ export default function MailView() {
   const getFilteredThreads = (): MailThread[] => {
     let filtered: MailThread[];
 
-    // First filter by category tab
-    switch (filter) {
+    // Filter by view type
+    switch (currentView) {
       case 'all':
         filtered = threads.value.all;
         break;
+
+      case 'escalations':
+        filtered = threads.value.all.filter(t => t.is_escalation === true);
+        break;
+
       case 'onboarding':
         filtered = threads.value.onboarding;
         break;
+
       case 'support':
         filtered = threads.value.support;
         break;
+
+      case 'newsletters':
+        filtered = threads.value.all.filter(t =>
+          t.category === 'general' &&
+          (t.ai_labels?.includes('newsletter') || t.ai_labels?.includes('promotional'))
+        );
+        break;
+
+      case 'my-todos':
+        filtered = threads.value.all.filter(t =>
+          t.action_items && t.action_items.length > 0
+        );
+        break;
+
+      case 'waiting':
+        filtered = threads.value.all.filter(t => t.status === 'waiting');
+        break;
+
       default:
         filtered = [];
     }
@@ -57,6 +83,23 @@ export default function MailView() {
 
     return filtered.slice(0, 100); // Limit to 100 threads
   };
+
+  // Compute view counts
+  const viewCounts = useComputed(() => {
+    const all = threads.value.all;
+    return {
+      all: all.length,
+      escalations: all.filter(t => t.is_escalation === true).length,
+      onboarding: threads.value.onboarding.length,
+      support: threads.value.support.length,
+      newsletters: all.filter(t =>
+        t.category === 'general' &&
+        (t.ai_labels?.includes('newsletter') || t.ai_labels?.includes('promotional'))
+      ).length,
+      'my-todos': all.filter(t => t.action_items && t.action_items.length > 0).length,
+      waiting: all.filter(t => t.status === 'waiting').length,
+    };
+  });
 
   const toggleLabelFilter = (label: string) => {
     setSelectedLabels(prev =>
@@ -74,6 +117,31 @@ export default function MailView() {
     e.stopPropagation();
     await markThreadAsRead(threadId, currentUnreadStatus);
     // The background sync will update the cache
+  };
+
+  const handleArchive = async (threadId: string, e: Event) => {
+    e.stopPropagation();
+
+    const result = await archiveThread(threadId, true);
+
+    if (result.success) {
+      console.log('Thread archived successfully');
+
+      // Optimistically remove thread from UI immediately
+      mailThreads.value = {
+        all: mailThreads.value.all.filter(t => t.id !== threadId),
+        onboarding: mailThreads.value.onboarding.filter(t => t.id !== threadId),
+        support: mailThreads.value.support.filter(t => t.id !== threadId),
+      };
+
+      // Close expanded view if this thread was expanded
+      if (expandedThreadId === threadId) {
+        setExpandedThreadId(null);
+      }
+    } else {
+      console.error('Failed to archive thread:', result.error);
+      alert(`Failed to archive: ${result.error}`);
+    }
   };
 
   const handleViewAll = () => {
@@ -125,47 +193,25 @@ export default function MailView() {
   const filteredThreads = getFilteredThreads();
 
   return (
-    <div class="mail-view">
-      <div class="mail-header">
-        <h1 class="mail-title">Mail</h1>
-        <div class="mail-header-actions">
-          <span class="mail-stats">{filteredThreads.length} threads</span>
-          <button class="mail-view-all-button" onClick={handleViewAll}>
-            Open Gmail
-          </button>
-        </div>
-      </div>
+    <div class="mail-view-container">
+      {/* Navigation Sidebar */}
+      <NavigationSidebar
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        viewCounts={viewCounts.value}
+      />
 
-      {/* Category Tabs */}
-      <div class="mail-filters">
-        <button
-          class={`mail-filter-btn ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          All Mail
-          {threads.value.all.length > 0 && (
-            <span class="mail-filter-count">{threads.value.all.length}</span>
-          )}
-        </button>
-        <button
-          class={`mail-filter-btn ${filter === 'onboarding' ? 'active' : ''}`}
-          onClick={() => setFilter('onboarding')}
-        >
-          Onboarding
-          {threads.value.onboarding.length > 0 && (
-            <span class="mail-filter-count">{threads.value.onboarding.length}</span>
-          )}
-        </button>
-        <button
-          class={`mail-filter-btn ${filter === 'support' ? 'active' : ''}`}
-          onClick={() => setFilter('support')}
-        >
-          Support
-          {threads.value.support.length > 0 && (
-            <span class="mail-filter-count">{threads.value.support.length}</span>
-          )}
-        </button>
-      </div>
+      {/* Main Content */}
+      <div class="mail-view">
+        <div class="mail-header">
+          <h1 class="mail-title">Mail</h1>
+          <div class="mail-header-actions">
+            <span class="mail-stats">{filteredThreads.length} threads</span>
+            <button class="mail-view-all-button" onClick={handleViewAll}>
+              Open Gmail
+            </button>
+          </div>
+        </div>
 
       {/* Label Filters */}
       {availableLabels.value.length > 0 && (
@@ -289,6 +335,18 @@ export default function MailView() {
                     <div class="mail-actions">
                       <button
                         class="mail-action-btn"
+                        onClick={(e) => handleArchive(thread.id, e)}
+                        title="Archive this thread (removes from inbox)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                          <polyline points="21 8 21 21 3 21 3 8"/>
+                          <rect x="1" y="3" width="22" height="5"/>
+                          <line x1="10" y1="12" x2="14" y2="12"/>
+                        </svg>
+                        Archive
+                      </button>
+                      <button
+                        class="mail-action-btn"
                         onClick={(e) => handleToggleRead(thread.id, thread.is_unread, e)}
                         title={thread.is_unread ? 'Mark as read' : 'Mark as unread'}
                       >
@@ -335,6 +393,7 @@ export default function MailView() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

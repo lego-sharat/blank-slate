@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { buildPrompt } from '../_shared/prompt-template.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +26,9 @@ interface SummaryResult {
   labels: string[] // Flexible labels for categorization and filtering
   satisfactionScore?: number
   satisfactionAnalysis?: string
+  isEscalation?: boolean // Whether this requires immediate attention
+  escalationReason?: string // Why this is an escalation
+  status?: 'active' | 'waiting' | 'resolved' // Thread status
 }
 
 /**
@@ -167,7 +171,10 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
 
-        // Update thread with summary, action items, topic, integration, labels, and satisfaction score (if applicable)
+        // Check if this is a calendar event (should never be escalation)
+        const isCalendarEvent = isCalendarInviteThread(messages)
+
+        // Update thread with summary, action items, topic, integration, labels, satisfaction score, escalation, and status
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
@@ -185,6 +192,25 @@ serve(async (req) => {
         if ((category === 'onboarding' || category === 'support') && summaryResult.satisfactionScore) {
           updateData.satisfaction_score = summaryResult.satisfactionScore
           updateData.satisfaction_analysis = summaryResult.satisfactionAnalysis
+        }
+
+        // Add escalation detection (force false for calendar events)
+        if (isCalendarEvent) {
+          // Calendar events should NEVER be escalations
+          updateData.is_escalation = false
+          updateData.escalation_reason = null
+          console.log(`[AI Summary] Thread ${threadId} is a calendar event, forcing is_escalation=false`)
+        } else if (summaryResult.isEscalation !== undefined) {
+          updateData.is_escalation = summaryResult.isEscalation
+          if (summaryResult.isEscalation && summaryResult.escalationReason) {
+            updateData.escalation_reason = summaryResult.escalationReason
+            updateData.escalated_at = new Date().toISOString()
+          }
+        }
+
+        // Add thread status
+        if (summaryResult.status) {
+          updateData.status = summaryResult.status
         }
 
         const { error: updateError } = await supabase
@@ -251,6 +277,85 @@ serve(async (req) => {
 })
 
 /**
+ * Detect if a thread is a calendar invite based on message content
+ * Prevents calendar events from being misclassified as escalations
+ */
+function isCalendarInviteThread(messages: any[]): boolean {
+  if (!messages || messages.length === 0) return false
+
+  const firstMessage = messages[0]
+  const subject = (firstMessage.subject || '').toLowerCase()
+  const from = (firstMessage.from_email || '').toLowerCase()
+  const snippet = (firstMessage.snippet || firstMessage.body_preview || '').toLowerCase()
+
+  // Check subject for calendar keywords
+  const calendarSubjectPrefixes = [
+    'invitation:',
+    'accepted:',
+    'declined:',
+    'tentative:',
+    'canceled:',
+    'cancelled:',
+    'updated invitation:',
+    'updated event:',
+    'reminder:',
+  ]
+
+  if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
+    return true
+  }
+
+  // Check subject for calendar phrases
+  const calendarSubjectKeywords = [
+    'has invited you',
+    'event invitation',
+    'calendar event',
+    'meeting invitation',
+    'meeting invite',
+    'has accepted',
+    'has declined',
+    'has tentatively accepted',
+    'changed this event',
+    'cancelled this event',
+    'canceled this event',
+    'event reminder',
+  ]
+
+  if (calendarSubjectKeywords.some(keyword => subject.includes(keyword))) {
+    return true
+  }
+
+  // Check from address
+  const calendarFromPatterns = [
+    'calendar-notification@google.com',
+    'calendar@google.com',
+    'noreply@google.com',
+    'notifications@google.com',
+  ]
+
+  if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
+    return true
+  }
+
+  // Check snippet for calendar phrases
+  const calendarSnippetKeywords = [
+    'view event',
+    'going?',
+    'yes, maybe, no',
+    'google calendar',
+    'add to calendar',
+    'when:',
+    'where:',
+  ]
+
+  if (calendarSnippetKeywords.some(keyword => snippet.includes(keyword))) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Generate thread summary and action items using Claude Haiku
  * Analyzes the entire conversation with full context
  * For onboarding/support threads, also extracts customer satisfaction score
@@ -267,163 +372,14 @@ ${msg.body_preview || msg.snippet || '(No content)'}
 ---`
   }).join('\n')
 
-  // Build prompt based on category
-  const isCustomerFacing = category === 'onboarding' || category === 'support'
-
-  const satisfactionInstructions = isCustomerFacing ? `
-
-3. Customer Satisfaction Score (1-10):
-   - Analyze the customer's tone, sentiment, and overall experience
-   - Consider: Was their issue resolved? Did they express gratitude or frustration?
-   - Look for indicators: positive language, complaints, escalations, unresolved issues
-   - Score 1-3: Unhappy/frustrated customer
-   - Score 4-6: Neutral experience, some issues
-   - Score 7-10: Satisfied/happy customer
-   - Provide a brief analysis explaining the score` : ''
-
-  const responseFormat = isCustomerFacing ? `
-{
-  "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
-  "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
-  "labels": ["customer-support", "high-priority"],
-  "actionItems": [
-    {
-      "description": "Specific action item with context",
-      "dueDate": "YYYY-MM-DD" or null,
-      "priority": "high" | "medium" | "low"
-    }
-  ],
-  "satisfactionScore": 7,
-  "satisfactionAnalysis": "Brief explanation of the satisfaction score"
-}` : `
-{
-  "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
-  "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
-  "labels": ["customer-support", "high-priority"],
-  "actionItems": [
-    {
-      "description": "Specific action item with context",
-      "dueDate": "YYYY-MM-DD" or null,
-      "priority": "high" | "medium" | "low"
-    }
-  ]
-}`
-
-  const prompt = `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
-
-User: ${userName ? `${userName} (${userEmail})` : userEmail}
-
-This is an email conversation with ${messages.length} message(s):
-${threadContext}
-
-Please analyze this entire email thread and provide:
-
-1. A concise 2-3 sentence summary of the overall conversation, including:
-   - What the conversation is about
-   - Key points discussed
-   - Current status or outcome if applicable
-
-2. A topic/label that best categorizes this thread:
-   - integration_request: Customer requesting a new Shopify app integration (not yet supported)
-   - integration_issue: Problems with an existing integration (bugs, not working, setup issues)
-   - app_customization: Questions about mobile app design, UI/UX customization, branding, PDP/PLP/Cart templates, theme management, content blocks, landing pages
-   - feature_request: New feature requests for the app builder platform itself (new capabilities, enhancements)
-   - bug_report: Bugs in the mobile app or builder platform (crashes, display issues, functionality not working)
-   - billing_question: Questions about pricing, plans, subscriptions, payments, upgrades
-   - technical_issue: Technical problems, setup issues, deployment, catalog sync, deeplink setup, push notification setup
-   - onboarding_help: Help getting started, initial setup, tutorials, first-time configuration
-   - hiring_team: Hiring, recruitment, job applications, team updates, HR matters
-   - general_inquiry: General questions, information requests, how-to questions
-   - other: Doesn't fit other categories
-
-3. Integration name (if applicable):
-   - Look for ANY Shopify app or third-party integration mentioned in the conversation
-   - Extract the exact name as mentioned by the customer
-   - Examples of common integrations to look for:
-     * Search: "Boost", "Searchanise", "Zevi", "Algolia", "Fast Simon", "Findify"
-     * Reviews: "Yotpo Reviews", "Judge.me", "Stamped", "Loox", "Junip", "Reviews.io", "Okendo"
-     * Analytics/Push: "GA4", "Klaviyo", "CleverTap", "Moengage", "Firebase", "WebEngage"
-     * Rewards: "Smile", "Nector", "Loyalty Lion", "Yotpo Rewards", "99minds"
-     * Subscriptions: "Recharge", "Stay.AI", "Loop", "Appstle", "Prive"
-     * Checkout: "Gokwik", "Shopflo", "Fastrr"
-     * Returns: "Return Prime", "Eco Returns", "Loop Returns"
-     * Customer Support: "Gorgias", "Kapture", "Tidio", "Kustomer"
-     * Attribution: "Adjust", "Appsflyer", "Branch"
-     * Video: "Firework", "Whatamore", "Quinn"
-     * Size Charts: "Wair", "Kiwi Size Chart"
-     * Product Recommendations: "Rebuy", "Visenze"
-     * Shipping/EDD: "Shiprocket", "Clickpost", "Fenix"
-   - If customer mentions a different integration not in examples above, still extract it
-   - Use null if no integration is mentioned
-
-4. Labels (array of applicable labels for filtering):
-   Email Type Labels:
-   - "customer-support": Customer support inquiry or issue
-   - "onboarding": New customer onboarding
-   - "promotional": Promotional emails, marketing, offers
-   - "newsletter": Newsletter, product updates, announcements
-   - "social-media": Social media notifications, mentions
-   - "update": Software updates, changelogs, notifications
-   - "team-internal": Internal team communication
-   - "investor": Investor-related communication
-   - "product-query": General product questions
-   - "hiring": Job applications, recruitment, candidates
-   - "team-update": Team announcements, HR updates, organizational changes
-   - "cold-email": Unsolicited sales outreach from external SaaS companies, agencies, or vendors trying to sell products/services (e.g., marketing agencies, development shops, lead generation services, AI tools, etc.)
-
-   Priority/Status Labels:
-   - "high-priority": Urgent or critical issues
-   - "needs-response": Requires immediate response
-   - "escalated": Escalated to senior team
-   - "resolved": Issue has been resolved
-
-   Content Labels:
-   - "integration-related": Related to an integration
-   - "billing": Related to billing/payments
-   - "technical": Technical in nature
-   - "design": Design/UI/UX related
-
-   Use 1-4 most relevant labels. Always include at least one email type label.
-
-   IMPORTANT - Detecting Cold Emails:
-   Apply "cold-email" label if the email matches these characteristics:
-   - Unsolicited outreach from companies/agencies you don't have a relationship with
-   - Offering services like: web development, app development, marketing, SEO, lead generation, staff augmentation, design services, AI/ML solutions, data analytics, etc.
-   - Generic templates with phrases like: "I came across your company...", "We help companies like yours...", "We specialize in...", "I'd love to schedule a quick call..."
-   - Sender is from a marketing/sales agency or SaaS vendor
-   - No prior conversation history or existing relationship
-   - Typically asking for a call/meeting to pitch their services
-   - NOT from: actual customers, partners, investors, or people replying to your outreach
-
-5. Action items for the user (${userName || userEmail})
-   - ONLY extract action items that the USER needs to do (not what others need to do)
-   - Examples of valid action items for the user:
-     * "Respond to customer's question about Klaviyo integration"
-     * "Schedule demo call with customer on Friday"
-     * "Review and provide feedback on design mockups"
-     * "Follow up with engineering team about bug fix"
-   - DO NOT include:
-     * Actions that others need to do for the user
-     * General observations or statements
-     * Things the user already completed
-   - Include context about what needs to be done
-   - Identify any mentioned deadlines or timeframes
-   - If there are no action items for the user, return an empty array
-${satisfactionInstructions}
-
-IMPORTANT: Respond with ONLY a valid JSON object, no other text or markdown formatting.
-Use this exact structure:
-${responseFormat}
-
-Guidelines:
-- If no action items for the user: return empty array
-- Only include action items that ${userName || userEmail} needs to do themselves
-- If no integration mentioned: use null for integrationName
-- For integrationName: Extract exact name as mentioned in email (e.g., "Yotpo Reviews" not "yotpo-reviews")
-- For labels: Select 1-4 most relevant labels from the list above
-- Focus on actionable items that require the user to take action`
+  // Build prompt using template
+  const prompt = buildPrompt({
+    userName,
+    userEmail,
+    threadContext,
+    messageCount: messages.length,
+    category
+  })
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -520,6 +476,38 @@ Guidelines:
       delete result.satisfactionScore
       delete result.satisfactionAnalysis
     }
+  }
+
+  // Validate escalation detection
+  if (result.isEscalation !== undefined) {
+    if (typeof result.isEscalation !== 'boolean') {
+      console.warn('Invalid isEscalation from Claude, defaulting to false')
+      result.isEscalation = false
+      result.escalationReason = null
+    } else if (result.isEscalation && result.escalationReason) {
+      if (typeof result.escalationReason !== 'string' || result.escalationReason.trim() === '') {
+        console.warn('Invalid escalationReason from Claude, clearing')
+        result.escalationReason = null
+      } else {
+        result.escalationReason = result.escalationReason.trim()
+      }
+    }
+  } else {
+    // Default to false if not provided
+    result.isEscalation = false
+    result.escalationReason = null
+  }
+
+  // Validate status
+  const validStatuses = ['active', 'waiting', 'resolved']
+  if (result.status !== undefined) {
+    if (!validStatuses.includes(result.status)) {
+      console.warn(`Invalid status from Claude: ${result.status}, defaulting to "active"`)
+      result.status = 'active'
+    }
+  } else {
+    // Default to active if not provided
+    result.status = 'active'
   }
 
   return result

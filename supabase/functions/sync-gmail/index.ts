@@ -74,11 +74,17 @@ serve(async (req) => {
 
     console.log(`[Gmail Sync] Complete: ${successCount} succeeded, ${errorCount} failed`)
 
+    // Process archive queue
+    console.log('[Gmail Sync] Processing archive queue...')
+    const archiveResults = await processArchiveQueue(supabase, encryptionKey)
+    console.log(`[Gmail Sync] Archive queue: ${archiveResults.successCount} succeeded, ${archiveResults.errorCount} failed`)
+
     return new Response(JSON.stringify({
       success: true,
       processed: tokens?.length || 0,
       successCount,
-      errorCount
+      errorCount,
+      archiveQueue: archiveResults
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
@@ -146,12 +152,20 @@ async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: str
     }
   }
 
-  // Filter out threads that should be skipped (spam, trash, etc)
-  const validThreads = threadUpdates.filter(thread =>
-    !thread.messages.some(msg =>
-      msg.labelIds.some(label => SKIP_LABELS.includes(label))
-    )
-  )
+  // Filter out threads that should be skipped (spam, trash, calendar invites, etc)
+  const validThreads = threadUpdates.filter(thread => {
+    // Skip if has excluded labels
+    if (thread.messages.some(msg => msg.labelIds.some(label => SKIP_LABELS.includes(label)))) {
+      return false
+    }
+
+    // Skip calendar invites
+    if (isCalendarInvite(thread)) {
+      return false
+    }
+
+    return true
+  })
 
   console.log(`[User ${token.user_id}] Processing ${validThreads.length} valid threads`)
 
@@ -235,8 +249,7 @@ async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKe
 async function fetchRecentThreads(accessToken: string): Promise<Set<string>> {
   const params = new URLSearchParams({
     maxResults: '500',
-    labelIds: 'INBOX',
-    q: '-in:spam -in:trash -category:promotions -category:social -category:updates -label:dtc'
+    q: '(in:inbox OR label:support OR label:onboarding) -in:spam -in:trash -category:promotions -category:social -category:updates -label:dtc'
   })
 
   const response = await fetch(`${GMAIL_API_BASE}/messages?${params}`, {
@@ -444,6 +457,95 @@ function getHeader(message: GmailMessage, name: string): string {
   return headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || ''
 }
 
+/**
+ * Detect if a thread is a calendar invite
+ * Checks subject line, from address, content type, and snippet
+ */
+function isCalendarInvite(thread: any): boolean {
+  const firstMessage = thread.messages[0]
+  if (!firstMessage) return false
+
+  const subject = getHeader(firstMessage, 'subject').toLowerCase()
+  const from = getHeader(firstMessage, 'from').toLowerCase()
+  const contentType = getHeader(firstMessage, 'content-type').toLowerCase()
+  const snippet = (firstMessage.snippet || '').toLowerCase()
+
+  // Check subject line for calendar keywords (strict prefixes)
+  const calendarSubjectPrefixes = [
+    'invitation:',
+    'accepted:',
+    'declined:',
+    'tentative:',
+    'canceled:',
+    'cancelled:',
+    'updated invitation:',
+    'updated event:',
+    'reminder:',
+  ]
+
+  if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
+    return true
+  }
+
+  // Check subject for calendar-related phrases
+  const calendarSubjectKeywords = [
+    'has invited you',
+    'event invitation',
+    'calendar event',
+    'meeting invitation',
+    'meeting invite',
+    'has accepted',
+    'has declined',
+    'has tentatively accepted',
+    'changed this event',
+    'cancelled this event',
+    'canceled this event',
+    'event reminder',
+  ]
+
+  if (calendarSubjectKeywords.some(keyword => subject.includes(keyword))) {
+    return true
+  }
+
+  // Check from address for calendar services
+  const calendarFromPatterns = [
+    'calendar-notification@google.com',
+    'calendar@google.com',
+    'noreply@google.com',
+    'notifications@google.com',
+    'calendar-server@',
+    'no-reply@calendar',
+  ]
+
+  if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
+    return true
+  }
+
+  // Check snippet for calendar-specific phrases
+  const calendarSnippetKeywords = [
+    'view event',
+    'going?',
+    'yes, maybe, no',
+    'rsvp',
+    'google calendar',
+    'add to calendar',
+    'event details',
+    'when:',
+    'where:',
+  ]
+
+  if (calendarSnippetKeywords.some(keyword => snippet.includes(keyword))) {
+    return true
+  }
+
+  // Check content type for calendar data
+  if (contentType.includes('text/calendar') || contentType.includes('application/ics')) {
+    return true
+  }
+
+  return false
+}
+
 function parseMessage(gmailMsg: GmailMessage, userId: string) {
   const from = getHeader(gmailMsg, 'from')
   const fromMatch = from.match(/(.*?)\s*<(.+?)>/) || [null, from, from]
@@ -480,4 +582,150 @@ function categorizeThread(labelIds: string[], subject: string): 'onboarding' | '
   }
 
   return 'general'
+}
+
+// Process archive queue - archive threads in Gmail that were archived from UI
+async function processArchiveQueue(supabase: any, encryptionKey: string) {
+  let successCount = 0
+  let errorCount = 0
+
+  try {
+    // Get pending archive queue items
+    const { data: queueItems, error: queueError } = await supabase.rpc('get_pending_archive_queue', {
+      p_limit: 50
+    })
+
+    if (queueError) {
+      console.error('[Archive Queue] Failed to fetch queue:', queueError)
+      return { successCount: 0, errorCount: 0 }
+    }
+
+    if (!queueItems || queueItems.length === 0) {
+      console.log('[Archive Queue] No items to process')
+      return { successCount: 0, errorCount: 0 }
+    }
+
+    console.log(`[Archive Queue] Processing ${queueItems.length} items`)
+
+    // Group by user_id to batch token fetches
+    const itemsByUser = new Map<string, any[]>()
+    for (const item of queueItems) {
+      if (!itemsByUser.has(item.user_id)) {
+        itemsByUser.set(item.user_id, [])
+      }
+      itemsByUser.get(item.user_id)!.push(item)
+    }
+
+    // Process each user's archive requests
+    for (const [userId, userItems] of itemsByUser.entries()) {
+      try {
+        // Get user's OAuth token
+        const { data: tokenData, error: tokenError } = await supabase.rpc('get_oauth_token', {
+          p_user_id: userId,
+          p_provider: 'gmail',
+          p_encryption_key: encryptionKey
+        })
+
+        if (tokenError || !tokenData || tokenData.length === 0) {
+          console.error(`[Archive Queue] Failed to get token for user ${userId}:`, tokenError)
+          // Mark all items for this user as failed
+          for (const item of userItems) {
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'failed',
+              p_error_message: 'Failed to get OAuth token'
+            })
+          }
+          errorCount += userItems.length
+          continue
+        }
+
+        const token = tokenData[0]
+        let accessToken = token.access_token
+
+        // Refresh if expired
+        if (Date.now() > token.expires_at) {
+          try {
+            accessToken = await refreshAccessToken(supabase, token, encryptionKey)
+          } catch (refreshError) {
+            console.error(`[Archive Queue] Token refresh failed for user ${userId}:`, refreshError)
+            for (const item of userItems) {
+              await supabase.rpc('update_archive_queue_status', {
+                p_queue_id: item.id,
+                p_status: 'failed',
+                p_error_message: 'Token refresh failed'
+              })
+            }
+            errorCount += userItems.length
+            continue
+          }
+        }
+
+        // Archive each thread in Gmail
+        for (const item of userItems) {
+          try {
+            await archiveThreadInGmail(accessToken, item.gmail_thread_id)
+
+            // Mark as completed
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'completed',
+              p_error_message: null
+            })
+
+            successCount++
+            console.log(`[Archive Queue] ✓ Archived thread ${item.gmail_thread_id}`)
+
+          } catch (archiveError) {
+            console.error(`[Archive Queue] Failed to archive thread ${item.gmail_thread_id}:`, archiveError)
+
+            // Mark as failed
+            await supabase.rpc('update_archive_queue_status', {
+              p_queue_id: item.id,
+              p_status: 'failed',
+              p_error_message: archiveError.message || 'Unknown error'
+            })
+
+            errorCount++
+          }
+
+          // Small delay to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+
+      } catch (userError) {
+        console.error(`[Archive Queue] Error processing user ${userId}:`, userError)
+        errorCount += userItems.length
+      }
+    }
+
+  } catch (error) {
+    console.error('[Archive Queue] Unexpected error:', error)
+  }
+
+  return { successCount, errorCount }
+}
+
+// Archive a thread in Gmail by removing INBOX label
+async function archiveThreadInGmail(accessToken: string, threadId: string) {
+  const response = await fetch(
+    `${GMAIL_API_BASE}/threads/${threadId}/modify`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        removeLabelIds: ['INBOX', 'UNREAD']
+      })
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Gmail API error: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  return response.json()
 }

@@ -304,3 +304,54 @@ export async function completeActionItemInSupabase(itemId: string, isCompleted: 
     return false
   }
 }
+
+/**
+ * Archive a mail thread in Supabase
+ * This will mark the thread as archived in the database and queue it for Gmail archiving
+ */
+export async function archiveThread(
+  threadId: string,
+  archiveInGmail: boolean = true
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = getSupabaseClient()
+
+    if (!supabase) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
+    // Get current user session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    // Call the archive_thread RPC function
+    const { data, error } = await supabase.rpc('archive_thread', {
+      p_thread_id: threadId,
+      p_archive_in_gmail: archiveInGmail,
+    })
+
+    if (error) {
+      console.error('[Mail] Error archiving thread:', error)
+      return { success: false, error: error.message }
+    }
+
+    if (!data?.success) {
+      return { success: false, error: 'Failed to archive thread' }
+    }
+
+    console.log('[Mail] Thread archived successfully:', {
+      threadId,
+      gmailSyncQueued: data.gmail_sync_queued,
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('[Mail] Unexpected error archiving thread:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
