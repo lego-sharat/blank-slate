@@ -152,12 +152,20 @@ async function syncUserMail(supabase: any, token: OAuthToken, encryptionKey: str
     }
   }
 
-  // Filter out threads that should be skipped (spam, trash, etc)
-  const validThreads = threadUpdates.filter(thread =>
-    !thread.messages.some(msg =>
-      msg.labelIds.some(label => SKIP_LABELS.includes(label))
-    )
-  )
+  // Filter out threads that should be skipped (spam, trash, calendar invites, etc)
+  const validThreads = threadUpdates.filter(thread => {
+    // Skip if has excluded labels
+    if (thread.messages.some(msg => msg.labelIds.some(label => SKIP_LABELS.includes(label)))) {
+      return false
+    }
+
+    // Skip calendar invites
+    if (isCalendarInvite(thread)) {
+      return false
+    }
+
+    return true
+  })
 
   console.log(`[User ${token.user_id}] Processing ${validThreads.length} valid threads`)
 
@@ -448,6 +456,55 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
 function getHeader(message: GmailMessage, name: string): string {
   const headers = message.payload?.headers || []
   return headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || ''
+}
+
+/**
+ * Detect if a thread is a calendar invite
+ * Checks subject line, from address, and content type
+ */
+function isCalendarInvite(thread: any): boolean {
+  const firstMessage = thread.messages[0]
+  if (!firstMessage) return false
+
+  const subject = getHeader(firstMessage, 'subject').toLowerCase()
+  const from = getHeader(firstMessage, 'from').toLowerCase()
+  const contentType = getHeader(firstMessage, 'content-type').toLowerCase()
+
+  // Check subject line for calendar keywords
+  const calendarSubjectPrefixes = [
+    'invitation:',
+    'accepted:',
+    'declined:',
+    'tentative:',
+    'canceled:',
+    'cancelled:',
+    'updated invitation:',
+    'updated event:',
+  ]
+
+  if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
+    return true
+  }
+
+  // Check from address for calendar services
+  const calendarFromPatterns = [
+    'calendar-notification@google.com',
+    'calendar@google.com',
+    'noreply@google.com',
+    'calendar-server@',
+    'no-reply@calendar',
+  ]
+
+  if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
+    return true
+  }
+
+  // Check content type for calendar data
+  if (contentType.includes('text/calendar') || contentType.includes('application/ics')) {
+    return true
+  }
+
+  return false
 }
 
 function parseMessage(gmailMsg: GmailMessage, userId: string) {
