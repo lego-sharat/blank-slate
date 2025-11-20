@@ -1,5 +1,3 @@
-import { h } from 'preact';
-
 export type MailViewType = 'all' | 'escalations' | 'onboarding' | 'support' | 'newsletters' | 'my-todos' | 'waiting';
 
 interface ViewConfig {
@@ -57,10 +55,10 @@ const VIEWS: ViewConfig[] = [
 interface NavigationSidebarProps {
   currentView: MailViewType;
   onViewChange: (view: MailViewType) => void;
-  viewCounts?: Record<MailViewType, number>;
+  viewCounts: Partial<Record<MailViewType, number>>;
 }
 
-export default function NavigationSidebar({ currentView, onViewChange, viewCounts = {} }: NavigationSidebarProps) {
+export default function NavigationSidebar({ currentView, onViewChange, viewCounts }: NavigationSidebarProps) {
   return (
     <nav class="mail-navigation">
       <div class="mail-nav-header">
