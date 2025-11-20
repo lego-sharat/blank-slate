@@ -571,13 +571,26 @@ function parseMessage(gmailMsg: GmailMessage, userId: string) {
   }
 }
 
-function categorizeThread(labelIds: string[], subject: string): 'onboarding' | 'support' | 'general' {
+function categorizeThread(labelIds: string[], subject: string): 'onboarding' | 'support' | 'billing_links' | 'general' {
   const labelNames = labelIds.join(' ').toLowerCase()
   const subjectLower = subject.toLowerCase()
 
+  // Check for billing links threads (highest priority - very specific)
+  const billingKeywords = [
+    'billing link', 'payment link', 'approve billing', 'billing approval',
+    'accept billing', 'billing request', 'payment approval'
+  ]
+  if (billingKeywords.some(keyword => subjectLower.includes(keyword))) {
+    return 'billing_links'
+  }
+
+  // Check for onboarding
   if (labelNames.includes('onboarding') || subjectLower.includes('welcome') || subjectLower.includes('getting started')) {
     return 'onboarding'
-  } else if (labelNames.includes('support') || subjectLower.includes('support') || subjectLower.includes('help')) {
+  }
+
+  // Check for support
+  if (labelNames.includes('support') || subjectLower.includes('support') || subjectLower.includes('help')) {
     return 'support'
   }
 

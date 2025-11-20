@@ -29,7 +29,7 @@ export interface MailMessageDB {
   snippet: string | null
   body_preview: string | null
   labels: string[]
-  category: 'onboarding' | 'support' | 'general' | null
+  category: 'onboarding' | 'support' | 'billing_links' | 'general' | null
   is_unread: boolean
   has_attachments: boolean
   created_at: string
@@ -122,7 +122,7 @@ export async function saveMessagesToCache(messages: MailMessageDB[]): Promise<vo
  * Sorted by date descending (newest first)
  */
 export async function getMessagesFromCache(options?: {
-  category?: 'onboarding' | 'support' | 'general'
+  category?: 'onboarding' | 'support' | 'billing_links' | 'general'
   unreadOnly?: boolean
   limit?: number
 }): Promise<MailMessageDB[]> {

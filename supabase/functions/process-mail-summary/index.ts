@@ -26,8 +26,6 @@ interface SummaryResult {
   labels: string[] // Flexible labels for categorization and filtering
   satisfactionScore?: number
   satisfactionAnalysis?: string
-  isEscalation?: boolean // Whether this requires immediate attention
-  escalationReason?: string // Why this is an escalation
   status?: 'active' | 'waiting' | 'resolved' // Thread status
 }
 
@@ -171,10 +169,7 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
 
-        // Check if this is a calendar event (should never be escalation)
-        const isCalendarEvent = isCalendarInviteThread(messages)
-
-        // Update thread with summary, action items, topic, integration, labels, satisfaction score, escalation, and status
+        // Update thread with summary, action items, topic, integration, labels, satisfaction score, and status
         const updateData: any = {
           summary: summaryResult.summary,
           action_items: summaryResult.actionItems,
@@ -188,24 +183,10 @@ serve(async (req) => {
           updateData.integration_name = summaryResult.integrationName
         }
 
-        // Add satisfaction score for onboarding/support threads
-        if ((category === 'onboarding' || category === 'support') && summaryResult.satisfactionScore) {
+        // Add satisfaction score for onboarding/support/billing_links threads
+        if ((category === 'onboarding' || category === 'support' || category === 'billing_links') && summaryResult.satisfactionScore) {
           updateData.satisfaction_score = summaryResult.satisfactionScore
           updateData.satisfaction_analysis = summaryResult.satisfactionAnalysis
-        }
-
-        // Add escalation detection (force false for calendar events)
-        if (isCalendarEvent) {
-          // Calendar events should NEVER be escalations
-          updateData.is_escalation = false
-          updateData.escalation_reason = null
-          console.log(`[AI Summary] Thread ${threadId} is a calendar event, forcing is_escalation=false`)
-        } else if (summaryResult.isEscalation !== undefined) {
-          updateData.is_escalation = summaryResult.isEscalation
-          if (summaryResult.isEscalation && summaryResult.escalationReason) {
-            updateData.escalation_reason = summaryResult.escalationReason
-            updateData.escalated_at = new Date().toISOString()
-          }
         }
 
         // Add thread status
@@ -275,85 +256,6 @@ serve(async (req) => {
     )
   }
 })
-
-/**
- * Detect if a thread is a calendar invite based on message content
- * Prevents calendar events from being misclassified as escalations
- */
-function isCalendarInviteThread(messages: any[]): boolean {
-  if (!messages || messages.length === 0) return false
-
-  const firstMessage = messages[0]
-  const subject = (firstMessage.subject || '').toLowerCase()
-  const from = (firstMessage.from_email || '').toLowerCase()
-  const snippet = (firstMessage.snippet || firstMessage.body_preview || '').toLowerCase()
-
-  // Check subject for calendar keywords
-  const calendarSubjectPrefixes = [
-    'invitation:',
-    'accepted:',
-    'declined:',
-    'tentative:',
-    'canceled:',
-    'cancelled:',
-    'updated invitation:',
-    'updated event:',
-    'reminder:',
-  ]
-
-  if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
-    return true
-  }
-
-  // Check subject for calendar phrases
-  const calendarSubjectKeywords = [
-    'has invited you',
-    'event invitation',
-    'calendar event',
-    'meeting invitation',
-    'meeting invite',
-    'has accepted',
-    'has declined',
-    'has tentatively accepted',
-    'changed this event',
-    'cancelled this event',
-    'canceled this event',
-    'event reminder',
-  ]
-
-  if (calendarSubjectKeywords.some(keyword => subject.includes(keyword))) {
-    return true
-  }
-
-  // Check from address
-  const calendarFromPatterns = [
-    'calendar-notification@google.com',
-    'calendar@google.com',
-    'noreply@google.com',
-    'notifications@google.com',
-  ]
-
-  if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
-    return true
-  }
-
-  // Check snippet for calendar phrases
-  const calendarSnippetKeywords = [
-    'view event',
-    'going?',
-    'yes, maybe, no',
-    'google calendar',
-    'add to calendar',
-    'when:',
-    'where:',
-  ]
-
-  if (calendarSnippetKeywords.some(keyword => snippet.includes(keyword))) {
-    return true
-  }
-
-  return false
-}
 
 /**
  * Generate thread summary and action items using Claude Haiku
@@ -476,26 +378,6 @@ ${msg.body_preview || msg.snippet || '(No content)'}
       delete result.satisfactionScore
       delete result.satisfactionAnalysis
     }
-  }
-
-  // Validate escalation detection
-  if (result.isEscalation !== undefined) {
-    if (typeof result.isEscalation !== 'boolean') {
-      console.warn('Invalid isEscalation from Claude, defaulting to false')
-      result.isEscalation = false
-      result.escalationReason = null
-    } else if (result.isEscalation && result.escalationReason) {
-      if (typeof result.escalationReason !== 'string' || result.escalationReason.trim() === '') {
-        console.warn('Invalid escalationReason from Claude, clearing')
-        result.escalationReason = null
-      } else {
-        result.escalationReason = result.escalationReason.trim()
-      }
-    }
-  } else {
-    // Default to false if not provided
-    result.isEscalation = false
-    result.escalationReason = null
   }
 
   // Validate status

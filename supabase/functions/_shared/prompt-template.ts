@@ -19,7 +19,7 @@ export interface PromptParams {
 
 export function buildPrompt(params: PromptParams): string {
   const { userName, userEmail, threadContext, messageCount, category } = params
-  const isCustomerFacing = category === 'onboarding' || category === 'support'
+  const isCustomerFacing = category === 'onboarding' || category === 'support' || category === 'billing_links'
 
   const satisfactionInstructions = isCustomerFacing ? `
 
@@ -32,37 +32,13 @@ export function buildPrompt(params: PromptParams): string {
    - Score 7-10: Satisfied/happy customer
    - Provide a brief analysis explaining the score
 
-4. Escalation Detection (isEscalation and escalationReason):
-   - **IMPORTANT: NEVER mark calendar invites/events as escalations**
-   - Mark as escalation (true) if ANY of these apply:
-     * Customer is angry, frustrated, or threatening to churn
-     * Multiple unresolved follow-ups or long wait times
-     * Issue is blocking business-critical functionality
-     * Customer explicitly asks to speak with senior management/founder
-     * High-value customer (based on context) with serious issue
-     * Complaint about poor service or multiple failures
-     * Legal threats or public reputation risks
-   - Provide brief reason if escalation (1 sentence)
-   - If not escalation OR if calendar event: use false and null
-
-5. Thread Status:
+4. Thread Status:
    - "waiting": Last message is from your team asking customer for info/action, waiting for their response
    - "resolved": Issue clearly resolved, customer thanked you, or conversation naturally concluded
    - "active": Requires response from your team, customer waiting, or ongoing discussion
    - Default to "active" if unclear` : `
 
-3. Escalation Detection (isEscalation and escalationReason):
-   - **IMPORTANT: NEVER mark calendar invites/events as escalations**
-   - Mark as escalation (true) if ANY of these apply:
-     * Urgent request requiring immediate attention
-     * Critical business issue or blocker
-     * Important stakeholder or high-priority sender
-     * Multiple unresolved follow-ups
-     * Time-sensitive matter with approaching deadline
-   - Provide brief reason if escalation (1 sentence)
-   - If not escalation OR if calendar event: use false and null
-
-4. Thread Status:
+3. Thread Status:
    - "waiting": Last message is from you asking someone for info/action, waiting for their response
    - "resolved": Matter clearly resolved or conversation concluded
    - "active": Requires action from you or ongoing discussion
@@ -70,8 +46,8 @@ export function buildPrompt(params: PromptParams): string {
 
   const responseFormat = isCustomerFacing ? `
 {
-  "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
+  "summary": "One sentence summary of the conversation (max 2 sentences)",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | billing_links | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
   "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
   "labels": ["customer-support", "high-priority"],
   "actionItems": [
@@ -83,13 +59,11 @@ export function buildPrompt(params: PromptParams): string {
   ],
   "satisfactionScore": 7,
   "satisfactionAnalysis": "Brief explanation of the satisfaction score",
-  "isEscalation": false,
-  "escalationReason": null,
   "status": "active"
 }` : `
 {
-  "summary": "Brief summary of the entire conversation",
-  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
+  "summary": "One sentence summary of the conversation (max 2 sentences)",
+  "topic": "integration_request | integration_issue | app_customization | feature_request | bug_report | billing_question | billing_links | technical_issue | onboarding_help | hiring_team | general_inquiry | other",
   "integrationName": "Name of Shopify app/integration mentioned (e.g., Yotpo Reviews, Klaviyo, Recharge) or null",
   "labels": ["customer-support", "high-priority"],
   "actionItems": [
@@ -99,8 +73,6 @@ export function buildPrompt(params: PromptParams): string {
       "priority": "high" | "medium" | "low"
     }
   ],
-  "isEscalation": false,
-  "escalationReason": null,
   "status": "active"
 }`
 
@@ -113,10 +85,9 @@ ${threadContext}
 
 Please analyze this entire email thread and provide:
 
-1. A concise 2-3 sentence summary of the overall conversation, including:
-   - What the conversation is about
-   - Key points discussed
-   - Current status or outcome if applicable
+1. A concise 1-sentence summary (maximum 2 sentences if absolutely necessary):
+   - Focus on the key point of the conversation and current status
+   - Be direct and actionable
 
 2. A topic/label that best categorizes this thread:
    - integration_request: Customer requesting a new Shopify app integration (not yet supported)
@@ -125,6 +96,7 @@ Please analyze this entire email thread and provide:
    - feature_request: New feature requests for the app builder platform itself (new capabilities, enhancements)
    - bug_report: Bugs in the mobile app or builder platform (crashes, display issues, functionality not working)
    - billing_question: Questions about pricing, plans, subscriptions, payments, upgrades
+   - billing_links: Team member asking customer to accept billing/payment link
    - technical_issue: Technical problems, setup issues, deployment, catalog sync, deeplink setup, push notification setup
    - onboarding_help: Help getting started, initial setup, tutorials, first-time configuration
    - hiring_team: Hiring, recruitment, job applications, team updates, HR matters
@@ -191,6 +163,10 @@ Please analyze this entire email thread and provide:
    - NOT from: actual customers, partners, investors, or people replying to your outreach
 
 5. Action items for the user (${userName || userEmail})
+   - **CRITICAL FILTERING RULES:**
+     * ONLY create action items from emails where ${userEmail} is directly addressed in the "To" field
+     * NEVER create action items from emails sent by @appbrew.tech team members (they are teammates, not requiring actions)
+     * If the entire thread is internal team communication (@appbrew.tech to @appbrew.tech), return empty array
    - ONLY extract action items that the USER needs to do (not what others need to do)
    - Examples of valid action items for the user:
      * "Respond to customer's question about Klaviyo integration"
@@ -201,6 +177,7 @@ Please analyze this entire email thread and provide:
      * Actions that others need to do for the user
      * General observations or statements
      * Things the user already completed
+     * Actions from team member emails (@appbrew.tech senders)
    - Include context about what needs to be done
    - Identify any mentioned deadlines or timeframes
    - If there are no action items for the user, return an empty array

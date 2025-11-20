@@ -16,7 +16,7 @@ export interface MailThread {
   gmail_thread_id: string
   subject: string
   participants: Array<{ name: string; email: string }>
-  category: 'onboarding' | 'support' | 'general'
+  category: 'onboarding' | 'support' | 'billing_links' | 'general'
 
   // Status and escalation
   status?: 'active' | 'archived' | 'waiting' | 'resolved'
