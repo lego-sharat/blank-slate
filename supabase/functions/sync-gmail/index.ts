@@ -249,8 +249,7 @@ async function refreshAccessToken(supabase: any, token: OAuthToken, encryptionKe
 async function fetchRecentThreads(accessToken: string): Promise<Set<string>> {
   const params = new URLSearchParams({
     maxResults: '500',
-    labelIds: 'INBOX',
-    q: '-in:spam -in:trash -category:promotions -category:social -category:updates -label:dtc'
+    q: '(in:inbox OR label:support OR label:onboarding) -in:spam -in:trash -category:promotions -category:social -category:updates -label:dtc'
   })
 
   const response = await fetch(`${GMAIL_API_BASE}/messages?${params}`, {
