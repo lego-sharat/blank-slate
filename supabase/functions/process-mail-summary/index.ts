@@ -170,6 +170,9 @@ serve(async (req) => {
         const category = existingThread?.category || 'general'
         const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
 
+        // Check if this is a calendar event (should never be escalation)
+        const isCalendarEvent = isCalendarInviteThread(messages)
+
         // Update thread with summary, action items, topic, integration, labels, satisfaction score, escalation, and status
         const updateData: any = {
           summary: summaryResult.summary,
@@ -190,8 +193,13 @@ serve(async (req) => {
           updateData.satisfaction_analysis = summaryResult.satisfactionAnalysis
         }
 
-        // Add escalation detection
-        if (summaryResult.isEscalation !== undefined) {
+        // Add escalation detection (force false for calendar events)
+        if (isCalendarEvent) {
+          // Calendar events should NEVER be escalations
+          updateData.is_escalation = false
+          updateData.escalation_reason = null
+          console.log(`[AI Summary] Thread ${threadId} is a calendar event, forcing is_escalation=false`)
+        } else if (summaryResult.isEscalation !== undefined) {
           updateData.is_escalation = summaryResult.isEscalation
           if (summaryResult.isEscalation && summaryResult.escalationReason) {
             updateData.escalation_reason = summaryResult.escalationReason
@@ -268,6 +276,85 @@ serve(async (req) => {
 })
 
 /**
+ * Detect if a thread is a calendar invite based on message content
+ * Prevents calendar events from being misclassified as escalations
+ */
+function isCalendarInviteThread(messages: any[]): boolean {
+  if (!messages || messages.length === 0) return false
+
+  const firstMessage = messages[0]
+  const subject = (firstMessage.subject || '').toLowerCase()
+  const from = (firstMessage.from_email || '').toLowerCase()
+  const snippet = (firstMessage.snippet || firstMessage.body_preview || '').toLowerCase()
+
+  // Check subject for calendar keywords
+  const calendarSubjectPrefixes = [
+    'invitation:',
+    'accepted:',
+    'declined:',
+    'tentative:',
+    'canceled:',
+    'cancelled:',
+    'updated invitation:',
+    'updated event:',
+    'reminder:',
+  ]
+
+  if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
+    return true
+  }
+
+  // Check subject for calendar phrases
+  const calendarSubjectKeywords = [
+    'has invited you',
+    'event invitation',
+    'calendar event',
+    'meeting invitation',
+    'meeting invite',
+    'has accepted',
+    'has declined',
+    'has tentatively accepted',
+    'changed this event',
+    'cancelled this event',
+    'canceled this event',
+    'event reminder',
+  ]
+
+  if (calendarSubjectKeywords.some(keyword => subject.includes(keyword))) {
+    return true
+  }
+
+  // Check from address
+  const calendarFromPatterns = [
+    'calendar-notification@google.com',
+    'calendar@google.com',
+    'noreply@google.com',
+    'notifications@google.com',
+  ]
+
+  if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
+    return true
+  }
+
+  // Check snippet for calendar phrases
+  const calendarSnippetKeywords = [
+    'view event',
+    'going?',
+    'yes, maybe, no',
+    'google calendar',
+    'add to calendar',
+    'when:',
+    'where:',
+  ]
+
+  if (calendarSnippetKeywords.some(keyword => snippet.includes(keyword))) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Generate thread summary and action items using Claude Haiku
  * Analyzes the entire conversation with full context
  * For onboarding/support threads, also extracts customer satisfaction score
@@ -299,6 +386,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
    - Provide a brief analysis explaining the score
 
 4. Escalation Detection (isEscalation and escalationReason):
+   - **IMPORTANT: NEVER mark calendar invites/events as escalations**
    - Mark as escalation (true) if ANY of these apply:
      * Customer is angry, frustrated, or threatening to churn
      * Multiple unresolved follow-ups or long wait times
@@ -308,7 +396,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
      * Complaint about poor service or multiple failures
      * Legal threats or public reputation risks
    - Provide brief reason if escalation (1 sentence)
-   - If not escalation: use false and null
+   - If not escalation OR if calendar event: use false and null
 
 5. Thread Status:
    - "waiting": Last message is from your team asking customer for info/action, waiting for their response
@@ -317,6 +405,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
    - Default to "active" if unclear` : `
 
 3. Escalation Detection (isEscalation and escalationReason):
+   - **IMPORTANT: NEVER mark calendar invites/events as escalations**
    - Mark as escalation (true) if ANY of these apply:
      * Urgent request requiring immediate attention
      * Critical business issue or blocker
@@ -324,7 +413,7 @@ ${msg.body_preview || msg.snippet || '(No content)'}
      * Multiple unresolved follow-ups
      * Time-sensitive matter with approaching deadline
    - Provide brief reason if escalation (1 sentence)
-   - If not escalation: use false and null
+   - If not escalation OR if calendar event: use false and null
 
 4. Thread Status:
    - "waiting": Last message is from you asking someone for info/action, waiting for their response

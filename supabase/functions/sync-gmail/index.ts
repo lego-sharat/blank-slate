@@ -460,7 +460,7 @@ function getHeader(message: GmailMessage, name: string): string {
 
 /**
  * Detect if a thread is a calendar invite
- * Checks subject line, from address, and content type
+ * Checks subject line, from address, content type, and snippet
  */
 function isCalendarInvite(thread: any): boolean {
   const firstMessage = thread.messages[0]
@@ -469,8 +469,9 @@ function isCalendarInvite(thread: any): boolean {
   const subject = getHeader(firstMessage, 'subject').toLowerCase()
   const from = getHeader(firstMessage, 'from').toLowerCase()
   const contentType = getHeader(firstMessage, 'content-type').toLowerCase()
+  const snippet = (firstMessage.snippet || '').toLowerCase()
 
-  // Check subject line for calendar keywords
+  // Check subject line for calendar keywords (strict prefixes)
   const calendarSubjectPrefixes = [
     'invitation:',
     'accepted:',
@@ -480,9 +481,30 @@ function isCalendarInvite(thread: any): boolean {
     'cancelled:',
     'updated invitation:',
     'updated event:',
+    'reminder:',
   ]
 
   if (calendarSubjectPrefixes.some(prefix => subject.startsWith(prefix))) {
+    return true
+  }
+
+  // Check subject for calendar-related phrases
+  const calendarSubjectKeywords = [
+    'has invited you',
+    'event invitation',
+    'calendar event',
+    'meeting invitation',
+    'meeting invite',
+    'has accepted',
+    'has declined',
+    'has tentatively accepted',
+    'changed this event',
+    'cancelled this event',
+    'canceled this event',
+    'event reminder',
+  ]
+
+  if (calendarSubjectKeywords.some(keyword => subject.includes(keyword))) {
     return true
   }
 
@@ -491,11 +513,29 @@ function isCalendarInvite(thread: any): boolean {
     'calendar-notification@google.com',
     'calendar@google.com',
     'noreply@google.com',
+    'notifications@google.com',
     'calendar-server@',
     'no-reply@calendar',
   ]
 
   if (calendarFromPatterns.some(pattern => from.includes(pattern))) {
+    return true
+  }
+
+  // Check snippet for calendar-specific phrases
+  const calendarSnippetKeywords = [
+    'view event',
+    'going?',
+    'yes, maybe, no',
+    'rsvp',
+    'google calendar',
+    'add to calendar',
+    'event details',
+    'when:',
+    'where:',
+  ]
+
+  if (calendarSnippetKeywords.some(keyword => snippet.includes(keyword))) {
     return true
   }
 
