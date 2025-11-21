@@ -406,6 +406,18 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
     }
   })
 
+  // Separate internal (@appbrew.tech) from external participants
+  const internalParticipants: string[] = []
+  const externalParticipants: string[] = []
+
+  participants.forEach(p => {
+    if (p.email && p.email.toLowerCase().endsWith('@appbrew.tech')) {
+      internalParticipants.push(p.email)
+    } else if (p.email) {
+      externalParticipants.push(p.email)
+    }
+  })
+
   // Determine category
   const labelIds = [...new Set(messages.flatMap(m => m.labelIds))]
   const category = categorizeThread(labelIds, subject)
@@ -428,6 +440,8 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
       participants,
       category,
       gmail_labels: labelIds,
+      internal_participants: internalParticipants,
+      external_participants: externalParticipants,
       is_unread: isUnread,
       has_attachments: hasAttachments,
       message_count: messages.length,

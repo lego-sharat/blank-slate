@@ -182,6 +182,8 @@ export interface MailThread {
   status?: 'active' | 'archived' | 'waiting' | 'resolved';
   is_escalation?: boolean;
   escalation_reason?: string;
+  escalation_type?: 'customer' | 'team' | null; // customer=external, team=internal
+  escalated_at?: string;
 
   // Gmail labels vs AI labels
   gmail_labels: string[]; // INBOX, UNREAD, DTC, etc.
@@ -202,6 +204,16 @@ export interface MailThread {
   // Customer metadata
   customer_name?: string;
   customer_mrr?: number;
+
+  // Billing tracking
+  is_billing?: boolean;
+  billing_status?: 'sent' | 'accepted' | 'pending' | null;
+  billing_sent_at?: string;
+  billing_accepted_at?: string;
+
+  // Participant tracking (team vs external)
+  internal_participants?: string[]; // @appbrew.tech emails
+  external_participants?: string[]; // Non-team emails
 
   // Thread stats
   message_count: number;

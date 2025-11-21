@@ -28,7 +28,10 @@ interface SummaryResult {
   satisfactionAnalysis?: string
   isEscalation?: boolean // Whether this requires immediate attention
   escalationReason?: string // Why this is an escalation
+  escalationType?: 'customer' | 'team' | null // Type of escalation
   status?: 'active' | 'waiting' | 'resolved' // Thread status
+  isBilling?: boolean // Whether this thread contains billing links
+  billingStatus?: 'sent' | 'accepted' | 'pending' | null // Billing status
 }
 
 /**
@@ -131,7 +134,7 @@ serve(async (req) => {
         // Check if thread already has a recent summary (less than 1 hour old)
         const { data: existingThread } = await supabase
           .from('mail_threads')
-          .select('summary, summary_generated_at, category')
+          .select('summary, summary_generated_at, category, internal_participants, external_participants')
           .eq('user_id', userId)
           .eq('gmail_thread_id', threadId)
           .single()
@@ -169,7 +172,9 @@ serve(async (req) => {
 
         // Generate thread summary using Claude Haiku
         const category = existingThread?.category || 'general'
-        const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, anthropicApiKey)
+        const internalParticipants = existingThread?.internal_participants || []
+        const externalParticipants = existingThread?.external_participants || []
+        const summaryResult = await generateThreadSummary(messages, category, userEmail, userName, internalParticipants, externalParticipants, anthropicApiKey)
 
         // Check if this is a calendar event (should never be escalation)
         const isCalendarEvent = isCalendarInviteThread(messages)
@@ -199,18 +204,40 @@ serve(async (req) => {
           // Calendar events should NEVER be escalations
           updateData.is_escalation = false
           updateData.escalation_reason = null
+          updateData.escalation_type = null
           console.log(`[AI Summary] Thread ${threadId} is a calendar event, forcing is_escalation=false`)
         } else if (summaryResult.isEscalation !== undefined) {
           updateData.is_escalation = summaryResult.isEscalation
           if (summaryResult.isEscalation && summaryResult.escalationReason) {
             updateData.escalation_reason = summaryResult.escalationReason
+            updateData.escalation_type = summaryResult.escalationType || null
             updateData.escalated_at = new Date().toISOString()
+          } else {
+            // Not an escalation, clear escalation_type
+            updateData.escalation_type = null
           }
         }
 
         // Add thread status
         if (summaryResult.status) {
           updateData.status = summaryResult.status
+        }
+
+        // Add billing tracking
+        if (summaryResult.isBilling !== undefined) {
+          updateData.is_billing = summaryResult.isBilling
+          if (summaryResult.isBilling && summaryResult.billingStatus) {
+            updateData.billing_status = summaryResult.billingStatus
+            // Set billing timestamps based on status
+            if (summaryResult.billingStatus === 'sent' && !updateData.billing_sent_at) {
+              updateData.billing_sent_at = new Date().toISOString()
+            }
+            if (summaryResult.billingStatus === 'accepted') {
+              updateData.billing_accepted_at = new Date().toISOString()
+            }
+          } else {
+            updateData.billing_status = null
+          }
         }
 
         const { error: updateError } = await supabase
@@ -361,7 +388,7 @@ function isCalendarInviteThread(messages: any[]): boolean {
  * For onboarding/support threads, also extracts customer satisfaction score
  * Only extracts action items that the user needs to do
  */
-async function generateThreadSummary(messages: any[], category: string, userEmail: string, userName: string | null, apiKey: string): Promise<SummaryResult> {
+async function generateThreadSummary(messages: any[], category: string, userEmail: string, userName: string | null, internalParticipants: string[], externalParticipants: string[], apiKey: string): Promise<SummaryResult> {
   // Build conversation context
   const threadContext = messages.map((msg, idx) => {
     return `
@@ -378,7 +405,9 @@ ${msg.body_preview || msg.snippet || '(No content)'}
     userEmail,
     threadContext,
     messageCount: messages.length,
-    category
+    category,
+    internalParticipants,
+    externalParticipants
   })
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {

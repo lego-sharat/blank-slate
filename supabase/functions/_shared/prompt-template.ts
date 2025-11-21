@@ -15,11 +15,21 @@ export interface PromptParams {
   threadContext: string
   messageCount: number
   category: string
+  internalParticipants: string[]  // @appbrew.tech team members
+  externalParticipants: string[]  // Customers and external people
 }
 
 export function buildPrompt(params: PromptParams): string {
-  const { userName, userEmail, threadContext, messageCount, category } = params
+  const { userName, userEmail, threadContext, messageCount, category, internalParticipants, externalParticipants } = params
   const isCustomerFacing = category === 'onboarding' || category === 'support'
+
+  // Format participant lists for context
+  const teamContext = internalParticipants.length > 0
+    ? `\n\nYour team members in this thread (all @appbrew.tech): ${internalParticipants.join(', ')}`
+    : ''
+  const customerContext = externalParticipants.length > 0
+    ? `\nExternal people (customers/partners): ${externalParticipants.join(', ')}`
+    : ''
 
   const satisfactionInstructions = isCustomerFacing ? `
 
@@ -32,9 +42,10 @@ export function buildPrompt(params: PromptParams): string {
    - Score 7-10: Satisfied/happy customer
    - Provide a brief analysis explaining the score
 
-4. Escalation Detection (isEscalation and escalationReason):
+4. Escalation Detection (isEscalation, escalationReason, and escalationType):
    - **IMPORTANT: NEVER mark calendar invites/events as escalations**
-   - Mark as escalation (true) if ANY of these apply:
+   - **ONLY mark as escalation if this is a support or onboarding thread (customer-facing)**
+   - For customer-facing threads, mark as escalation (true) with escalationType="customer" if ANY apply:
      * Customer is angry, frustrated, or threatening to churn
      * Multiple unresolved follow-ups or long wait times
      * Issue is blocking business-critical functionality
@@ -43,30 +54,48 @@ export function buildPrompt(params: PromptParams): string {
      * Complaint about poor service or multiple failures
      * Legal threats or public reputation risks
    - Provide brief reason if escalation (1 sentence)
-   - If not escalation OR if calendar event: use false and null
+   - If not escalation OR if calendar event: use false, null, and null
 
 5. Thread Status:
    - "waiting": Last message is from your team asking customer for info/action, waiting for their response
    - "resolved": Issue clearly resolved, customer thanked you, or conversation naturally concluded
    - "active": Requires response from your team, customer waiting, or ongoing discussion
-   - Default to "active" if unclear` : `
+   - Default to "active" if unclear
 
-3. Escalation Detection (isEscalation and escalationReason):
+6. Billing Detection (isBilling and billingStatus):
+   - Set isBilling=true if your team (@appbrew.tech) sent billing/payment links to external customers
+   - Look for phrases like: "payment link", "invoice", "subscription renewal", "upgrade to paid plan", "billing details", "payment due"
+   - Determine billingStatus:
+     * "sent": Billing link sent but no customer response yet
+     * "accepted": Customer confirmed payment, accepted plan, or thanked for successful payment
+     * "pending": Customer asked questions about billing but hasn't acted yet
+   - If not billing-related: use false and null` : `
+
+3. Escalation Detection (isEscalation, escalationReason, and escalationType):
    - **IMPORTANT: NEVER mark calendar invites/events as escalations**
-   - Mark as escalation (true) if ANY of these apply:
-     * Urgent request requiring immediate attention
-     * Critical business issue or blocker
-     * Important stakeholder or high-priority sender
-     * Multiple unresolved follow-ups
+   - **For general threads, mark as escalation (true) with escalationType="team" if ANY apply:**
+     * Urgent request from team member requiring immediate attention
+     * Critical business issue or blocker affecting operations
+     * Important stakeholder (investor, partner, leadership) with high-priority matter
+     * Multiple unresolved follow-ups from team
      * Time-sensitive matter with approaching deadline
    - Provide brief reason if escalation (1 sentence)
-   - If not escalation OR if calendar event: use false and null
+   - If not escalation OR if calendar event: use false, null, and null
 
 4. Thread Status:
    - "waiting": Last message is from you asking someone for info/action, waiting for their response
    - "resolved": Matter clearly resolved or conversation concluded
    - "active": Requires action from you or ongoing discussion
-   - Default to "active" if unclear`
+   - Default to "active" if unclear
+
+5. Billing Detection (isBilling and billingStatus):
+   - Set isBilling=true if your team (@appbrew.tech) sent billing/payment links to external participants
+   - Look for phrases like: "payment link", "invoice", "subscription renewal", "upgrade to paid plan", "billing details", "payment due"
+   - Determine billingStatus:
+     * "sent": Billing link sent but no customer response yet
+     * "accepted": Customer/partner confirmed payment or accepted plan
+     * "pending": Customer asked questions about billing but hasn't acted yet
+   - If not billing-related: use false and null`
 
   const responseFormat = isCustomerFacing ? `
 {
@@ -85,7 +114,10 @@ export function buildPrompt(params: PromptParams): string {
   "satisfactionAnalysis": "Brief explanation of the satisfaction score",
   "isEscalation": false,
   "escalationReason": null,
-  "status": "active"
+  "escalationType": null,
+  "status": "active",
+  "isBilling": false,
+  "billingStatus": null
 }` : `
 {
   "summary": "Brief summary of the entire conversation",
@@ -101,12 +133,15 @@ export function buildPrompt(params: PromptParams): string {
   ],
   "isEscalation": false,
   "escalationReason": null,
-  "status": "active"
+  "escalationType": null,
+  "status": "active",
+  "isBilling": false,
+  "billingStatus": null
 }`
 
   return `You are an AI assistant for a Shopify mobile app builder platform. You help summarize email threads, extract action items${isCustomerFacing ? ', and analyze customer satisfaction' : ''}.
 
-User: ${userName ? `${userName} (${userEmail})` : userEmail}
+User: ${userName ? `${userName} (${userEmail})` : userEmail}${teamContext}${customerContext}
 
 This is an email conversation with ${messageCount} message(s):
 ${threadContext}
@@ -175,6 +210,7 @@ Please analyze this entire email thread and provide:
    Content Labels:
    - "integration-related": Related to an integration
    - "billing": Related to billing/payments
+   - "billing-accepted": Customer has accepted/paid billing (use with "billing")
    - "technical": Technical in nature
    - "design": Design/UI/UX related
 

@@ -42,7 +42,11 @@ export default function MailView() {
         break;
 
       case 'escalations':
-        filtered = threads.value.all.filter(t => t.is_escalation === true);
+        // Only show escalations from support and onboarding categories
+        filtered = threads.value.all.filter(t =>
+          t.is_escalation === true &&
+          (t.category === 'support' || t.category === 'onboarding')
+        );
         break;
 
       case 'onboarding':
@@ -70,6 +74,10 @@ export default function MailView() {
         filtered = threads.value.all.filter(t => t.status === 'waiting');
         break;
 
+      case 'billing':
+        filtered = threads.value.all.filter(t => t.is_billing === true);
+        break;
+
       default:
         filtered = [];
     }
@@ -89,7 +97,10 @@ export default function MailView() {
     const all = threads.value.all;
     return {
       all: all.length,
-      escalations: all.filter(t => t.is_escalation === true).length,
+      escalations: all.filter(t =>
+        t.is_escalation === true &&
+        (t.category === 'support' || t.category === 'onboarding')
+      ).length,
       onboarding: threads.value.onboarding.length,
       support: threads.value.support.length,
       newsletters: all.filter(t =>
@@ -98,6 +109,7 @@ export default function MailView() {
       ).length,
       'my-todos': all.filter(t => t.action_items && t.action_items.length > 0).length,
       waiting: all.filter(t => t.status === 'waiting').length,
+      billing: all.filter(t => t.is_billing === true).length,
     };
   });
 
