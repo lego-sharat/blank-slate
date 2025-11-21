@@ -387,6 +387,7 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
   // Extract thread metadata
   const subject = getHeader(firstMessage, 'subject') || '(No subject)'
   const allParticipants = new Set<string>()
+  const recipientEmails = new Set<string>()
 
   messages.forEach(msg => {
     const from = getHeader(msg, 'from')
@@ -394,7 +395,16 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
     const cc = getHeader(msg, 'cc')
 
     if (from) allParticipants.add(from)
-    if (to) to.split(',').forEach(email => allParticipants.add(email.trim()))
+    if (to) {
+      to.split(',').forEach(email => {
+        const trimmed = email.trim()
+        allParticipants.add(trimmed)
+        // Extract just the email address for recipient checking
+        const match = trimmed.match(/<(.+?)>/)
+        const emailOnly = match ? match[1].toLowerCase() : trimmed.toLowerCase()
+        recipientEmails.add(emailOnly)
+      })
+    }
     if (cc) cc.split(',').forEach(email => allParticipants.add(email.trim()))
   })
 
@@ -418,9 +428,9 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
     }
   })
 
-  // Determine category
+  // Determine category based on recipient email
   const labelIds = [...new Set(messages.flatMap(m => m.labelIds))]
-  const category = categorizeThread(labelIds, subject)
+  const category = categorizeThread(recipientEmails, labelIds, subject)
 
   // Check if any message is unread
   const isUnread = messages.some(m => m.labelIds.includes('UNREAD'))
@@ -585,7 +595,16 @@ function parseMessage(gmailMsg: GmailMessage, userId: string) {
   }
 }
 
-function categorizeThread(labelIds: string[], subject: string): 'onboarding' | 'support' | 'general' {
+function categorizeThread(recipientEmails: Set<string>, labelIds: string[], subject: string): 'onboarding' | 'support' | 'general' {
+  // First check recipient email address (most reliable)
+  if (recipientEmails.has('onboarding@appbrew.tech')) {
+    return 'onboarding'
+  }
+  if (recipientEmails.has('support@appbrew.tech')) {
+    return 'support'
+  }
+
+  // Fall back to labels and subject
   const labelNames = labelIds.join(' ').toLowerCase()
   const subjectLower = subject.toLowerCase()
 

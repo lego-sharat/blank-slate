@@ -11,7 +11,6 @@ import NavigationSidebar, { type MailViewType } from './NavigationSidebar';
 
 export default function MailView() {
   const [currentView, setCurrentView] = useState<MailViewType>('all');
-  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const threads = useComputed(() => mailThreads.value);
@@ -22,15 +21,6 @@ export default function MailView() {
       setIsConnected(status.connected);
     });
   }, []);
-
-  // Get all unique AI labels from threads
-  const availableLabels = useComputed(() => {
-    const labelsSet = new Set<string>();
-    threads.value.all.forEach(thread => {
-      thread.ai_labels?.forEach(label => labelsSet.add(label));
-    });
-    return Array.from(labelsSet).sort();
-  });
 
   const getFilteredThreads = (): MailThread[] => {
     let filtered: MailThread[];
@@ -64,12 +54,6 @@ export default function MailView() {
         );
         break;
 
-      case 'my-todos':
-        filtered = threads.value.all.filter(t =>
-          t.action_items && t.action_items.length > 0
-        );
-        break;
-
       case 'waiting':
         filtered = threads.value.all.filter(t => t.status === 'waiting');
         break;
@@ -80,13 +64,6 @@ export default function MailView() {
 
       default:
         filtered = [];
-    }
-
-    // Then filter by selected labels
-    if (selectedLabels.length > 0) {
-      filtered = filtered.filter(thread =>
-        selectedLabels.some(label => thread.ai_labels?.includes(label))
-      );
     }
 
     return filtered.slice(0, 100); // Limit to 100 threads
@@ -107,19 +84,10 @@ export default function MailView() {
         t.category === 'general' &&
         (t.ai_labels?.includes('newsletter') || t.ai_labels?.includes('promotional'))
       ).length,
-      'my-todos': all.filter(t => t.action_items && t.action_items.length > 0).length,
       waiting: all.filter(t => t.status === 'waiting').length,
       billing: all.filter(t => t.is_billing === true).length,
     };
   });
-
-  const toggleLabelFilter = (label: string) => {
-    setSelectedLabels(prev =>
-      prev.includes(label)
-        ? prev.filter(l => l !== label)
-        : [...prev, label]
-    );
-  };
 
   const toggleExpand = (threadId: string) => {
     setExpandedThreadId(expandedThreadId === threadId ? null : threadId);
@@ -187,14 +155,6 @@ export default function MailView() {
     return '';
   };
 
-  const getLabelBadgeClass = (label: string): string => {
-    if (label === 'high-priority') return 'mail-label-priority';
-    if (label === 'needs-response') return 'mail-label-urgent';
-    if (label === 'cold-email') return 'mail-label-cold';
-    if (label === 'customer-support') return 'mail-label-support';
-    return 'mail-label-default';
-  };
-
   const getSatisfactionColor = (score: number): string => {
     if (score >= 8) return '#4ade80'; // green
     if (score >= 6) return '#fbbf24'; // yellow
@@ -225,24 +185,6 @@ export default function MailView() {
               </button>
             </div>
           </div>
-
-        {/* Label Filters */}
-        {availableLabels.value.length > 0 && (
-        <div class="mail-label-filters">
-          <span class="mail-label-filters-title">Labels:</span>
-          <div class="mail-label-chips">
-            {availableLabels.value.map(label => (
-              <button
-                key={label}
-                class={`mail-label-chip ${selectedLabels.includes(label) ? 'active' : ''} ${getLabelBadgeClass(label)}`}
-                onClick={() => toggleLabelFilter(label)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {!isConnected && (
         <div class="mail-connection-warning">
@@ -316,19 +258,6 @@ export default function MailView() {
                     </div>
                   )}
 
-                  {/* AI Labels */}
-                  {thread.ai_labels && thread.ai_labels.length > 0 && (
-                    <div class="mail-ai-labels">
-                      {thread.ai_labels.slice(0, 3).map(label => (
-                        <span key={label} class={`mail-label-badge ${getLabelBadgeClass(label)}`}>
-                          {label}
-                        </span>
-                      ))}
-                      {thread.ai_labels.length > 3 && (
-                        <span class="mail-label-more">+{thread.ai_labels.length - 3}</span>
-                      )}
-                    </div>
-                  )}
 
                   {/* Satisfaction Score (for onboarding/support) */}
                   {thread.satisfaction_score && (thread.category === 'onboarding' || thread.category === 'support') && (

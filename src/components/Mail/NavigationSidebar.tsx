@@ -1,4 +1,4 @@
-export type MailViewType = 'all' | 'escalations' | 'onboarding' | 'support' | 'newsletters' | 'my-todos' | 'waiting' | 'billing';
+export type MailViewType = 'all' | 'escalations' | 'onboarding' | 'support' | 'newsletters' | 'waiting' | 'billing';
 
 interface ViewConfig {
   id: MailViewType;
@@ -37,12 +37,6 @@ const VIEWS: ViewConfig[] = [
     label: 'Newsletters',
     icon: '',
     description: 'Marketing and newsletters',
-  },
-  {
-    id: 'my-todos',
-    label: 'My Todos',
-    icon: '',
-    description: 'Action items for your team',
   },
   {
     id: 'waiting',
