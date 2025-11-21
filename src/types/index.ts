@@ -214,6 +214,7 @@ export interface MailThread {
   // Participant tracking (team vs external)
   internal_participants?: string[]; // @appbrew.tech emails
   external_participants?: string[]; // Non-team emails
+  is_directly_addressed?: boolean; // True if sharat@appbrew.tech is in to/cc
 
   // Thread stats
   message_count: number;

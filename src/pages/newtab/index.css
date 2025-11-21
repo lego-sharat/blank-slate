@@ -5136,9 +5136,16 @@ body.light-theme {
 
 .mail-badges {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   flex-shrink: 0;
+}
+
+.mail-badge-separator {
+  color: #666;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
 }
 
 .mail-badge {

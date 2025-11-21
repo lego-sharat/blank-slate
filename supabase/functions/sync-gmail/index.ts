@@ -388,6 +388,7 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
   const subject = getHeader(firstMessage, 'subject') || '(No subject)'
   const allParticipants = new Set<string>()
   const recipientEmails = new Set<string>()
+  let isDirectlyAddressed = false
 
   messages.forEach(msg => {
     const from = getHeader(msg, 'from')
@@ -403,9 +404,24 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
         const match = trimmed.match(/<(.+?)>/)
         const emailOnly = match ? match[1].toLowerCase() : trimmed.toLowerCase()
         recipientEmails.add(emailOnly)
+        // Check if sharat@appbrew.tech is directly addressed
+        if (emailOnly === 'sharat@appbrew.tech') {
+          isDirectlyAddressed = true
+        }
       })
     }
-    if (cc) cc.split(',').forEach(email => allParticipants.add(email.trim()))
+    if (cc) {
+      cc.split(',').forEach(email => {
+        const trimmed = email.trim()
+        allParticipants.add(trimmed)
+        // Extract email and check if sharat is CC'd
+        const match = trimmed.match(/<(.+?)>/)
+        const emailOnly = match ? match[1].toLowerCase() : trimmed.toLowerCase()
+        if (emailOnly === 'sharat@appbrew.tech') {
+          isDirectlyAddressed = true
+        }
+      })
+    }
   })
 
   const participants = Array.from(allParticipants).map(p => {
@@ -452,6 +468,7 @@ async function saveThread(supabase: any, thread: { threadId: string; userId: str
       gmail_labels: labelIds,
       internal_participants: internalParticipants,
       external_participants: externalParticipants,
+      is_directly_addressed: isDirectlyAddressed,
       is_unread: isUnread,
       has_attachments: hasAttachments,
       message_count: messages.length,

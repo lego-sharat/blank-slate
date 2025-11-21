@@ -10,9 +10,9 @@ interface ViewConfig {
 const VIEWS: ViewConfig[] = [
   {
     id: 'all',
-    label: 'All Mail',
+    label: 'Inbox',
     icon: '',
-    description: 'All email threads',
+    description: 'Emails sent directly to you',
   },
   {
     id: 'escalations',

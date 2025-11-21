@@ -28,7 +28,8 @@ export default function MailView() {
     // Filter by view type
     switch (currentView) {
       case 'all':
-        filtered = threads.value.all;
+        // Only show emails directly addressed to sharat@appbrew.tech
+        filtered = threads.value.all.filter(t => t.is_directly_addressed === true);
         break;
 
       case 'escalations':
@@ -73,7 +74,7 @@ export default function MailView() {
   const viewCounts = useComputed(() => {
     const all = threads.value.all;
     return {
-      all: all.length,
+      all: all.filter(t => t.is_directly_addressed === true).length,
       escalations: all.filter(t =>
         t.is_escalation === true &&
         (t.category === 'support' || t.category === 'onboarding')
@@ -150,8 +151,8 @@ export default function MailView() {
   };
 
   const getCategoryLabel = (category: string): string => {
-    if (category === 'onboarding') return 'Onboarding';
-    if (category === 'support') return 'Support';
+    if (category === 'onboarding') return 'onboarding';
+    if (category === 'support') return 'support';
     return '';
   };
 
@@ -225,9 +226,12 @@ export default function MailView() {
                     </div>
                     <div class="mail-badges">
                       {thread.category && thread.category !== 'general' && (
-                        <span class={`mail-badge ${getCategoryBadgeClass(thread.category)}`}>
-                          {getCategoryLabel(thread.category)}
-                        </span>
+                        <>
+                          <span class={`mail-badge ${getCategoryBadgeClass(thread.category)}`}>
+                            {getCategoryLabel(thread.category)}
+                          </span>
+                          {thread.integration_name && <span class="mail-badge-separator">·</span>}
+                        </>
                       )}
                       {thread.integration_name && (
                         <span class="mail-badge mail-badge-integration" title={`Integration: ${thread.integration_name}`}>
