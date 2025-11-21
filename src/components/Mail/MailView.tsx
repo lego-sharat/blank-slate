@@ -406,8 +406,8 @@ export default function MailView() {
           })}
         </div>
       )}
-        </div> {/* mail-view-content */}
-      </div> {/* mail-view */}
-    </div> {/* mail-view-container */}
+        </div>
+      </div>
+    </div>
   );
 }
