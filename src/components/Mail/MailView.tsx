@@ -215,18 +215,19 @@ export default function MailView() {
 
       {/* Main Content */}
       <div class="mail-view">
-        <div class="mail-header">
-          <h1 class="mail-title">Mail</h1>
-          <div class="mail-header-actions">
-            <span class="mail-stats">{filteredThreads.length} threads</span>
-            <button class="mail-view-all-button" onClick={handleViewAll}>
-              Open Gmail
-            </button>
+        <div class="mail-view-content">
+          <div class="mail-header">
+            <h1 class="mail-title">Mail</h1>
+            <div class="mail-header-actions">
+              <span class="mail-stats">{filteredThreads.length} threads</span>
+              <button class="mail-view-all-button" onClick={handleViewAll}>
+                Open Gmail
+              </button>
+            </div>
           </div>
-        </div>
 
-      {/* Label Filters */}
-      {availableLabels.value.length > 0 && (
+        {/* Label Filters */}
+        {availableLabels.value.length > 0 && (
         <div class="mail-label-filters">
           <span class="mail-label-filters-title">Labels:</span>
           <div class="mail-label-chips">
@@ -405,7 +406,8 @@ export default function MailView() {
           })}
         </div>
       )}
-      </div>
-    </div>
+        </div> {/* mail-view-content */}
+      </div> {/* mail-view */}
+    </div> {/* mail-view-container */}
   );
 }

@@ -11,49 +11,49 @@ const VIEWS: ViewConfig[] = [
   {
     id: 'all',
     label: 'All Mail',
-    icon: '📧',
+    icon: '',
     description: 'All email threads',
   },
   {
     id: 'escalations',
     label: 'Escalations',
-    icon: '🔥',
+    icon: '',
     description: 'High-priority urgent threads',
   },
   {
     id: 'onboarding',
     label: 'Onboarding',
-    icon: '🎯',
+    icon: '',
     description: 'New customer onboarding',
   },
   {
     id: 'support',
     label: 'Support',
-    icon: '💬',
+    icon: '',
     description: 'Customer support requests',
   },
   {
     id: 'newsletters',
     label: 'Newsletters',
-    icon: '📰',
+    icon: '',
     description: 'Marketing and newsletters',
   },
   {
     id: 'my-todos',
     label: 'My Todos',
-    icon: '✅',
+    icon: '',
     description: 'Action items for your team',
   },
   {
     id: 'waiting',
     label: 'Waiting',
-    icon: '⏳',
+    icon: '',
     description: 'Waiting on customer',
   },
   {
     id: 'billing',
     label: 'Billing',
-    icon: '💳',
+    icon: '',
     description: 'Billing links sent to customers',
   },
 ];
@@ -83,7 +83,6 @@ export default function NavigationSidebar({ currentView, onViewChange, viewCount
               onClick={() => onViewChange(view.id)}
               title={view.description}
             >
-              <span class="mail-nav-icon">{view.icon}</span>
               <span class="mail-nav-label">{view.label}</span>
               {count > 0 && (
                 <span class="mail-nav-count">{count > 99 ? '99+' : count}</span>
